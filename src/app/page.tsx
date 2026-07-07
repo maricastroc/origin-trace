@@ -47,9 +47,11 @@ export default function Home() {
               <span className="text-accent">yourself</span>.
             </h2>
             <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-muted">
-              The same engine, live: point it at an article and a phrase, and it
-              binary-searches the real history down to the revision that
-              introduced the claim.
+              Paste a claim. Origin Trace tries to resolve which article it
+              belongs to — and when the scope is ambiguous, it shows you the
+              candidates instead of guessing. Then it binary-searches that
+              article&rsquo;s real history down to the revision that introduced
+              the claim.
             </p>
             <div className="mt-10">
               <LiveTrace />

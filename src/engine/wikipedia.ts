@@ -144,6 +144,45 @@ export class WikipediaClient {
     const map = await this.getContent([revid]);
     return map.get(revid) ?? null;
   }
+
+  /**
+   * Full-text search over article titles/content. Used to resolve a phrase to
+   * candidate articles. Pass a raw query (e.g. a phrase) for ranked/fuzzy hits,
+   * or `insource:"exact phrase"` for verbatim current-wikitext matches.
+   */
+  async search(query: string, limit = 8): Promise<SearchHit[]> {
+    const params: Record<string, string> = {
+      action: "query",
+      list: "search",
+      srsearch: query,
+      srlimit: String(limit),
+      srprop: "snippet",
+      srnamespace: "0", // articles only
+    };
+    const data = (await this.fetchJson(this.endpoint(params))) as ApiResponse;
+    return (data.query?.search ?? []).map((h) => ({
+      title: h.title,
+      snippet: stripSnippet(h.snippet ?? ""),
+    }));
+  }
+}
+
+/** One search result: an article title and a plain-text context snippet. */
+export interface SearchHit {
+  title: string;
+  snippet: string;
+}
+
+/** Strip the HTML the search API returns in snippets down to plain text. */
+function stripSnippet(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, "")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&#0?39;|&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // --- Minimal shape of the formatversion=2 Action API JSON we consume. ---
@@ -163,7 +202,12 @@ interface ApiPage {
   revisions?: ApiRevision[];
 }
 
+interface ApiSearchHit {
+  title: string;
+  snippet?: string;
+}
+
 interface ApiResponse {
-  query?: { pages?: ApiPage[] };
+  query?: { pages?: ApiPage[]; search?: ApiSearchHit[] };
   continue?: { rvcontinue?: string };
 }

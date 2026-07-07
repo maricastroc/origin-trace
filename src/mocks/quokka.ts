@@ -64,6 +64,7 @@ export const quokka: ClaimProvenance = {
   },
   meta: {
     generatedBy: "manual-trace",
+    corpus: { total: 1690, truncated: false },
     notes:
       "swaps bracketed by content reading; exact revids of the swaps not pinned",
   },

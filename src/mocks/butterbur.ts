@@ -72,6 +72,7 @@ export const butterbur: ClaimProvenance = {
     "The wording and the evidence changed several times. The boundary “what counts as the same claim?” is yours — the product shows both readings and the evolution that separates them.",
   meta: {
     generatedBy: "manual-trace",
+    corpus: { total: 291, truncated: false },
     notes:
       "windows bracketed by content reading; exact revid of the 2014 rewrite not pinned",
   },

@@ -1,6 +1,7 @@
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
 import { CaseFileHeader } from "./CaseFileHeader";
 import { CircularLoop } from "./CircularLoop";
+import { CorpusReceipt } from "./CorpusReceipt";
 import { CredibilityRead } from "./CredibilityRead";
 import { DualReadings } from "./DualReadings";
 import { EvidenceStatus } from "./EvidenceStatus";
@@ -14,6 +15,12 @@ export function CaseFile({ data }: { data: ClaimProvenance }) {
     <article className="flex flex-col gap-6">
       <CaseFileHeader claim={data.claim} />
       <EvidenceStatus data={data} />
+      {data.meta.corpus && (
+        <CorpusReceipt
+          corpus={data.meta.corpus}
+          manual={data.meta.generatedBy === "manual-trace"}
+        />
+      )}
       <Timeline
         events={data.timeline}
         label={isAmbiguous ? "Chain of rewording" : "Credibility timeline"}

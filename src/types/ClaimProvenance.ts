@@ -45,5 +45,21 @@ export interface ClaimProvenance {
     generatedBy: "manual-trace" | "wikiblame-pipeline";
     fetchedAt?: string;
     notes?: string;
+    /**
+     * The closed-corpus receipt: how much of the history the engine had to read
+     * to pin the origin. Present only for live engine traces.
+     */
+    corpus?: {
+      /**
+       * Revisions whose content the binary search actually read. Present for
+       * live engine traces; omitted for hand traces, which enumerate the
+       * closed corpus without a binary-search read count.
+       */
+      read?: number;
+      /** Total revisions in the enumerated history. */
+      total: number;
+      /** History was cut short by the page cap — closure unproven. */
+      truncated: boolean;
+    };
   };
 }

@@ -29,6 +29,22 @@ export function Hero() {
             instead of inventing a provenance.
           </p>
 
+          {/* The mechanism, planted at first glance — not a fact-checker, not an LLM. */}
+          <p className="mt-6 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">
+            <span className="text-accent" aria-hidden="true">
+              ▪
+            </span>
+            <span>reads every revision</span>
+            <span className="text-line-strong" aria-hidden="true">
+              /
+            </span>
+            <span>binary-searches the origin</span>
+            <span className="text-line-strong" aria-hidden="true">
+              /
+            </span>
+            <span className="text-ink-muted">never an LLM</span>
+          </p>
+
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <a
               href="#cases"

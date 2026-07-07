@@ -216,7 +216,15 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     meta: {
       generatedBy: "wikiblame-pipeline",
       fetchedAt: new Date().toISOString(),
-      notes: buildNotes(intro, revisions.length, truncated),
+      corpus: {
+        read: intro.contentFetches,
+        total: revisions.length,
+        truncated,
+      },
+      ...(() => {
+        const notes = buildNotes(intro);
+        return notes ? { notes } : {};
+      })(),
     },
   };
 }
@@ -279,23 +287,13 @@ function sourceQualityFor(
   };
 }
 
-function buildNotes(
-  intro: { contentFetches: number; assumptionViolated: boolean },
-  total: number,
-  truncated: boolean,
-): string {
-  const parts = [
-    `${intro.contentFetches} of ${total} revisions read (introduction by binary search)`,
-  ];
-  if (intro.assumptionViolated) {
-    parts.push(
-      "non-monotonic presence at the boundary — the window may not be the first occurrence; verify",
-    );
-  }
-  if (truncated) {
-    parts.push("history truncated by maxPages — corpus closure not proven");
-  }
-  return parts.join("; ") + ".";
+/**
+ * Caveats worth spelling out. The revisions-read count now lives in
+ * `meta.corpus` (the receipt), so notes carry only what the reader must weigh.
+ */
+function buildNotes(intro: { assumptionViolated: boolean }): string | undefined {
+  if (!intro.assumptionViolated) return undefined;
+  return "non-monotonic presence at the boundary — the window may not be the first occurrence; verify.";
 }
 
 // --- Small text helpers -----------------------------------------------------

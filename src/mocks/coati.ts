@@ -64,6 +64,7 @@ export const coati: ClaimProvenance = {
   },
   meta: {
     generatedBy: "manual-trace",
+    corpus: { total: 1159, truncated: false },
     notes:
       "confirmed by directly reading the wikitext of revisions 229827595 (2008, unsourced) and 557100001 (2013, cites the Telegraph)",
   },

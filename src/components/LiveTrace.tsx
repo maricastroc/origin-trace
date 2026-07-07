@@ -48,6 +48,50 @@ const inputClass =
 const enc = encodeURIComponent;
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
+/** A full-width text input with an inline clear (×), shown only when non-empty. */
+function ClearableInput({
+  value,
+  onChange,
+  onClear,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onClear: () => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="relative">
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={inputClass.replace("px-3", "pl-3 pr-9")}
+      />
+      {value && (
+        <button
+          type="button"
+          onClick={onClear}
+          aria-label="Clear"
+          className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-ink-faint transition-colors hover:bg-surface-2 hover:text-ink"
+        >
+          <svg
+            viewBox="0 0 16 16"
+            className="h-3.5 w-3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function LiveTrace() {
   const [phrase, setPhrase] = useState("happiest animal");
   const [article, setArticle] = useState("");
@@ -157,22 +201,22 @@ export function LiveTrace() {
             <span className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">
               Claim phrase
             </span>
-            <input
+            <ClearableInput
               value={phrase}
-              onChange={(e) => setPhrase(e.target.value)}
+              onChange={setPhrase}
+              onClear={() => setPhrase("")}
               placeholder="happiest animal"
-              className={inputClass}
             />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">
               Article — optional scope
             </span>
-            <input
+            <ClearableInput
               value={article}
-              onChange={(e) => setArticle(e.target.value)}
+              onChange={setArticle}
+              onClear={() => setArticle("")}
               placeholder="leave empty and we'll try to resolve it"
-              className={`${inputClass} sm:max-w-xs`}
             />
           </label>
         </div>

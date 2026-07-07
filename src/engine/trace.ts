@@ -1,4 +1,5 @@
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
+import type { ClaimSource } from "@/types/ClaimSource";
 import type { TimelineEvent } from "@/types/TimelineEvent";
 import type { Verdict } from "@/types/Verdict";
 import {
@@ -107,6 +108,16 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       ? "retrofit"
       : "unsourced-stable";
 
+  const introYear = Number(year(intro.revision.timestamp));
+  const circularLoop =
+    primary === "retrofit" &&
+    !intro.removedSince &&
+    currentRef.source?.year !== undefined &&
+    Number.isFinite(introYear) &&
+    currentRef.source.year > introYear
+      ? citogenesisLoop(currentRef.source, introYear, year(latest.timestamp))
+      : null;
+
   const timeline: TimelineEvent[] = [];
 
   if (intro.priorRevision) {
@@ -169,14 +180,16 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     verdict: {
       primary,
       confidence: "low",
-      summary: summarize(primary, intro.removedSince),
+      summary: summarize(primary, intro.removedSince, circularLoop != null),
     },
     timeline,
+    ...(circularLoop ? { annotations: { circularLoop } } : {}),
     credibilityRead: credibilityRead(primary, {
       introRef: introRef.source,
       currentRef: currentRef.source,
       removedSince: intro.removedSince,
       noteOnly: nowNoteOnly || bornNoteOnly,
+      circular: circularLoop != null,
     }),
     ...sourceQualityFor(introRef.source, currentRef.source),
     meta: {
@@ -195,13 +208,35 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   };
 }
 
-function summarize(primary: Verdict, removed: boolean): string {
+function citogenesisLoop(
+  source: ClaimSource,
+  introYear: number,
+  currentYear: string,
+): NonNullable<ClaimProvenance["annotations"]>["circularLoop"] {
+  const citedYear = Number(currentYear);
+  return {
+    cycle: [
+      { actor: "Wikipedia", year: introYear, action: "asserts the claim, unsourced" },
+      { actor: source.label, year: source.year!, action: "publishes it — after Wikipedia" },
+      {
+        actor: "Wikipedia",
+        year: Number.isFinite(citedYear) ? citedYear : source.year!,
+        action: `cites ${source.label} as backing`,
+      },
+    ],
+    note: `The cited source (${source.label}, ${source.year}) postdates the claim's unsourced appearance on Wikipedia (${introYear}). A source published after the claim was already here cannot be its origin — the backing may be circular. The exact revision that attached the citation isn't pinned in this pass.`,
+  };
+}
+
+function summarize(primary: Verdict, removed: boolean, circular: boolean): string {
   if (removed) return "The claim existed and was later removed from the article.";
   switch (primary) {
     case "born-sourced":
       return "Claim and citation entered together at introduction.";
     case "retrofit":
-      return "Born unsourced; the citation was attached later.";
+      return circular
+        ? "Born unsourced; the citation attached later was published after the claim — the backing may be circular."
+        : "Born unsourced; the citation was attached later.";
     case "unsourced-stable":
       return "Never sourced, but never removed.";
     default:
@@ -216,6 +251,7 @@ function credibilityRead(
     currentRef: { label: string } | null;
     removedSince: boolean;
     noteOnly: boolean;
+    circular: boolean;
   },
 ): string {
   if (ctx.removedSince) {
@@ -225,7 +261,9 @@ function credibilityRead(
     case "born-sourced":
       return `Born with a source (${ctx.introRef?.label ?? "citation"}) in the same revision that introduced the claim — the backing precedes or accompanies the assertion.`;
     case "retrofit":
-      return `Presented as fact with no source at introduction; the citation (${ctx.currentRef?.label ?? "current"}) only stuck on later. The backing is retroactive.`;
+      return ctx.circular
+        ? `Presented as fact with no source at introduction; the citation that later stuck (${ctx.currentRef?.label ?? "current"}) was published after the claim already lived here, so it cannot be the origin — the backing may trace back to this article itself.`
+        : `Presented as fact with no source at introduction; the citation (${ctx.currentRef?.label ?? "current"}) only stuck on later. The backing is retroactive.`;
     case "unsourced-stable":
       return ctx.noteOnly
         ? "Introduced unsourced and still unsourced. It carries an explanatory footnote — the “[α]”-style marker that reads like a reference — but that note only adds context; it cites no source."

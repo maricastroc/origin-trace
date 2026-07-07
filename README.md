@@ -53,7 +53,7 @@ Reconstructed deterministically from Wikipedia's full revision history — no la
 | **Determinism** | **No LLM, no database.** Every verdict is a reproducible function of the revision history              |
 | **Streaming**   | Server-Sent Events — real binary-search progress, not a faked spinner                                  |
 | **Runtime**     | Node.js API routes — `/api/trace` (SSE), `/api/resolve`, `/api/audit`                                  |
-| **Tooling**     | ESLint, `tsc`, and a live validation harness (`engine:validate`) that checks the engine against hand traces |
+| **Tooling**     | ESLint, `tsc`, **Vitest** (a unit suite over the engine + lib, no network), and a live validation harness (`engine:validate`) that checks the engine against hand traces |
 
 <br/>
 
@@ -146,6 +146,22 @@ A tool that stakes its value on honesty should be just as honest about its own e
 
 <br/>
 
+## 🧪 Testing
+
+Because the pipeline is a set of pure, deterministic functions, it's tested the same way — **no network, no live API**. The engine takes an injectable `fetchJson`, so a small in-memory stand-in for the MediaWiki API drives whole traces end to end; every assertion is reproducible offline, exactly like the verdicts themselves.
+
+- **101 tests across 12 files**, run with **Vitest**.
+- **Engine** — the gap-robust binary search (including removed-and-reintroduced histories), citation-vs-note detection, `{{cite}}` parsing, structural article segmentation, and every verdict path: `born-sourced`, `retrofit`, `unsourced-stable`, _removed_, and the **citogenesis loop**.
+- **Wikipedia client** — `rvcontinue` pagination, truncation, missing pages, snippet stripping, and the cache (LRU + TTL).
+- **Lib** — high-impact phrase detection (EN + PT), audit metrics/model, evidence signals, and the label/verdict maps.
+- **API routes** — input-validation branches.
+
+```bash
+npm test
+```
+
+<br/>
+
 ## ℹ️ How to run the application?
 
 > No API keys, database, or accounts are required — Origin Trace runs entirely against the public Wikipedia API.
@@ -180,6 +196,12 @@ npm run trace -- Quokka "happiest animal"
 
 ```bash
 npm run engine:validate
+```
+
+> Run the unit suite (Vitest, fully offline):
+
+```bash
+npm test
 ```
 
 <br/>

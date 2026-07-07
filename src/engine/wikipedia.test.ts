@@ -1,0 +1,143 @@
+import { describe, expect, it, vi } from "vitest";
+import { WikipediaClient, type FetchJson } from "@/engine/wikipedia.ts";
+import { createEngineCache } from "@/engine/cache.ts";
+
+describe("WikipediaClient.listRevisions", () => {
+  it("follows rvcontinue and merges pages, oldest-first", async () => {
+    const fetchJson: FetchJson = async (url) => {
+      const p = new URL(url).searchParams;
+      if (!p.get("rvcontinue")) {
+        return {
+          query: { pages: [{ revisions: [{ revid: 1, timestamp: "2019" }, { revid: 2, timestamp: "2019" }] }] },
+          continue: { rvcontinue: "page2" },
+        };
+      }
+      return { query: { pages: [{ revisions: [{ revid: 3, timestamp: "2020" }] }] } };
+    };
+    const client = new WikipediaClient({ fetchJson });
+    const { revisions, truncated } = await client.listRevisions("X");
+    expect(revisions.map((r) => r.revid)).toEqual([1, 2, 3]);
+    expect(truncated).toBe(false);
+  });
+
+  it("reports truncated=true when it stops at the maxPages cap", async () => {
+    const fetchJson: FetchJson = async () => ({
+      query: { pages: [{ revisions: [{ revid: 1, timestamp: "2019" }] }] },
+      continue: { rvcontinue: "always-more" },
+    });
+    const client = new WikipediaClient({ fetchJson, maxPages: 1 });
+    const { truncated } = await client.listRevisions("X");
+    expect(truncated).toBe(true);
+  });
+
+  it("throws when the page is missing", async () => {
+    const fetchJson: FetchJson = async () => ({ query: { pages: [{ missing: true }] } });
+    const client = new WikipediaClient({ fetchJson });
+    await expect(client.listRevisions("Ghost")).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("WikipediaClient.getCurrentContent", () => {
+  it("returns the latest revision id, content and timestamp", async () => {
+    const fetchJson: FetchJson = async () => ({
+      query: {
+        pages: [
+          {
+            revisions: [
+              { revid: 9, timestamp: "2021-05-01T00:00:00Z", slots: { main: { content: "hello" } } },
+            ],
+          },
+        ],
+      },
+    });
+    const client = new WikipediaClient({ fetchJson });
+    expect(await client.getCurrentContent("X")).toEqual({
+      revid: 9,
+      content: "hello",
+      timestamp: "2021-05-01T00:00:00Z",
+    });
+  });
+
+  it("returns null when the revision carries no content slot", async () => {
+    const fetchJson: FetchJson = async () => ({
+      query: { pages: [{ revisions: [{ revid: 9, timestamp: "2021" }] }] },
+    });
+    const client = new WikipediaClient({ fetchJson });
+    expect(await client.getCurrentContent("X")).toBeNull();
+  });
+
+  it("throws for a missing article", async () => {
+    const fetchJson: FetchJson = async () => ({ query: { pages: [{ missing: true }] } });
+    const client = new WikipediaClient({ fetchJson });
+    await expect(client.getCurrentContent("Ghost")).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("WikipediaClient.getRevisionContent", () => {
+  it("resolves a single revision's content, or null when absent", async () => {
+    const fetchJson: FetchJson = async (url) => {
+      const ids = new URL(url).searchParams.get("revids")!.split("|").map(Number);
+      return {
+        query: {
+          pages: [
+            {
+              revisions: ids
+                .filter((id) => id === 7)
+                .map((id) => ({ revid: id, slots: { main: { content: "seven" } } })),
+            },
+          ],
+        },
+      };
+    };
+    const client = new WikipediaClient({ fetchJson });
+    expect(await client.getRevisionContent(7)).toBe("seven");
+    expect(await client.getRevisionContent(8)).toBeNull();
+  });
+});
+
+describe("WikipediaClient.search", () => {
+  it("strips HTML and decodes entities from snippets", async () => {
+    const fetchJson: FetchJson = async () => ({
+      query: {
+        search: [
+          {
+            title: "Quokka",
+            snippet: '<span class="searchmatch">Quokka</span> is &quot;happy&quot; &amp; small',
+          },
+        ],
+      },
+    });
+    const client = new WikipediaClient({ fetchJson });
+    expect(await client.search("q")).toEqual([
+      { title: "Quokka", snippet: 'Quokka is "happy" & small' },
+    ]);
+  });
+});
+
+describe("WikipediaClient caching", () => {
+  it("serves a repeated revision list and content from the cache", async () => {
+    const fetchJson = vi.fn<FetchJson>(async (url) => {
+      const p = new URL(url).searchParams;
+      if (p.get("revids")) {
+        return { query: { pages: [{ revisions: [{ revid: 5, slots: { main: { content: "five" } } }] }] } };
+      }
+      return { query: { pages: [{ revisions: [{ revid: 5, timestamp: "2020" }] }] } };
+    });
+    const cache = createEngineCache();
+    const client = new WikipediaClient({ fetchJson, cache });
+
+    await client.listRevisions("X");
+    await client.listRevisions("X");
+    await client.getRevisionContent(5);
+    await client.getRevisionContent(5);
+
+    const listCalls = fetchJson.mock.calls.filter(
+      ([u]) => !new URL(u).searchParams.get("revids"),
+    ).length;
+    const contentCalls = fetchJson.mock.calls.filter(
+      ([u]) => new URL(u).searchParams.get("revids"),
+    ).length;
+    expect(listCalls).toBe(1);
+    expect(contentCalls).toBe(1);
+  });
+});

@@ -5,7 +5,7 @@ export function SiteFooter() {
     <footer className="mt-auto border-t border-line">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-5 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <div className="flex items-center gap-2.5">
-          <Mark className="h-[18px] w-auto" />
+          <Mark className="h-4.5 w-auto" />
           <span className="font-mono text-[12px] text-ink-muted">
             origin-trace — project by Mariana Castro
           </span>

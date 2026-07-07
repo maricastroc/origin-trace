@@ -6,7 +6,7 @@ export function Masthead() {
     <header className="sticky top-0 z-20 border-b border-line bg-surface-0/85 backdrop-blur-sm">
       <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-5 sm:px-8">
         <a href="#top" className="group flex items-center gap-3">
-          <Wordmark className="h-[22px] w-auto" />
+          <Wordmark className="h-5.5 w-auto" />
           <span className="kicker hidden sm:inline">
             {"// claim provenance"}
           </span>
@@ -24,11 +24,11 @@ export function Masthead() {
           </NavLink>
           <a
             href="#live"
-            className="group ml-1 inline-flex items-center gap-2 rounded-md bg-accent px-3.5 py-1.5 text-[13px] font-medium text-[color:var(--paper-raised)] shadow-[0_1px_2px_rgba(90,60,30,0.25)] transition-colors hover:bg-accent-strong"
+            className="group ml-1 inline-flex items-center gap-2 rounded-md bg-accent px-3.5 py-1.5 text-[13px] font-medium text-surface-2 shadow-[0_1px_2px_rgba(90,60,30,0.25)] transition-colors hover:bg-accent-strong"
           >
             <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--paper-raised)] opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[color:var(--paper-raised)]" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-surface-2 opacity-60" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-surface-2" />
             </span>
             Trace live
           </a>

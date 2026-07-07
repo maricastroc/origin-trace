@@ -72,7 +72,7 @@ function SpecimenNode({
     <li className="relative flex gap-3.5 pb-4 last:pb-0">
       {!last && (
         <span
-          className="absolute left-[6px] top-3 h-full w-px bg-line-strong"
+          className="absolute left-1.5 top-3 h-full w-px bg-line-strong"
           aria-hidden="true"
         />
       )}

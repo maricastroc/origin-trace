@@ -157,9 +157,61 @@ Conceito: um **dossiê de proveniência forense** em papel.
 - Verificado: `next build` limpo, `tsc`/`eslint` limpos, responsivo (mobile 375px sem
   overflow — o bug das abas sumiu com as abas).
 
+## Resolução de escopo (phrase-only) — feita
+
+Antes o `traceClaim` exigia `{ article, phrase }`. Agora dá pra colar **só a frase**: um
+estágio de resolução (`src/engine/resolve.ts` → `/api/resolve`) descobre o(s) artigo(s) e
+entrega ao motor inalterado. A regra é deliberadamente honesta — **nunca escolhe em
+silêncio**:
+
+- `resolveArticles(phrase)` roda duas buscas na search API: `insource:"frase"` (match
+  literal no wikitext atual) + busca fuzzy ranqueada. Une, dedup, ordena (literal primeiro).
+- **Só crava sozinho quando há exatamente 1 match literal** (`scope: "unambiguous"`) → aí
+  traça direto. Todo o resto devolve a ambiguidade:
+  - vários matches literais → `ambiguous` + nota "aparece literal em N artigos — sinal de
+    propagação" (é a citogênese aparecendo na resolução: "Brazilian aardvark" cai em Coati +
+    Circular reporting + Reliability of Wikipedia).
+  - só matches fuzzy → `ambiguous` + "a redação pode ter mudado; estes são os mais próximos"
+    (ex.: "happiest animal" não casa literal com "happiest animal**s**").
+  - nada → `not-found` + "me diga o artigo".
+- UI (`LiveTrace`): input de frase + campo de artigo **opcional** (override do escopo).
+  Máquina de estados: idle → resolving → (unambiguous ⇒ tracing | ambiguous ⇒ `ScopePicker`
+  com candidatos | not-found). O escopo escolhido aparece num banner acima do dossiê.
+- Filosofia: "tento resolver o escopo; quando é ambíguo, mostro a ambiguidade" — não
+  "digite qualquer frase e eu descubro tudo". Preserva o corpus fechado (ainda se traça o
+  histórico finito de UM artigo) e o "admite quando o registro cala".
+
+## Reframe epistemológico — feito
+
+O produto respondia "quando surgiu"; o valor real é "qual o **estado epistemológico** da
+afirmação". O veredito sempre foi uma *classificação da vida da afirmação* — agora ele
+lidera, em vez de ser legenda de canto.
+
+- **`EvidenceStatus`** (novo, topo do `CaseFile`): a resposta. Palavra de saúde grande em
+  Fraunces (`sourced / back-filled / unstable / unsourced / contested / ambiguous`) +
+  significado em linguagem simples + carimbo + **sinais derivados** (`deriveSignals` em
+  `lib/evidenceSignals.ts`): idade da afirmação, "sourced/unsourced now", "evidence changed
+  N×". Severity `alert` (unsourced-stable) pinta o painel em oxblood.
+- **`verdictStyle` virou taxonomia graduada por risco**: `severity` (good/caution/warn/
+  alert/neutral) → cor, + `health`, `meaning`, `rank`. Fix importante: retrofit saiu do
+  oxblood → ocre (foi fonteado, só que tarde); unsourced-stable é o único vermelho crítico.
+- **`Taxonomy`** (novo, landing, entre Method e Cases): "It doesn't say true or false. It
+  **classifies** the evidence history." — os 6 padrões como vocabulário visível. Vende o
+  reframe: *classify the evidence history of any claim*.
+- Removido `VerdictSummary` (a resposta agora mora no topo). Timeline re-legendada como "the
+  evidence for the verdict".
+
 ## Próximos passos
 
-1. **Deixar o contrato evoluir** (seu ponto original). O motor v0 já pede:
+1. **A aposta grande: auditar o artigo inteiro** (não uma frase por vez). Sair de "investigue
+   isto" para "qual a qualidade do conhecimento deste artigo": quais afirmações estão sem
+   fonte, quais foram retrofitadas, quais deram churn. **Insight de viabilidade (on-brand):
+   NÃO usar NLP pra segmentar afirmações** — a fronteira vem de graça da estrutura da
+   Wikipedia: **sentenças com `<ref>` vs. sem `<ref>`**. O "mapa de não-fonteadas" de um
+   artigo é determinístico e barato; a classificação retrofit/churn por frase é a camada
+   cara (um trace por frase) feita sob demanda. Detecção de `contested`/reverts (para
+   "never challenged") continua pendente — hoje mostro "no removal recorded", não afirmo.
+2. **Deixar o contrato evoluir** (seu ponto original). O motor v0 já pede:
    - um `verdict` "não-encontrada"/abstenção explícito (hoje `traceClaim` lança
      `ClaimNotFoundError`);
    - eventos intermediários reais (hoje o motor só emite intro + estado atual; falta o

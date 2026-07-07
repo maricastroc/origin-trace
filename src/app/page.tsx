@@ -4,6 +4,7 @@ import { Hero } from "@/components/site/Hero";
 import { Masthead } from "@/components/site/Masthead";
 import { Method } from "@/components/site/Method";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { Taxonomy } from "@/components/site/Taxonomy";
 
 export default function Home() {
   return (
@@ -12,6 +13,7 @@ export default function Home() {
       <main className="flex flex-col">
         <Hero />
         <Method />
+        <Taxonomy />
 
         {/* The cases — a sunken band to set the dossiers apart. */}
         <section

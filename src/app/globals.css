@@ -8,7 +8,7 @@
   --paper-raised: #fcfaf4;
   --ink: #221e18;
   --ink-muted: #5b5246;
-  --ink-faint: #9a8c76;
+  --ink-faint: #6d6354;
   --line: #e2d9c7;
   --line-strong: #cabda3;
 
@@ -18,7 +18,7 @@
 
   --success: #3f6b45;
   --success-bg: #e4ecdf;
-  --warn: #8a6414;
+  --warn: #835f13;
   --warn-bg: #efe6cd;
   --danger: #8a2b26;
   --danger-bg: #efdfd7;
@@ -78,6 +78,15 @@ body {
 ::selection {
   background: var(--accent);
   color: var(--paper-raised);
+}
+
+/* Palette-matched keyboard focus ring. In `base` so utilities like
+   `outline-none` (on inputs that carry their own focus border) still win. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 
 .kicker {

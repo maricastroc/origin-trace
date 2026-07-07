@@ -115,7 +115,7 @@ export function Method() {
                         <span className="font-display text-[27px] leading-none text-accent">
                           {s.stat.value}
                         </span>
-                        <p className="mt-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-ink-faint">
+                        <p className="mt-1 font-mono text-[9.5px] uppercase tracking-widest text-ink-faint">
                           {s.stat.unit}
                         </p>
                       </div>
@@ -125,7 +125,7 @@ export function Method() {
                   {!last && (
                     <>
                       <ArrowRight
-                        className="absolute -right-[11px] top-1.5 hidden h-3.5 w-3.5 text-line-strong sm:block"
+                        className="absolute -right-2.75 top-1.5 hidden h-3.5 w-3.5 text-line-strong sm:block"
                         aria-hidden="true"
                       />
                       <ArrowDown

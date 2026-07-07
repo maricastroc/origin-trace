@@ -1,15 +1,12 @@
 import { Files, Route, ScanText } from "lucide-react";
-import { Mark } from "./Mark";
+import { Wordmark } from "./Wordmark";
 
 export function Masthead() {
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-surface-0/85 backdrop-blur-sm">
       <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-5 sm:px-8">
-        <a href="#top" className="group flex items-center gap-2.5">
-          <Mark className="h-5 w-[15px]" />
-          <span className="text-[15px] font-medium tracking-tight text-ink">
-            Origin Trace
-          </span>
+        <a href="#top" className="group flex items-center gap-3">
+          <Wordmark className="h-[22px] w-auto" />
           <span className="kicker hidden sm:inline">
             {"// claim provenance"}
           </span>

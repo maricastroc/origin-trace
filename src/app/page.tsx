@@ -9,7 +9,8 @@ export default function Home() {
         </h1>
         <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-ink-muted">
           A história da credibilidade de uma afirmação na Wikipedia — não o
-          resumo, a evolução. Três casos reais, rastreados na API.
+          resumo, a evolução. Três casos reais, ou rastreie um ao vivo na aba{" "}
+          <span className="text-ink">Ao vivo</span>.
         </p>
       </header>
       <CaseFileGallery />

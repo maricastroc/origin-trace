@@ -3,6 +3,7 @@ import { CaseFileHeader } from "./CaseFileHeader";
 import { CircularLoop } from "./CircularLoop";
 import { CredibilityRead } from "./CredibilityRead";
 import { DualReadings } from "./DualReadings";
+import { ProvenanceFooter } from "./ProvenanceFooter";
 import { SourceQualityNote } from "./SourceQualityNote";
 import { Timeline } from "./Timeline";
 import { VerdictSummary } from "./VerdictSummary";
@@ -32,6 +33,7 @@ export function CaseFile({ data }: { data: ClaimProvenance }) {
       <CredibilityRead text={data.credibilityRead} />
       {data.sourceQuality && <SourceQualityNote quality={data.sourceQuality} />}
       <VerdictSummary verdict={data.verdict} />
+      <ProvenanceFooter meta={data.meta} />
     </article>
   );
 }

@@ -161,6 +161,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     ...sourceQualityFor(introRef.source, currentRef.source),
     meta: {
       generatedBy: "wikiblame-pipeline",
+      fetchedAt: new Date().toISOString(),
       notes: buildNotes(intro, revisions.length, truncated),
     },
   };

@@ -24,6 +24,7 @@ export function normalize(text: string): string {
     .replace(/<[^>]+>/g, " ") // any other tag
     .replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, "$1") // [[a|b]] → b, [[a]] → a
     .replace(/[’‘`]/g, "'")
+    .replace(/'{2,}/g, "") // ''italic'' / '''bold''' markup — drop, keep contractions
     .replace(/[^a-z0-9']+/g, " ") // punctuation & leftover markup → space
     .replace(/\s+/g, " ")
     .trim();
@@ -191,12 +192,16 @@ export function detectRefNear(content: string, phrase: string): RefDetection {
   const masked = maskedRanges(paragraph);
   const at = anchorInProse(paragraph, phrase, masked);
   const from = at >= 0 ? at : 0;
-  const tail = paragraph.slice(from);
+  // Bound the search to the claim's OWN sentence (citations trail the terminal
+  // period, so they're included). A flat forward window would spill into the
+  // next sentence and credit this claim with the neighbour's citation — which
+  // also made whole-article audits disagree with the per-sentence drill-down.
+  const tail = scopeToSentence(paragraph, from);
 
   // A real citation anywhere in the window wins — the claim is backed. Only when
   // there is none do we fall back to reporting an explanatory note, which looks
   // like a reference but sources nothing (the classic {{efn}} "[α]" marker).
-  const markers = collectMarkers(tail, 400);
+  const markers = collectMarkers(tail, tail.length);
   const citation = markers.find((m) => m.kind === "citation");
   if (citation) {
     return {
@@ -211,6 +216,74 @@ export function detectRefNear(content: string, phrase: string): RefDetection {
     return { sourced: false, source: null, refText: explanatory.text, note: true };
   }
   return nothing;
+}
+
+/**
+ * Abbreviations that end in a period without ending the sentence — so the scope
+ * doesn't cut short (and lose the sentence's real trailing citation) at "U.S."
+ */
+const SCOPE_ABBR = new Set([
+  "mr", "mrs", "ms", "dr", "prof", "st", "mt", "no", "vs", "etc", "al",
+  "e.g", "i.e", "cf", "ca", "fig", "jr", "sr", "inc", "ltd", "co", "corp",
+  "u.s", "u.k", "a.d", "b.c",
+]);
+
+/**
+ * The slice of `paragraph` from `from` to the end of the sentence the anchor is
+ * in — INCLUDING any <ref>/citation templates that trail the terminal period
+ * (`claim.<ref>…`). Guards against decimals and abbreviations so it doesn't end
+ * the sentence early and miss the citation that actually backs the claim.
+ */
+function scopeToSentence(paragraph: string, from: number): string {
+  const ranges = maskedRanges(paragraph);
+  const chars = paragraph.split("");
+  for (const [a, b] of ranges) {
+    for (let i = a; i < b && i < chars.length; i++) {
+      if (chars[i] !== "\n") chars[i] = " ";
+    }
+  }
+  const masked = chars.join("");
+
+  for (let i = from; i < masked.length; i++) {
+    const ch = masked[i];
+    if (ch !== "." && ch !== "!" && ch !== "?") continue;
+    let j = i;
+    while (j + 1 < masked.length && ".!?".includes(masked[j + 1])) j++;
+
+    if (ch === "." && /\d/.test(masked[i + 1] ?? "")) {
+      i = j;
+      continue; // decimal, e.g. 3.5
+    }
+    if (ch === "." && isScopeAbbrev(masked, i)) {
+      i = j;
+      continue;
+    }
+
+    // Pull trailing citation refs into this sentence before deciding the break.
+    let end = j + 1;
+    for (;;) {
+      let p = end;
+      while (p < paragraph.length && /\s/.test(paragraph[p]) && !inRanges(p, ranges)) p++;
+      const span = ranges.find(([a]) => a === p);
+      if (!span) break;
+      end = span[1];
+    }
+    const after = masked.slice(end);
+    const gap = after.match(/^\s+/)?.[0] ?? "";
+    const next = after[gap.length];
+    if (next === undefined || /[A-Z0-9"'“(\[]/.test(next)) {
+      return paragraph.slice(from, end);
+    }
+    i = j;
+  }
+  return paragraph.slice(from);
+}
+
+function isScopeAbbrev(text: string, i: number): boolean {
+  const word = text.slice(Math.max(0, i - 12), i).match(/([A-Za-z.]+)$/)?.[1] ?? "";
+  if (!word) return false;
+  if (SCOPE_ABBR.has(word.toLowerCase())) return true;
+  return /^[A-Z]$/.test(word); // a single-letter initial, e.g. "J."
 }
 
 /**

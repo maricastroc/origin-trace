@@ -9,6 +9,7 @@
     "lint": "eslint",
     "trace": "node --experimental-strip-types src/engine/cli.ts",
     "engine:validate": "node --experimental-strip-types src/engine/validate.ts",
+    "investigations:build": "node --experimental-strip-types src/engine/build-investigations.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"

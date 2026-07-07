@@ -73,7 +73,6 @@ export function ArticleAudit() {
     void execute(article, lang);
   }
 
-  // A permalink (?audit=…&lang=…) reloads a prior audit on page load.
   const bootstrapped = useRef(false);
   useEffect(() => {
     if (bootstrapped.current) return;
@@ -82,8 +81,7 @@ export function ArticleAudit() {
     const article = params.get("audit");
     if (!article) return;
     const lang = params.get("lang") ?? "en";
-    // One-time bootstrap from the URL — must run post-hydration, so mirroring
-    // the param into state here is intended.
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setInput(article);
     document.getElementById("audit")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -116,7 +114,7 @@ export function ArticleAudit() {
           <button
             type="submit"
             disabled={busy}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-[color:var(--paper-raised)] transition-colors hover:bg-accent-strong disabled:opacity-40"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-surface-2 transition-colors hover:bg-accent-strong disabled:opacity-40"
           >
             <ScanSearch className="h-4 w-4" aria-hidden="true" />
             {busy ? "Auditing…" : "Audit"}

@@ -19,7 +19,6 @@ describe("resolveArticles", () => {
     const res = await resolveArticles("the happiest animal", { fetchJson });
     expect(res.scope).toBe("unambiguous");
     expect(res.resolved).toBe("Quokka");
-    // exact match should rank ahead of the fuzzy-only candidate
     expect(res.candidates[0].title).toBe("Quokka");
     expect(res.candidates[0].exactWikitextMatch).toBe(true);
   });

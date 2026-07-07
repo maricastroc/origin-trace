@@ -80,8 +80,6 @@ body {
   color: var(--paper-raised);
 }
 
-/* Palette-matched keyboard focus ring. In `base` so utilities like
-   `outline-none` (on inputs that carry their own focus border) still win. */
 @layer base {
   :focus-visible {
     outline: 2px solid var(--accent);
@@ -122,7 +120,6 @@ body {
   }
 }
 
-/* On-brand scrollbar for internal scroll panels (paper theme). */
 .scroll-panel {
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;

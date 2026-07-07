@@ -100,8 +100,6 @@ export function LiveTrace() {
     await resolveAndTrace(phrase.trim(), article.trim());
   }
 
-  // A permalink (?trace=…&article=…) reproduces a result on load. The scope is
-  // baked into the link, so this replays the exact trace without re-resolving.
   const bootstrapped = useRef(false);
   useEffect(() => {
     if (bootstrapped.current) return;
@@ -111,8 +109,7 @@ export function LiveTrace() {
     if (!p) return;
     const a = params.get("article") ?? "";
     const lang = params.get("lang") ?? undefined;
-    // One-time bootstrap from the URL — must run post-hydration to avoid a
-    // controlled-input mismatch, so mirroring the params into state here is intended.
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPhrase(p); setArticle(a);
     document.getElementById("live")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -168,7 +165,7 @@ export function LiveTrace() {
           <button
             type="submit"
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-[color:var(--paper-raised)] transition-colors hover:bg-accent-strong disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-surface-2 transition-colors hover:bg-accent-strong disabled:opacity-40"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
             {state.status === "resolving"

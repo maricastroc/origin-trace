@@ -2,23 +2,14 @@
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 
-// Local, device-only history of traces and audits. No account, no server —
-// just the last few things you looked at, kept in localStorage so a reload or
-// a shared permalink can bring them back.
-
 export type HistoryKind = "trace" | "audit";
 
 export interface HistoryEntry {
   kind: HistoryKind;
-  /** Dedupe id — the permalink query for this result (see paramsToKey). */
   key: string;
-  /** Params to rebuild the shareable link / re-run the lookup. */
   params: Record<string, string | undefined>;
-  /** Primary label — the phrase (trace) or article title (audit). */
   title: string;
-  /** Secondary label — the resolved scope, or the language. */
   subtitle?: string;
-  /** Verdict label (trace) or coverage read (audit). */
   badge?: string;
   ts: number;
 }
@@ -26,9 +17,6 @@ export interface HistoryEntry {
 const STORE_KEY = "origin-trace:history:v1";
 const CAP = 24;
 
-// The store is an external system (localStorage) exposed to React through
-// useSyncExternalStore — SSR-safe and free of setState-in-effect churn. A
-// cached snapshot keeps getSnapshot referentially stable between mutations.
 const EMPTY: HistoryEntry[] = [];
 const listeners = new Set<() => void>();
 let cache: HistoryEntry[] | null = null;
@@ -56,7 +44,7 @@ function commit(entries: HistoryEntry[]): void {
     try {
       window.localStorage.setItem(STORE_KEY, JSON.stringify(entries));
     } catch {
-      // storage full or blocked — history is best-effort, so swallow.
+      //
     }
   }
   listeners.forEach((l) => l());
@@ -80,7 +68,6 @@ function purge(kind: HistoryKind): void {
   commit(getSnapshot().filter((e) => e.kind !== kind));
 }
 
-/** Reactive view of history filtered to one kind (trace or audit). */
 export function useHistory(kind: HistoryKind) {
   const all = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY);
   const items = useMemo(() => all.filter((e) => e.kind === kind), [all, kind]);

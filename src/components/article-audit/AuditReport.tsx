@@ -60,7 +60,6 @@ export function AuditReport({ data }: { data: ArticleAuditData }) {
   const predicate = (claim: AuditClaim) =>
     matchesFilter(claim, filter) && matchesQuery(claim.text, query);
 
-  // Match the map's height to the controls rail so their bottoms line up.
   const railRef = useRef<HTMLDivElement>(null);
   const [railH, setRailH] = useState<number | null>(null);
   useEffect(() => {

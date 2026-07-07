@@ -30,8 +30,6 @@ export function CopyLinkButton({
       await navigator.clipboard.writeText(url);
       setCopied(true);
     } catch {
-      // Clipboard blocked (insecure context / denied) — surface the URL so the
-      // user can still copy it by hand.
       window.prompt("Copy this link", url);
     }
   }

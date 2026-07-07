@@ -103,7 +103,6 @@ describe("findIntroduction", () => {
     const { revisions, getContent, reads, phrase } = corpus(has);
     const res = await findIntroduction(revisions, phrase, getContent);
     expect(res!.index).toBe(100);
-    // binary search: log2(256)-ish probes, nowhere near 256 reads
     expect(new Set(reads).size).toBeLessThan(64);
   });
 });

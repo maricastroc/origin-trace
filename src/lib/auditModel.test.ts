@@ -53,7 +53,7 @@ describe("buildAuditModel", () => {
           isLead: true,
         }),
         section("Career", [
-          claim("sourced", "the greatest of all time"), // sourced → excluded
+          claim("sourced", "the greatest of all time"),
           claim("note-only", "a record-breaking run"),
         ]),
       ]),
@@ -68,18 +68,17 @@ describe("buildAuditModel", () => {
       claim("unsourced"),
       claim("unsourced"),
       claim("sourced"),
-    ]); // coverage 1/3
+    ]);
     const strong = section("Strong", [
       claim("sourced"),
       claim("sourced"),
       claim("unsourced"),
-    ]); // coverage 2/3
-    const tiny = section("Tiny", [claim("unsourced")]); // below RANKABLE_MIN
+    ]);
+    const tiny = section("Tiny", [claim("unsourced")]);
 
     const model = buildAuditModel(audit([weak, strong, tiny]));
     expect(model.worstSections.map((s) => s.label)).toEqual(["Weak", "Strong"]);
     expect(model.bestSection?.label).toBe("Strong");
-    // "Tiny" is too small to be ranked in either direction
     expect(model.worstSections.some((s) => s.label === "Tiny")).toBe(false);
   });
 

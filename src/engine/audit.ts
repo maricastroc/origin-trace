@@ -169,12 +169,9 @@ function proseLines(body: string): string[] {
   return paras;
 }
 
-// Media/category namespaces across the wikis we target (en + pt today).
 const MEDIA_NS =
   /^(?:file|image|category|media|ficheiro|imagem|arquivo|categoria|mídia|multimídia)$/i;
 
-// Remove [[File:…]] / [[Ficheiro:…]] / [[Category:…]] blocks whole, honoring
-// nested [[links]] inside captions — so image markup never merges into prose.
 function stripMediaLinks(text: string): string {
   let out = "";
   let i = 0;

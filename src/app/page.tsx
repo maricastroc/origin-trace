@@ -1,5 +1,5 @@
 import { ArticleAudit } from "@/components/article-audit/ArticleAudit";
-import { CaseExplorer } from "@/components/CaseExplorer";
+import { Investigations } from "@/components/investigations/Investigations";
 import { LiveTrace } from "@/components/live-trace/LiveTrace";
 import { Hero } from "@/components/site/Hero";
 import { Masthead } from "@/components/site/Masthead";
@@ -23,19 +23,20 @@ export default function Home() {
           <div className="mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="kicker">{"// the cases"}</p>
+                <p className="kicker">{"// investigations"}</p>
                 <h2 className="mt-4 font-display text-3xl font-medium tracking-[-0.015em] text-ink sm:text-[2.5rem]">
-                  Three real case files.
+                  Investigations.
                 </h2>
               </div>
               <p className="max-w-sm text-[14px] leading-relaxed text-ink-muted">
-                Each one traced by hand on the Wikipedia API. The easy ones are
-                boring — these evolved. Open one and read the story down to the
-                revision.
+                A curated file of what the engine can catch — citogenesis, retrofit,
+                unsourced-stable claims. Every verdict is real engine output, pinned
+                and reproducible. Hit <span className="text-ink">verify live</span> on
+                any of them.
               </p>
             </div>
             <div className="mt-12">
-              <CaseExplorer />
+              <Investigations />
             </div>
           </div>
         </section>

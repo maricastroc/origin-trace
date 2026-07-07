@@ -4,8 +4,7 @@ import { useState } from "react";
 import type { ArticleAudit as ArticleAuditData } from "@/types/ArticleAudit";
 import { errMsg } from "@/lib/errMsg";
 import { inputClass } from "@/lib/ui";
-import { AuditMap } from "./AuditMap";
-import { AuditSummary } from "./AuditSummary";
+import { AuditReport } from "./AuditReport";
 
 const EXAMPLES = ["Quokka", "Coati", "Cleopatra", "Black hole"];
 
@@ -123,9 +122,8 @@ export function ArticleAudit() {
       )}
 
       {state.status === "done" && (
-        <div className="animate-rise flex flex-col gap-5">
-          <AuditSummary data={state.data} />
-          <AuditMap data={state.data} />
+        <div className="animate-rise">
+          <AuditReport data={state.data} />
         </div>
       )}
     </div>

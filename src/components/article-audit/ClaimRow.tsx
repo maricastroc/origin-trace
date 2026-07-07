@@ -15,10 +15,12 @@ export function ClaimRow({
   claim,
   article,
   muted,
+  sectionLabel,
 }: {
   claim: AuditClaim;
   article: ArticleAuditData["article"];
   muted: boolean;
+  sectionLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const traceable = claim.status !== "sourced";
@@ -42,6 +44,11 @@ export function ClaimRow({
           aria-hidden="true"
         />
         <span className="min-w-0 flex-1">
+          {sectionLabel && (
+            <span className="mb-1 block font-mono text-[10px] uppercase tracking-[0.1em] text-ink-faint">
+              {sectionLabel}
+            </span>
+          )}
           <span
             className={`text-[13.5px] leading-relaxed ${muted ? "text-ink-muted" : "text-ink"}`}
           >

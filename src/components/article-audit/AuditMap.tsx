@@ -1,47 +1,53 @@
 import type { ArticleAudit as ArticleAuditData } from "@/types/ArticleAudit";
-import type { AuditSection } from "@/types/AuditSection";
-import { ClaimRow } from "./ClaimRow";
+import { countMatching, type AuditFilter } from "@/lib/auditMetrics";
+import { SectionRow } from "./SectionRow";
 
-function SectionBlock({
-  section,
-  article,
+export function AuditMap({
+  data,
+  filter,
+  expanded,
+  onToggle,
 }: {
-  section: AuditSection;
-  article: ArticleAuditData["article"];
+  data: ArticleAuditData;
+  filter: AuditFilter;
+  expanded: Set<number>;
+  onToggle: (index: number) => void;
 }) {
-  return (
-    <section>
-      <div className="flex items-center gap-2.5">
-        <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-          {section.isLead ? "lead" : section.heading}
-        </h3>
-        {section.isLead && (
-          <span className="rounded-full border border-line-strong bg-surface-2 px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.08em] text-ink-faint">
-            cited in body by convention
-          </span>
-        )}
-        <span className="h-px flex-1 bg-line" aria-hidden="true" />
-      </div>
-      <ul className="mt-3 flex flex-col gap-1.5">
-        {section.claims.map((claim) => (
-          <ClaimRow
-            key={claim.id}
-            claim={claim}
-            article={article}
-            muted={section.isLead}
-          />
-        ))}
-      </ul>
-    </section>
-  );
-}
+  const rows = data.sections
+    .map((section, index) => ({ section, index }))
+    .filter(
+      ({ section }) =>
+        filter === "all" || countMatching(section.claims, filter) > 0,
+    );
 
-export function AuditMap({ data }: { data: ArticleAuditData }) {
   return (
-    <div className="flex flex-col gap-6">
-      {data.sections.map((sec, i) => (
-        <SectionBlock key={i} section={sec} article={data.article} />
-      ))}
+    <div className="min-w-0">
+      <div className="flex items-center justify-between px-2.5 pb-2">
+        <p className="kicker">{"the map · by section"}</p>
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-faint">
+          {rows.length} {rows.length === 1 ? "section" : "sections"}
+        </span>
+      </div>
+
+      <div className="divide-y divide-line/70 rounded-xl border border-line-strong bg-surface-2/40 px-1.5 py-1">
+        {rows.length === 0 ? (
+          <p className="px-2.5 py-6 text-center text-[13px] text-ink-faint">
+            No sentences match this filter.
+          </p>
+        ) : (
+          rows.map(({ section, index }) => (
+            <SectionRow
+              key={index}
+              section={section}
+              index={index}
+              article={data.article}
+              filter={filter}
+              open={expanded.has(index)}
+              onToggle={() => onToggle(index)}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }

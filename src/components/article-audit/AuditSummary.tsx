@@ -1,16 +1,53 @@
 import type { ArticleAudit as ArticleAuditData } from "@/types/ArticleAudit";
+import type { AuditModel } from "@/lib/auditModel";
 import { Chip } from "./Chip";
 import { CoverageBar } from "./CoverageBar";
 
-export function AuditSummary({ data }: { data: ArticleAuditData }) {
+function Stat({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+        {label}
+      </span>
+      <span className="font-display text-[19px] leading-none text-ink tabular-nums">
+        {value}
+      </span>
+      {sub && (
+        <span className="truncate text-[11.5px] leading-tight text-ink-muted">
+          {sub}
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function AuditSummary({
+  data,
+  model,
+}: {
+  data: ArticleAuditData;
+  model: AuditModel;
+}) {
   const { body, lead, coverage } = data.summary;
   const pct = Math.round(coverage * 100);
+  const worst = model.worstSections[0];
+  const best = model.bestSection;
 
   return (
     <section className="rounded-xl border border-line-strong bg-surface-1/50 p-5">
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div>
-          <p className="kicker">the audit · body</p>
+          <p className="kicker">
+            evidence health · {model.sectionCount} sections
+          </p>
           <div className="mt-2.5 flex items-end gap-3">
             <span className="font-display text-[34px] leading-none text-ink">
               {pct}%
@@ -33,12 +70,34 @@ export function AuditSummary({ data }: { data: ArticleAuditData }) {
         unsourced={body.unsourced}
       />
 
+      <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-3">
+        <Stat label="sentences read" value={String(model.totals.sentences)} />
+        <Stat label="sections mapped" value={String(model.sectionCount)} />
+        <Stat label="high-impact claims" value={String(model.highImpact.length)} />
+        <Stat
+          label="weakest body section"
+          value={worst ? `${Math.round(worst.metrics.coverage * 100)}%` : "—"}
+          sub={worst ? worst.label : undefined}
+        />
+        <Stat
+          label="strongest body section"
+          value={best ? `${Math.round(best.metrics.coverage * 100)}%` : "—"}
+          sub={best ? best.label : undefined}
+        />
+        <Stat
+          label="longest uncited run"
+          value={model.longestRun ? `${model.longestRun.count}` : "—"}
+          sub={model.longestRun ? `in ${model.longestRun.label}` : undefined}
+        />
+      </dl>
+
       <div className="mt-4 flex flex-col gap-2 text-[12.5px] leading-relaxed text-ink-faint">
         {lead.total > 0 && (
           <p>
             <span className="text-ink-muted">Lead:</span> {lead.sourced} of{" "}
             {lead.total} sentences cited inline — the rest are conventionally
-            sourced in the body (WP:LEADCITE), so they&rsquo;re counted apart.
+            sourced in the body (WP:LEADCITE), so they&rsquo;re counted apart and
+            kept out of the section ranking.
           </p>
         )}
         <p>{data.meta.notes}</p>

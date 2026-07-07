@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileText, ScanSearch } from "lucide-react";
 import type { ArticleAudit as ArticleAuditData } from "@/types/ArticleAudit";
 import { errMsg } from "@/lib/errMsg";
+import { useHistory } from "@/lib/history";
+import { paramsToKey, readParams, updateUrl } from "@/lib/permalink";
+import { CopyLinkButton } from "../common/CopyLinkButton";
+import { HistoryStrip } from "../common/HistoryStrip";
 import { ClearableInput } from "../live-trace/ClearableInput";
 import { AuditReport } from "./AuditReport";
 
@@ -29,9 +33,9 @@ function parseArticle(raw: string): { article: string; lang: string } {
 export function ArticleAudit() {
   const [input, setInput] = useState("Quokka");
   const [state, setState] = useState<State>({ status: "idle" });
+  const { items: history, remember, forget, clear } = useHistory("audit");
 
-  async function run(raw: string) {
-    const { article, lang } = parseArticle(raw);
+  async function execute(article: string, lang: string) {
     if (!article) return;
     setState({ status: "loading", article });
     try {
@@ -41,11 +45,51 @@ export function ArticleAudit() {
         setState({ status: "error", message: body.error ?? `Error ${res.status}` });
         return;
       }
-      setState({ status: "done", data: body as ArticleAuditData });
+      const data = body as ArticleAuditData;
+      setState({ status: "done", data });
+      const params = { audit: data.article.title, lang: data.article.lang };
+      remember({
+        key: paramsToKey(params),
+        params,
+        title: data.article.title,
+        subtitle: data.article.lang !== "en" ? data.article.lang : undefined,
+        badge: `${Math.round(data.summary.coverage * 100)}% cited`,
+      });
+      updateUrl(params);
     } catch (err) {
       setState({ status: "error", message: errMsg(err) });
     }
   }
+
+  function run(raw: string) {
+    const { article, lang } = parseArticle(raw);
+    void execute(article, lang);
+  }
+
+  function replay(entry: (typeof history)[number]) {
+    const article = entry.params.audit ?? "";
+    const lang = entry.params.lang ?? "en";
+    setInput(article);
+    void execute(article, lang);
+  }
+
+  // A permalink (?audit=…&lang=…) reloads a prior audit on page load.
+  const bootstrapped = useRef(false);
+  useEffect(() => {
+    if (bootstrapped.current) return;
+    bootstrapped.current = true;
+    const params = readParams();
+    const article = params.get("audit");
+    if (!article) return;
+    const lang = params.get("lang") ?? "en";
+    // One-time bootstrap from the URL — must run post-hydration, so mirroring
+    // the param into state here is intended.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setInput(article);
+    document.getElementById("audit")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    void execute(article, lang);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const busy = state.status === "loading";
 
@@ -99,6 +143,13 @@ export function ArticleAudit() {
         </div>
       </form>
 
+      <HistoryStrip
+        items={history}
+        onPick={replay}
+        onForget={forget}
+        onClear={clear}
+      />
+
       {state.status === "loading" && (
         <div className="rounded-2xl border border-line-strong bg-surface-2 px-5 py-6">
           <div className="flex items-center gap-2.5">
@@ -125,7 +176,12 @@ export function ArticleAudit() {
       )}
 
       {state.status === "done" && (
-        <div className="animate-rise">
+        <div className="animate-rise flex flex-col gap-3">
+          <div className="flex justify-end">
+            <CopyLinkButton
+              params={{ audit: state.data.article.title, lang: state.data.article.lang }}
+            />
+          </div>
           <AuditReport data={state.data} />
         </div>
       )}

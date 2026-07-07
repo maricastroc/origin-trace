@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Quote, Search } from "lucide-react";
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
 import type { Resolution } from "@/types/Resolution";
 import type { TraceProgress } from "@/types/TraceProgress";
 import { streamTrace } from "@/lib/traceClient";
 import { errMsg } from "@/lib/errMsg";
+import { useHistory } from "@/lib/history";
+import { paramsToKey, readParams, updateUrl } from "@/lib/permalink";
+import { verdictStyle } from "@/lib/verdictStyle";
+import { CopyLinkButton } from "../common/CopyLinkButton";
+import { HistoryStrip } from "../common/HistoryStrip";
 import { CaseFile } from "../case-file/CaseFile";
 import { ClearableInput } from "./ClearableInput";
 import { LiveTraceLoading } from "./LiveTraceLoading";
@@ -21,7 +26,7 @@ type State =
   | { status: "unresolved"; note: string }
   | { status: "tracing"; scope: string; progress: TraceProgress | null }
   | { status: "error"; message: string }
-  | { status: "done"; data: ClaimProvenance; scope: string };
+  | { status: "done"; data: ClaimProvenance; scope: string; phrase: string; lang?: string };
 
 const EXAMPLES: { phrase: string; label: string }[] = [
   { phrase: "happiest animal", label: "happiest animal" },
@@ -35,30 +40,37 @@ export function LiveTrace() {
   const [phrase, setPhrase] = useState("happiest animal");
   const [article, setArticle] = useState("");
   const [state, setState] = useState<State>({ status: "idle" });
+  const { items: history, remember, forget, clear } = useHistory("trace");
 
-  async function trace(scope: string, claimPhrase: string) {
+  async function trace(scope: string, claimPhrase: string, lang?: string) {
     setState({ status: "tracing", scope, progress: null });
     try {
       const data = await streamTrace({
         article: scope,
         phrase: claimPhrase,
+        lang,
         onProgress: (progress) =>
           setState({ status: "tracing", scope, progress }),
       });
-      setState({ status: "done", data, scope });
+      setState({ status: "done", data, scope, phrase: claimPhrase, lang });
+      const params = { trace: claimPhrase, article: scope, lang };
+      remember({
+        key: paramsToKey(params),
+        params,
+        title: claimPhrase,
+        subtitle: scope,
+        badge: verdictStyle[data.verdict.primary].label,
+      });
+      updateUrl(params);
     } catch (err) {
       setState({ status: "error", message: errMsg(err) });
     }
   }
 
-  async function submit(event?: React.FormEvent) {
-    event?.preventDefault();
-    const p = phrase.trim();
-    const a = article.trim();
+  async function resolveAndTrace(p: string, a: string, lang?: string) {
     if (!p) return;
-
     if (a) {
-      await trace(a, p);
+      await trace(a, p, lang);
       return;
     }
 
@@ -72,7 +84,7 @@ export function LiveTrace() {
       }
       const r = body as Resolution;
       if (r.scope === "unambiguous" && r.resolved) {
-        await trace(r.resolved, p);
+        await trace(r.resolved, p, lang);
       } else if (r.scope === "not-found") {
         setState({ status: "unresolved", note: r.note });
       } else {
@@ -81,6 +93,40 @@ export function LiveTrace() {
     } catch (err) {
       setState({ status: "error", message: errMsg(err) });
     }
+  }
+
+  async function submit(event?: React.FormEvent) {
+    event?.preventDefault();
+    await resolveAndTrace(phrase.trim(), article.trim());
+  }
+
+  // A permalink (?trace=…&article=…) reproduces a result on load. The scope is
+  // baked into the link, so this replays the exact trace without re-resolving.
+  const bootstrapped = useRef(false);
+  useEffect(() => {
+    if (bootstrapped.current) return;
+    bootstrapped.current = true;
+    const params = readParams();
+    const p = params.get("trace");
+    if (!p) return;
+    const a = params.get("article") ?? "";
+    const lang = params.get("lang") ?? undefined;
+    // One-time bootstrap from the URL — must run post-hydration to avoid a
+    // controlled-input mismatch, so mirroring the params into state here is intended.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPhrase(p); setArticle(a);
+    document.getElementById("live")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    void resolveAndTrace(p, a, lang);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function replay(entry: (typeof history)[number]) {
+    const p = entry.params.trace ?? "";
+    const a = entry.params.article ?? "";
+    const lang = entry.params.lang ?? undefined;
+    setPhrase(p);
+    setArticle(a);
+    void resolveAndTrace(p, a, lang);
   }
 
   const busy = state.status === "resolving" || state.status === "tracing";
@@ -151,6 +197,13 @@ export function LiveTrace() {
         </div>
       </form>
 
+      <HistoryStrip
+        items={history}
+        onPick={replay}
+        onForget={forget}
+        onClear={clear}
+      />
+
       {state.status === "resolving" && (
         <StatusCard title="Resolving scope…" pulse>
           Searching Wikipedia for the article(s) that carry this claim.
@@ -195,7 +248,12 @@ export function LiveTrace() {
 
       {state.status === "done" && (
         <div className="animate-rise flex flex-col gap-4">
-          <ScopeBanner scope={state.scope} />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <ScopeBanner scope={state.scope} />
+            <CopyLinkButton
+              params={{ trace: state.phrase, article: state.scope, lang: state.lang }}
+            />
+          </div>
           <div className="rounded-2xl border border-line-strong bg-surface-2 p-5 shadow-[0_30px_60px_-40px_rgba(90,60,30,0.4)] sm:p-8">
             <CaseFile data={state.data} />
           </div>

@@ -18,12 +18,21 @@ interface Resolution {
   note: string;
 }
 
+/** Mirrors the engine's TraceProgress — a type-only shape, no runtime import. */
+type TraceProgress =
+  | { phase: "listing" }
+  | { phase: "listed"; revisions: number; truncated: boolean }
+  | { phase: "searching"; read: number; estimate: number }
+  | { phase: "located"; year: string; removed: boolean }
+  | { phase: "reading" }
+  | { phase: "detecting" };
+
 type State =
   | { status: "idle" }
   | { status: "resolving" }
   | { status: "ambiguous"; resolution: Resolution }
   | { status: "unresolved"; note: string }
-  | { status: "tracing"; scope: string }
+  | { status: "tracing"; scope: string; progress: TraceProgress | null }
   | { status: "error"; message: string }
   | { status: "done"; data: ClaimProvenance; scope: string };
 
@@ -45,17 +54,55 @@ export function LiveTrace() {
   const [state, setState] = useState<State>({ status: "idle" });
 
   async function trace(scope: string, claimPhrase: string) {
-    setState({ status: "tracing", scope });
+    setState({ status: "tracing", scope, progress: null });
     try {
       const res = await fetch(
         `/api/trace?article=${enc(scope)}&phrase=${enc(claimPhrase)}`,
       );
-      const body = await res.json();
-      if (!res.ok) {
+
+      // A non-stream error (e.g. 400 validation) still comes back as JSON.
+      if (!res.ok || !res.body) {
+        const body = await res.json().catch(() => ({}));
         setState({ status: "error", message: body.error ?? `Error ${res.status}` });
         return;
       }
-      setState({ status: "done", data: body as ClaimProvenance, scope });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let settled = false;
+
+      while (!settled) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE frames are separated by a blank line; keep the trailing partial.
+        const frames = buffer.split("\n\n");
+        buffer = frames.pop() ?? "";
+        for (const frame of frames) {
+          const json = frame.replace(/^data:\s?/, "").trim();
+          if (!json) continue;
+          const msg = JSON.parse(json) as
+            | { type: "progress"; progress: TraceProgress }
+            | { type: "result"; data: ClaimProvenance }
+            | { type: "error"; message: string };
+
+          if (msg.type === "progress") {
+            setState({ status: "tracing", scope, progress: msg.progress });
+          } else if (msg.type === "result") {
+            settled = true;
+            setState({ status: "done", data: msg.data, scope });
+          } else {
+            settled = true;
+            setState({ status: "error", message: msg.message });
+          }
+        }
+      }
+
+      if (!settled) {
+        setState({ status: "error", message: "The trace ended without a result." });
+      }
     } catch (err) {
       setState({ status: "error", message: errMsg(err) });
     }
@@ -188,7 +235,7 @@ export function LiveTrace() {
       {state.status === "tracing" && (
         <>
           <ScopeBanner scope={state.scope} />
-          <LiveTraceLoading />
+          <LiveTraceLoading progress={state.progress} />
         </>
       )}
 
@@ -310,38 +357,104 @@ function StatusCard({
   );
 }
 
-const STEPS = [
-  "Listing the revision history…",
-  "Binary-searching for the introduction…",
-  "Reading the revisions’ wikitext…",
-  "Detecting the attached citation…",
-];
+/** Map a real engine milestone to a label, a monotone bar fraction, and detail. */
+function readProgress(p: TraceProgress | null): {
+  label: string;
+  fraction: number;
+  detail: string;
+} {
+  if (!p) {
+    return {
+      label: "Opening the trace…",
+      fraction: 0.04,
+      detail: "Reaching Wikipedia’s Action API.",
+    };
+  }
+  switch (p.phase) {
+    case "listing":
+      return {
+        label: "Listing the revision history…",
+        fraction: 0.09,
+        detail: "Enumerating every revision, oldest first.",
+      };
+    case "listed":
+      return {
+        label: `${p.revisions.toLocaleString()} revisions in scope`,
+        fraction: 0.18,
+        detail: p.truncated
+          ? "History truncated by the page cap — closure unproven."
+          : "Full history enumerated.",
+      };
+    case "searching": {
+      const ratio = Math.min(1, p.read / Math.max(1, p.estimate));
+      return {
+        label: "Binary-searching for the introduction…",
+        fraction: 0.2 + 0.6 * ratio,
+        detail: `Read ${p.read} revision${p.read === 1 ? "" : "s"} so far.`,
+      };
+    }
+    case "located":
+      return {
+        label: `Introduction located · ${p.year}`,
+        fraction: 0.86,
+        detail: p.removed
+          ? "The claim was later removed — tracing its window."
+          : "Reading the current revision to compare.",
+      };
+    case "reading":
+      return {
+        label: "Reading the revisions’ wikitext…",
+        fraction: 0.92,
+        detail: "Introduction and current revision.",
+      };
+    case "detecting":
+      return {
+        label: "Detecting the attached citation…",
+        fraction: 0.97,
+        detail: "Looking for a <ref> on the claim.",
+      };
+  }
+}
 
-function LiveTraceLoading() {
-  const [step, setStep] = useState(0);
+function LiveTraceLoading({ progress }: { progress: TraceProgress | null }) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    const s = setInterval(() => setStep((v) => (v + 1) % STEPS.length), 2200);
     const t = setInterval(() => setElapsed((v) => v + 1), 1000);
-    return () => {
-      clearInterval(s);
-      clearInterval(t);
-    };
+    return () => clearInterval(t);
   }, []);
+
+  const { label, fraction, detail } = readProgress(progress);
+  const pct = Math.round(fraction * 100);
 
   return (
     <div className="rounded-2xl border border-line-strong bg-surface-2 px-5 py-6 sm:px-6">
       <div className="flex items-center gap-2.5">
         <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-accent" />
-        <p className="font-mono text-[13px] text-ink">{STEPS[step]}</p>
+        <p className="font-mono text-[13px] text-ink">{label}</p>
         <span className="ml-auto font-mono text-[11px] tabular-nums text-ink-faint">
           {elapsed}s
         </span>
       </div>
-      <p className="mt-2.5 text-[12.5px] leading-relaxed text-ink-faint">
-        The engine reads Wikipedia&rsquo;s real history and binary-searches down
-        to the revision that introduced the phrase. Usually takes 10–40s.
+
+      <div
+        className="mt-4 h-1 w-full overflow-hidden rounded-full bg-line"
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div
+          className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      <p className="mt-2.5 flex items-center justify-between gap-3 text-[12.5px] leading-relaxed text-ink-faint">
+        <span>{detail}</span>
+        <span className="shrink-0 font-mono tabular-nums text-ink-muted">
+          {pct}%
+        </span>
       </p>
     </div>
   );

@@ -5,6 +5,7 @@
  * (blame, trace) is pure and operates on the data this returns, so it can be
  * unit-tested against recorded fixtures by swapping the `fetchJson` transport.
  */
+import type { EngineCache } from "./cache.ts";
 
 /** One revision's metadata — the cheap enumeration, no content. */
 export interface RevisionMeta {
@@ -40,6 +41,12 @@ export interface WikipediaClientOptions {
    * point, so the default is generous; callers get told when it bites.
    */
   maxPages?: number;
+  /**
+   * Optional process-wide cache. When present, the revision list and per-revid
+   * wikitext are served from it — the dominant cost of a repeat trace. Left
+   * undefined in tests so injected fixtures stay deterministic.
+   */
+  cache?: EngineCache;
 }
 
 export interface RevisionList {
@@ -52,11 +59,13 @@ export class WikipediaClient {
   private readonly lang: string;
   private readonly fetchJson: FetchJson;
   private readonly maxPages: number;
+  private readonly cache?: EngineCache;
 
   constructor(opts: WikipediaClientOptions = {}) {
     this.lang = opts.lang ?? "en";
     this.fetchJson = opts.fetchJson ?? defaultFetchJson;
     this.maxPages = opts.maxPages ?? 200;
+    this.cache = opts.cache;
   }
 
   private endpoint(params: Record<string, string>): string {
@@ -75,6 +84,9 @@ export class WikipediaClient {
    * the binary search in blame.ts assumes.
    */
   async listRevisions(title: string): Promise<RevisionList> {
+    const cached = this.cache?.getList(this.lang, title);
+    if (cached) return cached;
+
     const revisions: RevisionMeta[] = [];
     let rvcontinue: string | undefined;
     let pages = 0;
@@ -84,7 +96,10 @@ export class WikipediaClient {
         action: "query",
         prop: "revisions",
         titles: title,
-        rvprop: "ids|timestamp|user|comment|flags",
+        // Only ids + timestamp are consumed downstream (index order + dates).
+        // Dropping user/comment/flags shrinks every page of the sequential
+        // pagination — the enumeration is the trace's fixed up-front cost.
+        rvprop: "ids|timestamp",
         rvlimit: "max",
         rvdir: "newer",
       };
@@ -109,7 +124,9 @@ export class WikipediaClient {
       pages += 1;
     } while (rvcontinue && pages < this.maxPages);
 
-    return { revisions, truncated: Boolean(rvcontinue) };
+    const result: RevisionList = { revisions, truncated: Boolean(rvcontinue) };
+    this.cache?.setList(this.lang, title, result);
+    return result;
   }
 
   /**
@@ -141,8 +158,13 @@ export class WikipediaClient {
 
   /** Convenience: wikitext of a single revision, or null if unavailable. */
   async getRevisionContent(revid: number): Promise<string | null> {
+    const cached = this.cache?.getContent(this.lang, revid);
+    if (cached !== undefined) return cached; // null is a valid cached value
+
     const map = await this.getContent([revid]);
-    return map.get(revid) ?? null;
+    const content = map.get(revid) ?? null;
+    this.cache?.setContent(this.lang, revid, content);
+    return content;
   }
 
   /**

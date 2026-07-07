@@ -19,6 +19,19 @@ import {
   type ContentReader,
 } from "./blame.ts";
 import { WikipediaClient, type FetchJson } from "./wikipedia.ts";
+import type { EngineCache } from "./cache.ts";
+
+/**
+ * A live milestone from the pipeline. Structured, not prose — the UI decides
+ * the wording and turns `read`/`estimate` into a real progress bar.
+ */
+export type TraceProgress =
+  | { phase: "listing" }
+  | { phase: "listed"; revisions: number; truncated: boolean }
+  | { phase: "searching"; read: number; estimate: number }
+  | { phase: "located"; year: string; removed: boolean }
+  | { phase: "reading" }
+  | { phase: "detecting" };
 
 export interface TraceInput {
   /** Article title as it appears in the URL, e.g. "Quokka". */
@@ -32,6 +45,10 @@ export interface TraceInput {
   maxPages?: number;
   /** Test seam: inject a recorded transport. */
   fetchJson?: FetchJson;
+  /** Process-wide cache for the live API path; omit in tests. */
+  cache?: EngineCache;
+  /** Live milestone sink — the seam for a streaming/progress UI. */
+  onProgress?: (progress: TraceProgress) => void;
 }
 
 /** Thrown when the phrase is not found in any revision we read. */
@@ -52,27 +69,56 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     lang,
     maxPages: input.maxPages,
     fetchJson: input.fetchJson,
+    cache: input.cache,
   });
 
+  const emit = input.onProgress ?? (() => {});
+  // The binary search is the phase whose reads we can count and report; the two
+  // tail reads below are almost always cache hits from the search, so we don't
+  // narrate them individually.
+  let phase: "searching" | "reading" = "searching";
+  let reads = 0;
+  let estimate = 12;
+
   // One cache shared by the whole trace — the binary search and the later
-  // detail reads never fetch the same revision twice.
+  // detail reads never fetch the same revision twice. Each real read (cache
+  // miss) advances the progress bar during the search phase.
   const cache = new Map<number, string | null>();
   const read: ContentReader = async (revid) => {
     if (cache.has(revid)) return cache.get(revid)!;
     const content = await client.getRevisionContent(revid);
     cache.set(revid, content);
+    if (phase === "searching") {
+      reads += 1;
+      emit({ phase: "searching", read: reads, estimate });
+    }
     return content;
   };
 
+  emit({ phase: "listing" });
   const { revisions, truncated } = await client.listRevisions(input.article);
   if (revisions.length === 0) throw new ClaimNotFoundError(input.article, input.phrase);
+  // A gap-robust search costs a handful of O(log n) passes; this is a generous
+  // upper hint so the bar advances smoothly and rarely saturates early.
+  estimate = Math.max(6, Math.ceil(Math.log2(revisions.length + 1)) * 2);
+  emit({ phase: "listed", revisions: revisions.length, truncated });
 
   const intro = await findIntroduction(revisions, input.phrase, read);
   if (intro === null) throw new ClaimNotFoundError(input.article, input.phrase);
+  emit({
+    phase: "located",
+    year: year(intro.revision.timestamp),
+    removed: intro.removedSince,
+  });
 
+  phase = "reading";
+  emit({ phase: "reading" });
   const latest = revisions[revisions.length - 1];
-  const introContent = (await read(intro.revision.revid)) ?? "";
-  const latestContent = (await read(latest.revid)) ?? "";
+  const [introContent, latestContent] = await Promise.all([
+    read(intro.revision.revid).then((c) => c ?? ""),
+    read(latest.revid).then((c) => c ?? ""),
+  ]);
+  emit({ phase: "detecting" });
 
   const introRef = detectRefNear(introContent, input.phrase);
   const currentRef = intro.removedSince

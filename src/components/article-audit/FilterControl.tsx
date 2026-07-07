@@ -1,30 +1,39 @@
-import type { AuditFilter } from "@/lib/auditMetrics";
+import type { LucideIcon } from "lucide-react";
 
-export interface FilterOption {
-  key: AuditFilter;
+export interface ControlOption<T extends string> {
+  key: T;
   label: string;
-  count: number;
-  dot?: string;
+  count?: number;
+  Icon?: LucideIcon;
+  /** text-color class for the icon */
+  iconClass?: string;
 }
 
-function Dot({ className }: { className: string }) {
+/** Back-compat alias for the filter call site. */
+export type FilterOption = ControlOption<string>;
+
+function Marker<T extends string>({ option }: { option: ControlOption<T> }) {
+  if (!option.Icon) {
+    return <span className="w-3.5 shrink-0" aria-hidden="true" />;
+  }
+  const { Icon } = option;
   return (
-    <span
-      className={`h-1.5 w-1.5 shrink-0 rounded-full ${className}`}
+    <Icon
+      className={`h-3.5 w-3.5 shrink-0 ${option.iconClass ?? "text-ink-faint"}`}
       aria-hidden="true"
     />
   );
 }
 
-export function FilterControl({
+export function FilterControl<T extends string>({
   options,
   value,
   onChange,
   variant,
 }: {
-  options: FilterOption[];
-  value: AuditFilter;
-  onChange: (f: AuditFilter) => void;
+  options: ControlOption<T>[];
+  value: T;
+  onChange: (v: T) => void;
   variant: "rail" | "pills";
 }) {
   if (variant === "pills") {
@@ -44,11 +53,13 @@ export function FilterControl({
                   : "border-line-strong text-ink-muted hover:border-ink hover:text-ink"
               }`}
             >
-              {o.dot && !active && <Dot className={o.dot} />}
+              {!active && <Marker option={o} />}
               {o.label}
-              <span className="font-mono text-[10.5px] tabular-nums opacity-70">
-                {o.count}
-              </span>
+              {o.count !== undefined && (
+                <span className="font-mono text-[10.5px] tabular-nums opacity-70">
+                  {o.count}
+                </span>
+              )}
             </button>
           );
         })}
@@ -72,15 +83,13 @@ export function FilterControl({
                 : "text-ink-muted hover:bg-surface-1/70 hover:text-ink"
             }`}
           >
-            {o.dot ? (
-              <Dot className={o.dot} />
-            ) : (
-              <span className="h-1.5 w-1.5 shrink-0" aria-hidden="true" />
-            )}
+            <Marker option={o} />
             <span className="flex-1">{o.label}</span>
-            <span className="font-mono text-[11px] text-ink-faint tabular-nums">
-              {o.count}
-            </span>
+            {o.count !== undefined && (
+              <span className="font-mono text-[11px] text-ink-faint tabular-nums">
+                {o.count}
+              </span>
+            )}
           </button>
         );
       })}

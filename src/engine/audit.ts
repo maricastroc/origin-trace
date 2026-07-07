@@ -151,7 +151,7 @@ export function sentences(body: string): string[] {
 }
 
 function proseLines(body: string): string[] {
-  const withoutTables = stripTables(body);
+  const withoutTables = stripMediaLinks(stripTables(body));
   const paras: string[] = [];
   for (const block of withoutTables.split(/\n{2,}/)) {
     const kept: string[] = [];
@@ -160,7 +160,6 @@ function proseLines(body: string): string[] {
       if (!t) continue;
       if (/^[*#:;!|]/.test(t)) continue;
       if (/^\{\{/.test(t) && /\}\}$/.test(t)) continue;
-      if (/^\[\[\s*(File|Image|Category)\s*:/i.test(t)) continue;
       if (/^(={2,6})\s*.+\1$/.test(t)) continue;
       if (/^<\/?(gallery|table|blockquote|div|ref|references)/i.test(t)) continue;
       kept.push(line);
@@ -168,6 +167,45 @@ function proseLines(body: string): string[] {
     if (kept.length) paras.push(kept.join(" "));
   }
   return paras;
+}
+
+// Media/category namespaces across the wikis we target (en + pt today).
+const MEDIA_NS =
+  /^(?:file|image|category|media|ficheiro|imagem|arquivo|categoria|mídia|multimídia)$/i;
+
+// Remove [[File:…]] / [[Ficheiro:…]] / [[Category:…]] blocks whole, honoring
+// nested [[links]] inside captions — so image markup never merges into prose.
+function stripMediaLinks(text: string): string {
+  let out = "";
+  let i = 0;
+  while (i < text.length) {
+    if (text[i] === "[" && text[i + 1] === "[") {
+      let depth = 1;
+      let j = i + 2;
+      while (j < text.length && depth > 0) {
+        if (text[j] === "[" && text[j + 1] === "[") {
+          depth++;
+          j += 2;
+        } else if (text[j] === "]" && text[j + 1] === "]") {
+          depth--;
+          j += 2;
+        } else {
+          j++;
+        }
+      }
+      const ns = text.slice(i + 2, j - 2).match(/^\s*([^:|[\]]+)\s*:/)?.[1]?.trim();
+      if (ns && MEDIA_NS.test(ns)) {
+        i = j;
+        continue;
+      }
+      out += text.slice(i, j);
+      i = j;
+      continue;
+    }
+    out += text[i];
+    i++;
+  }
+  return out;
 }
 
 function stripTables(text: string): string {
@@ -287,7 +325,7 @@ function cleanProse(sentence: string): string {
     .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, "")
     .replace(/\{\{[^{}]*\}\}/g, unwrapTemplate)
     .replace(/\{\{[^{}]*\}\}/g, "")
-    .replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, "$1")
+    .replace(/\[\[(?:[^\]]*\|)?([^\]|]*)\]\]/g, "$1")
     .replace(/\[https?:\/\/\S+\s+([^\]]*)\]/g, "$1")
     .replace(/'{2,}/g, "")
     .replace(/<[^>]+>/g, "")

@@ -1,29 +1,49 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowRight, Link2 } from "lucide-react";
 import type { ArticleAudit as ArticleAuditData } from "@/types/ArticleAudit";
 import type { AuditClaim } from "@/types/AuditClaim";
 import { ClaimDrillDown } from "./ClaimDrillDown";
+import { STATUS_META } from "./statusMeta";
 
-const DOT: Record<AuditClaim["status"], string> = {
-  sourced: "bg-success",
-  "note-only": "bg-warn",
-  unsourced: "bg-danger",
-};
+function highlight(text: string, query?: string): React.ReactNode {
+  const q = query?.trim().toLowerCase();
+  if (!q) return text;
+  const lower = text.toLowerCase();
+  const parts: React.ReactNode[] = [];
+  let i = 0;
+  let idx = lower.indexOf(q, i);
+  while (idx !== -1) {
+    if (idx > i) parts.push(text.slice(i, idx));
+    parts.push(
+      <mark key={idx} className="rounded-[3px] bg-accent-tint px-0.5 text-ink">
+        {text.slice(idx, idx + q.length)}
+      </mark>,
+    );
+    i = idx + q.length;
+    idx = lower.indexOf(q, i);
+  }
+  if (i < text.length) parts.push(text.slice(i));
+  return parts;
+}
 
 export function ClaimRow({
   claim,
   article,
   muted,
   sectionLabel,
+  query,
 }: {
   claim: AuditClaim;
   article: ArticleAuditData["article"];
   muted: boolean;
   sectionLabel?: string;
+  query?: string;
 }) {
   const [open, setOpen] = useState(false);
   const traceable = claim.status !== "sourced";
+  const StatusIcon = STATUS_META[claim.status].Icon;
 
   return (
     <li>
@@ -37,8 +57,8 @@ export function ClaimRow({
             : "border-transparent hover:border-line hover:bg-surface-1/50"
         }`}
       >
-        <span
-          className={`mt-[7px] h-2 w-2 shrink-0 rounded-full ${DOT[claim.status]} ${
+        <StatusIcon
+          className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${STATUS_META[claim.status].className} ${
             muted ? "opacity-50" : ""
           }`}
           aria-hidden="true"
@@ -52,22 +72,30 @@ export function ClaimRow({
           <span
             className={`text-[13.5px] leading-relaxed ${muted ? "text-ink-muted" : "text-ink"}`}
           >
-            {claim.text}
+            {highlight(claim.text, query)}
           </span>
           {claim.source?.label && (
-            <span className="ml-2 whitespace-nowrap font-mono text-[11px] text-success/90">
-              ↳ {claim.source.label}
+            <span className="ml-2 inline-flex items-center gap-1 whitespace-nowrap font-mono text-[11px] text-success/90">
+              <Link2 className="h-3 w-3" aria-hidden="true" />
+              {claim.source.label}
             </span>
           )}
         </span>
         <span
-          className={`mt-0.5 shrink-0 font-mono text-[11px] transition-colors ${
+          className={`mt-0.5 inline-flex shrink-0 items-center gap-1 font-mono text-[11px] transition-colors ${
             traceable
               ? "text-ink-faint group-hover:text-accent"
               : "text-ink-faint/60"
           }`}
         >
-          {open ? "close" : traceable ? "trace →" : "history →"}
+          {open ? (
+            "close"
+          ) : (
+            <>
+              {traceable ? "trace" : "history"}
+              <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            </>
+          )}
         </span>
       </button>
 

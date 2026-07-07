@@ -8,7 +8,7 @@ export function normalize(text: string): string {
     .replace(/<ref[^>]*\/>/g, " ")
     .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, " ")
     .replace(/<[^>]+>/g, " ")
-    .replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, "$1")
+    .replace(/\[\[(?:[^\]]*\|)?([^\]|]*)\]\]/g, "$1")
     .replace(/[’‘`]/g, "'")
     .replace(/'{2,}/g, "")
     .replace(/[^a-z0-9']+/g, " ")

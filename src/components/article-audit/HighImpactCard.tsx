@@ -1,18 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowRight } from "lucide-react";
 import type { ArticleAudit as ArticleAuditData } from "@/types/ArticleAudit";
 import type { AuditClaim } from "@/types/AuditClaim";
 import { ClaimDrillDown } from "./ClaimDrillDown";
-
-const META: Record<
-  AuditClaim["status"],
-  { dot: string; label: string }
-> = {
-  sourced: { dot: "bg-success", label: "Inline citation" },
-  "note-only": { dot: "bg-warn", label: "Note only, no source" },
-  unsourced: { dot: "bg-danger/80", label: "No inline citation" },
-};
+import { STATUS_META } from "./statusMeta";
 
 export function HighImpactCard({
   claim,
@@ -24,7 +17,8 @@ export function HighImpactCard({
   article: ArticleAuditData["article"];
 }) {
   const [open, setOpen] = useState(false);
-  const meta = META[claim.status];
+  const meta = STATUS_META[claim.status];
+  const StatusIcon = meta.Icon;
 
   return (
     <div
@@ -43,8 +37,8 @@ export function HighImpactCard({
             {sectionLabel}
           </span>
           <span className="flex items-center gap-1.5">
-            <span
-              className={`h-1.5 w-1.5 shrink-0 rounded-full ${meta.dot}`}
+            <StatusIcon
+              className={`h-3 w-3 shrink-0 ${meta.className}`}
               aria-hidden="true"
             />
             <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-ink-faint">
@@ -57,7 +51,7 @@ export function HighImpactCard({
 
         <span className="mt-1 flex items-center gap-1 font-mono text-[11px] text-accent">
           {open ? "close" : "trace this claim"}
-          {!open && <span aria-hidden="true">→</span>}
+          {!open && <ArrowRight className="h-3 w-3" aria-hidden="true" />}
         </span>
       </button>
 

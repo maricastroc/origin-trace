@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import type { Resolution } from "@/types/Resolution";
 
 export function ScopePicker({
@@ -36,8 +37,9 @@ export function ScopePicker({
                     relevance #{c.fuzzyRank}
                   </span>
                 )}
-                <span className="ml-auto font-mono text-[12px] text-ink-faint transition-colors group-hover:text-accent">
-                  trace →
+                <span className="ml-auto inline-flex items-center gap-1 font-mono text-[12px] text-ink-faint transition-colors group-hover:text-accent">
+                  trace
+                  <ArrowRight className="h-3 w-3" aria-hidden="true" />
                 </span>
               </div>
               {c.snippet && (

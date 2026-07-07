@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import type { CaseEntry } from "@/mocks";
 import { VerdictBadge } from "./case-file/VerdictBadge";
 
@@ -50,9 +51,10 @@ export function CaseCard({
         }`}
       >
         {active ? "case open" : "open case"}
-        <span className="transition-transform group-hover:translate-x-0.5">
-          →
-        </span>
+        <ArrowRight
+          className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
+          aria-hidden="true"
+        />
       </span>
     </button>
   );

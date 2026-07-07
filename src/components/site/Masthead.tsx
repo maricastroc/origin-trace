@@ -1,3 +1,4 @@
+import { Files, Route, ScanText } from "lucide-react";
 import { Mark } from "./Mark";
 
 export function Masthead() {
@@ -15,13 +16,13 @@ export function Masthead() {
         </a>
 
         <nav className="flex items-center gap-1 sm:gap-1.5">
-          <NavLink href="#method" icon={<MethodIcon />}>
+          <NavLink href="#method" icon={<Route className="h-3.5 w-3.5" />}>
             Method
           </NavLink>
-          <NavLink href="#cases" icon={<CasesIcon />}>
+          <NavLink href="#cases" icon={<Files className="h-3.5 w-3.5" />}>
             Cases
           </NavLink>
-          <NavLink href="#audit" icon={<AuditIcon />}>
+          <NavLink href="#audit" icon={<ScanText className="h-3.5 w-3.5" />}>
             Audit
           </NavLink>
           <a
@@ -62,56 +63,3 @@ function NavLink({
   );
 }
 
-function MethodIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      className="h-3.5 w-3.5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M3 8h10" />
-      <circle cx="3" cy="8" r="1.6" fill="currentColor" stroke="none" />
-      <circle cx="8" cy="8" r="1.6" />
-      <circle cx="13" cy="8" r="1.6" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function AuditIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      className="h-3.5 w-3.5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="3" y="2.5" width="10" height="11" rx="1.2" />
-      <path d="M5.5 6h5M5.5 8.5h5M5.5 11h2.5" />
-    </svg>
-  );
-}
-
-function CasesIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      className="h-3.5 w-3.5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="2.5" y="5.5" width="9" height="7" rx="1.2" />
-      <path d="M5 5.5V4.2A1.2 1.2 0 016.2 3h3.1a1.2 1.2 0 011.2 1.2v1.3M13.5 6.5v5" />
-    </svg>
-  );
-}

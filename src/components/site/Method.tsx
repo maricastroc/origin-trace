@@ -1,3 +1,5 @@
+import { ArrowDown, ArrowRight } from "lucide-react";
+
 const PIPELINE: {
   n: string;
   title: string;
@@ -122,18 +124,14 @@ export function Method() {
 
                   {!last && (
                     <>
-                      <span
-                        className="absolute -right-[9px] top-2 hidden font-mono text-[13px] text-line-strong sm:block"
+                      <ArrowRight
+                        className="absolute -right-[11px] top-1.5 hidden h-3.5 w-3.5 text-line-strong sm:block"
                         aria-hidden="true"
-                      >
-                        →
-                      </span>
-                      <span
-                        className="mt-3 block text-center font-mono text-[13px] text-line-strong sm:hidden"
+                      />
+                      <ArrowDown
+                        className="mx-auto mt-3 block h-3.5 w-3.5 text-line-strong sm:hidden"
                         aria-hidden="true"
-                      >
-                        ↓
-                      </span>
+                      />
                     </>
                   )}
                 </li>

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { FileText, ScanSearch } from "lucide-react";
 import type { ArticleAudit as ArticleAuditData } from "@/types/ArticleAudit";
 import { errMsg } from "@/lib/errMsg";
-import { inputClass } from "@/lib/ui";
+import { ClearableInput } from "../live-trace/ClearableInput";
 import { AuditReport } from "./AuditReport";
 
 const EXAMPLES = ["Quokka", "Coati", "Cleopatra", "Black hole"];
@@ -61,19 +62,20 @@ export function ArticleAudit() {
           the article
         </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <input
+          <ClearableInput
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={setInput}
+            onClear={() => setInput("")}
             placeholder="Article title or Wikipedia URL"
-            className={inputClass}
+            className="flex-1"
           />
           <button
             type="submit"
             disabled={busy}
             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-[color:var(--paper-raised)] transition-colors hover:bg-accent-strong disabled:opacity-40"
           >
+            <ScanSearch className="h-4 w-4" aria-hidden="true" />
             {busy ? "Auditing…" : "Audit"}
-            {!busy && <span aria-hidden="true">→</span>}
           </button>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2.5">
@@ -88,8 +90,9 @@ export function ArticleAudit() {
                 setInput(ex);
                 run(ex);
               }}
-              className="rounded-full border border-line-strong px-2.5 py-0.5 text-[12px] text-ink-muted transition-colors hover:border-ink hover:text-ink"
+              className="inline-flex items-center gap-1.5 rounded-full border border-line-strong px-2.5 py-0.5 text-[12px] text-ink-muted transition-colors hover:border-ink hover:text-ink"
             >
+              <FileText className="h-3 w-3" aria-hidden="true" />
               {ex}
             </button>
           ))}

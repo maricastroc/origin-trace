@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
 
 type Corpus = NonNullable<ClaimProvenance["meta"]["corpus"]>;
@@ -21,12 +22,10 @@ export function CorpusReceipt({
             <Stat value={total.toLocaleString()} unit="revisions in history" />
             {engine && (
               <>
-                <span
-                  className="mb-1.5 font-mono text-[15px] text-line-strong"
+                <ArrowRight
+                  className="mb-2 h-4 w-4 text-line-strong"
                   aria-hidden="true"
-                >
-                  →
-                </span>
+                />
                 <Stat value={read.toLocaleString()} unit="read · binary search" />
               </>
             )}

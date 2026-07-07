@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Quote, Search } from "lucide-react";
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
 import type { Resolution } from "@/types/Resolution";
 import type { TraceProgress } from "@/types/TraceProgress";
@@ -123,12 +124,12 @@ export function LiveTrace() {
             disabled={busy}
             className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-[color:var(--paper-raised)] transition-colors hover:bg-accent-strong disabled:opacity-40"
           >
+            <Search className="h-4 w-4" aria-hidden="true" />
             {state.status === "resolving"
               ? "Resolving…"
               : state.status === "tracing"
                 ? "Tracing…"
                 : "Trace"}
-            {!busy && <span aria-hidden="true">→</span>}
           </button>
           <span className="font-mono text-[11px] uppercase tracking-wide text-ink-faint">
             examples:
@@ -141,8 +142,9 @@ export function LiveTrace() {
                 setPhrase(ex.phrase);
                 setArticle("");
               }}
-              className="rounded-full border border-line-strong px-2.5 py-0.5 text-[12px] text-ink-muted transition-colors hover:border-ink hover:text-ink"
+              className="inline-flex items-center gap-1.5 rounded-full border border-line-strong px-2.5 py-0.5 text-[12px] text-ink-muted transition-colors hover:border-ink hover:text-ink"
             >
+              <Quote className="h-3 w-3" aria-hidden="true" />
               {ex.label}
             </button>
           ))}

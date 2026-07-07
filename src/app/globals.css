@@ -113,6 +113,27 @@ body {
   }
 }
 
+/* On-brand scrollbar for internal scroll panels (paper theme). */
+.scroll-panel {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.scroll-panel::-webkit-scrollbar {
+  width: 11px;
+}
+.scroll-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-panel::-webkit-scrollbar-thumb {
+  background-color: var(--line-strong);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.scroll-panel::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ink-faint);
+}
+
 @keyframes rise {
   from {
     opacity: 0;

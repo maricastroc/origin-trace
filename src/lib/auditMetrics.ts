@@ -32,6 +32,18 @@ export function sectionMetrics(section: AuditSection): SectionMetrics {
 
 export type AuditFilter = "all" | "attention" | "note" | "sourced" | "high";
 
+export type AuditSort =
+  | "article"
+  | "coverage-asc"
+  | "coverage-desc"
+  | "uncited"
+  | "high";
+
+export function matchesQuery(text: string, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  return q === "" || text.toLowerCase().includes(q);
+}
+
 export function matchesFilter(claim: AuditClaim, filter: AuditFilter): boolean {
   switch (filter) {
     case "all":

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import type { ArticleAudit as ArticleAuditData } from "@/types/ArticleAudit";
 import type { HighImpactItem } from "@/lib/auditModel";
 import { HighImpactCard } from "./HighImpactCard";
@@ -49,9 +50,10 @@ export function HighImpactBand({
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className="mt-3 font-mono text-[11px] text-ink-faint transition-colors hover:text-accent"
+          className="mt-3 inline-flex items-center gap-1 font-mono text-[11px] text-ink-faint transition-colors hover:text-accent"
         >
-          show {rest} more →
+          show {rest} more
+          <ChevronDown className="h-3 w-3" aria-hidden="true" />
         </button>
       )}
     </section>

@@ -1,30 +1,19 @@
+import { ChevronRight } from "lucide-react";
 import type { ArticleAudit as ArticleAuditData } from "@/types/ArticleAudit";
+import type { AuditClaim } from "@/types/AuditClaim";
 import type { AuditSection } from "@/types/AuditSection";
-import {
-  matchesFilter,
-  sectionMetrics,
-  sectionSlug,
-  type AuditFilter,
-} from "@/lib/auditMetrics";
+import { sectionMetrics, sectionSlug } from "@/lib/auditMetrics";
 import { ClaimRow } from "./ClaimRow";
 import { SegBar } from "./SegBar";
 
 function Chevron({ open }: { open: boolean }) {
   return (
-    <svg
-      viewBox="0 0 12 12"
-      className={`h-3 w-3 shrink-0 text-ink-faint transition-transform duration-200 ${
+    <ChevronRight
+      className={`h-3.5 w-3.5 shrink-0 text-ink-faint transition-transform duration-200 ${
         open ? "rotate-90" : ""
       }`}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       aria-hidden="true"
-    >
-      <path d="M4.5 2.5 8.5 6l-4 3.5" />
-    </svg>
+    />
   );
 }
 
@@ -32,23 +21,26 @@ export function SectionRow({
   section,
   index,
   article,
-  filter,
+  predicate,
+  active,
+  query,
   open,
   onToggle,
 }: {
   section: AuditSection;
   index: number;
   article: ArticleAuditData["article"];
-  filter: AuditFilter;
+  predicate: (claim: AuditClaim) => boolean;
+  active: boolean;
+  query: string;
   open: boolean;
   onToggle: () => void;
 }) {
   const m = sectionMetrics(section);
   const slug = sectionSlug(section.heading, index, section.isLead);
-  const filtered = filter !== "all";
-  const isOpen = open || filtered;
-  const claims = filtered
-    ? section.claims.filter((c) => matchesFilter(c, filter))
+  const isOpen = open || active;
+  const claims = active
+    ? section.claims.filter((c) => predicate(c))
     : section.claims;
   const pct = Math.round(m.coverage * 100);
 
@@ -72,7 +64,7 @@ export function SectionRow({
 
         <span className="ml-auto flex shrink-0 items-center gap-3 sm:gap-4">
           <span className="hidden w-14 text-right font-mono text-[11px] text-ink-faint tabular-nums sm:inline">
-            {filtered
+            {active
               ? `${claims.length} shown`
               : m.unsourced > 0
                 ? `${m.unsourced} uncited`
@@ -98,6 +90,7 @@ export function SectionRow({
               claim={claim}
               article={article}
               muted={section.isLead}
+              query={query}
             />
           ))}
         </ul>

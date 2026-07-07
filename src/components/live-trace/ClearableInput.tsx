@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { inputClass } from "@/lib/ui";
 
 export function ClearableInput({
@@ -7,14 +8,16 @@ export function ClearableInput({
   onChange,
   onClear,
   placeholder,
+  className = "",
 }: {
   value: string;
   onChange: (value: string) => void;
   onClear: () => void;
   placeholder?: string;
+  className?: string;
 }) {
   return (
-    <div className="relative">
+    <div className={`relative ${className}`}>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -28,17 +31,7 @@ export function ClearableInput({
           aria-label="Clear"
           className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-ink-faint transition-colors hover:bg-surface-2 hover:text-ink"
         >
-          <svg
-            viewBox="0 0 16 16"
-            className="h-3.5 w-3.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <path d="M4 4l8 8M12 4l-8 8" />
-          </svg>
+          <X className="h-3.5 w-3.5" />
         </button>
       )}
     </div>

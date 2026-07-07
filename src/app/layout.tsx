@@ -12,7 +12,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Display serif — the editorial voice of the headlines and case titles.
 const fraunces = Fraunces({
   variable: "--font-display",
   subsets: ["latin"],
@@ -20,7 +19,6 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
-// Reading serif — the claim itself, the thing under examination.
 const newsreader = Newsreader({
   variable: "--font-voice",
   subsets: ["latin"],

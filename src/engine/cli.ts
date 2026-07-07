@@ -1,12 +1,3 @@
-/**
- * CLI: trace a claim against the live Wikipedia API and print its
- * ClaimProvenance as JSON — the same shape the UI reads from the mocks.
- *
- *   node --experimental-strip-types src/engine/cli.ts <article> <phrase> [--lang en]
- *
- * Example:
- *   node --experimental-strip-types src/engine/cli.ts Quokka "happiest animal"
- */
 import { ClaimNotFoundError, traceClaim } from "./trace.ts";
 
 async function main(argv: string[]): Promise<number> {

@@ -1,4 +1,3 @@
-/** The reconstruction pipeline — the mechanism, made legible. */
 const PIPELINE: {
   n: string;
   title: string;
@@ -36,7 +35,6 @@ const PIPELINE: {
   },
 ];
 
-/** Why the verdict can be trusted — the properties that fall out of the method. */
 const PILLARS = [
   {
     n: "01",
@@ -68,7 +66,6 @@ export function Method() {
           <span className="text-accent">genealogy</span> that holds it up.
         </h2>
 
-        {/* Why it's hard — reframes the whole thing before the mechanism. */}
         <div className="mt-8 max-w-2xl border-l-2 border-accent pl-4 sm:pl-5">
           <p className="font-voice text-[20px] italic leading-snug text-ink sm:text-[22px]">
             Wikipedia stores the current article. It doesn&rsquo;t store the
@@ -82,7 +79,6 @@ export function Method() {
           </p>
         </div>
 
-        {/* The pipeline — the mechanism most visitors never see. */}
         <div className="mt-14">
           <p className="max-w-2xl text-[15px] leading-relaxed text-ink-muted">
             Every verdict is reconstructed from the article&rsquo;s{" "}
@@ -124,7 +120,6 @@ export function Method() {
                     )}
                   </div>
 
-                  {/* Flow arrows: rightward between columns, downward when stacked. */}
                   {!last && (
                     <>
                       <span
@@ -147,7 +142,6 @@ export function Method() {
           </ol>
         </div>
 
-        {/* Why the verdict holds — the trust properties. */}
         <div className="mt-16">
           <p className="kicker">{"// why the verdict holds"}</p>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-muted">

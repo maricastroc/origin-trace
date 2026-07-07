@@ -6,7 +6,6 @@ import { quokka } from "./quokka";
 export interface CaseEntry {
   id: string;
   label: string;
-  /** One-line stakes — why this case is worth opening. */
   hook: string;
   data: ClaimProvenance;
 }

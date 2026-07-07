@@ -1,13 +1,3 @@
-/**
- * Article audit: the cheap, structural "sourced map" of a whole article.
- *
- * One fetch of the current wikitext, then pure work — no history walk. The claim
- * boundary is taken from Wikipedia's own structure (a sentence, and whether a
- * <ref> sits on it), NOT from NLP. Segmentation is deliberately conservative and
- * honest about being heuristic; the per-sentence citation call reuses the exact
- * same rules as the per-claim trace (blame.ts), so "what counts as a citation"
- * lives in one place.
- */
 import type {
   ArticleAudit,
   AuditClaim,
@@ -41,8 +31,6 @@ export async function auditArticle(input: AuditInput): Promise<ArticleAudit> {
     cache: input.cache,
   });
 
-  // The client throws a generic "Article not found" for a missing page and
-  // returns null for a page with no readable content; both are the same 404 here.
   const current = await client.getCurrentContent(input.article).catch((err) => {
     if (err instanceof Error && /not found/i.test(err.message)) {
       throw new ArticleNotFoundError(input.article, lang);
@@ -74,9 +62,6 @@ export async function auditArticle(input: AuditInput): Promise<ArticleAudit> {
   };
 }
 
-// --- Segmentation ----------------------------------------------------------
-
-/** Level-2 sections that are apparatus, not prose — skipped wholesale. */
 const APPARATUS =
   /^(references?|notes?|footnotes?|citations?|sources?|bibliography|further reading|external links?|see also|works cited|explanatory notes?)$/i;
 
@@ -87,14 +72,10 @@ interface RawSection {
   body: string;
 }
 
-/**
- * Split wikitext into sections, classify each sentence. The lead is the text
- * before the first heading; apparatus sections are dropped.
- */
 export function segmentArticle(wikitext: string): AuditSection[] {
   const clean = wikitext
-    .replace(/<!--[\s\S]*?-->/g, "") // HTML comments
-    .replace(/<!--[\s\S]*$/g, ""); // an unterminated trailing comment
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<!--[\s\S]*$/g, "");
 
   const raw = splitSections(clean);
   const out: AuditSection[] = [];
@@ -132,7 +113,6 @@ export function segmentArticle(wikitext: string): AuditSection[] {
   return out;
 }
 
-/** Break wikitext at `== Heading ==` lines; the pre-heading text is the lead. */
 function splitSections(text: string): RawSection[] {
   const headingRe = /^(={2,6})\s*(.+?)\s*\1\s*$/gm;
   const sections: RawSection[] = [];
@@ -158,14 +138,6 @@ function splitSections(text: string): RawSection[] {
   return sections;
 }
 
-/**
- * Split a section body into sentences over its *prose* lines only. Block-level
- * non-prose (tables, templates, lists, file/image lines, headings-in-body) is
- * dropped first; then <ref>/{{template}} spans are masked so their internal
- * periods don't create false boundaries, and we split on sentence terminators
- * with an abbreviation guard. Returns raw sentence slices (refs intact) for
- * classification.
- */
 export function sentences(body: string): string[] {
   const prose = proseLines(body);
   const out: string[] = [];
@@ -178,7 +150,6 @@ export function sentences(body: string): string[] {
   return out;
 }
 
-/** Keep only paragraph lines that read as prose; strip tables and templates. */
 function proseLines(body: string): string[] {
   const withoutTables = stripTables(body);
   const paras: string[] = [];
@@ -187,9 +158,8 @@ function proseLines(body: string): string[] {
     for (const line of block.split("\n")) {
       const t = line.trim();
       if (!t) continue;
-      // Lists, definitions, table rows, file/image embeds, hatnotes, headings.
       if (/^[*#:;!|]/.test(t)) continue;
-      if (/^\{\{/.test(t) && /\}\}$/.test(t)) continue; // a whole-line template
+      if (/^\{\{/.test(t) && /\}\}$/.test(t)) continue;
       if (/^\[\[\s*(File|Image|Category)\s*:/i.test(t)) continue;
       if (/^(={2,6})\s*.+\1$/.test(t)) continue;
       if (/^<\/?(gallery|table|blockquote|div|ref|references)/i.test(t)) continue;
@@ -200,7 +170,6 @@ function proseLines(body: string): string[] {
   return paras;
 }
 
-/** Remove `{| … |}` wikitable blocks (they hold no auditable prose claims). */
 function stripTables(text: string): string {
   let out = "";
   let depth = 0;
@@ -221,22 +190,12 @@ function stripTables(text: string): string {
   return out;
 }
 
-/** Abbreviations that end in a period but not a sentence. */
 const ABBR = new Set([
   "mr", "mrs", "ms", "dr", "prof", "st", "mt", "no", "vs", "etc", "al",
   "e.g", "i.e", "cf", "c", "ca", "fig", "gen", "sen", "rep", "gov", "col",
   "jr", "sr", "inc", "ltd", "co", "corp", "u.s", "u.k", "a.d", "b.c",
 ]);
 
-/**
- * Split one prose paragraph into sentences, robust to markup and abbreviations.
- *
- * Boundaries are found on a masked copy (periods inside <ref>/{{…}} don't count).
- * Crucially, a citation in wikitext follows the terminal period — `claim.<ref>…`
- * — so once a boundary is found we *extend* the sentence to swallow any trailing
- * ref/template spans, keeping the citation with the sentence it backs instead of
- * orphaning it onto the next one.
- */
 function splitSentences(para: string): string[] {
   const masked = maskString(para);
   const ranges = maskedRanges(para);
@@ -247,11 +206,9 @@ function splitSentences(para: string): string[] {
     const ch = masked[i];
     if (ch !== "." && ch !== "!" && ch !== "?") continue;
 
-    // Consume a run of terminators (e.g. "?!", "...").
     let j = i;
     while (j + 1 < masked.length && ".!?".includes(masked[j + 1])) j++;
 
-    // Decimals (3.5) and abbreviations (U.S., e.g.) are not boundaries.
     if (ch === "." && /\d/.test(masked[i + 1] ?? "")) {
       i = j;
       continue;
@@ -261,8 +218,6 @@ function splitSentences(para: string): string[] {
       continue;
     }
 
-    // Pull any citation/template spans that sit right after the period into this
-    // sentence, then require whitespace + an opener (or end) to call it a break.
     const end = swallowTrailing(j + 1, para, ranges);
     const after = masked.slice(end);
     const gap = after.match(/^\s+/)?.[0] ?? "";
@@ -285,12 +240,6 @@ function splitSentences(para: string): string[] {
   return out;
 }
 
-/**
- * From index `from`, consume ref/template spans that sit right after the period
- * (`claim.<ref>…`, possibly across a space), returning the new sentence end.
- * Works on the original text + ranges so real whitespace is distinguishable from
- * a masked span (both look like spaces in the masked copy).
- */
 function swallowTrailing(
   from: number,
   para: string,
@@ -299,7 +248,6 @@ function swallowTrailing(
   let end = from;
   for (;;) {
     let p = end;
-    // Skip real whitespace that is not itself inside a masked span.
     while (p < para.length && /\s/.test(para[p]) && !inRange(p, ranges)) p++;
     const span = ranges.find(([a]) => a === p);
     if (!span) break;
@@ -312,18 +260,15 @@ function inRange(i: number, ranges: [number, number][]): boolean {
   return ranges.some(([a, b]) => i >= a && i < b);
 }
 
-/** Is the word ending at index `i` (a period) a known abbreviation? */
 function isAbbrevBefore(text: string, i: number): boolean {
   const before = text.slice(Math.max(0, i - 12), i);
   const word = before.match(/([A-Za-z.]+)$/)?.[1]?.toLowerCase() ?? "";
   if (!word) return false;
   if (ABBR.has(word)) return true;
-  // A single capital letter + period is an initial (e.g. "J. R. R.").
   const rawWord = text.slice(Math.max(0, i - 12), i).match(/([A-Za-z.]+)$/)?.[1] ?? "";
   return /^[A-Z]$/.test(rawWord);
 }
 
-/** Replace <ref>/{{template}} spans with spaces of equal length (indices intact). */
 function maskString(text: string): string {
   const ranges = maskedRanges(text);
   if (ranges.length === 0) return text;
@@ -336,42 +281,32 @@ function maskString(text: string): string {
   return chars.join("");
 }
 
-// --- Display cleaning & filtering ------------------------------------------
-
-/** Turn a raw wikitext sentence into readable prose (refs and markup gone). */
 function cleanProse(sentence: string): string {
   return sentence
     .replace(/<ref[^>]*\/>/g, "")
     .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, "")
-    .replace(/\{\{[^{}]*\}\}/g, unwrapTemplate) // keep values from {{convert}} etc.
-    .replace(/\{\{[^{}]*\}\}/g, "") // any leftover (nested) template
+    .replace(/\{\{[^{}]*\}\}/g, unwrapTemplate)
+    .replace(/\{\{[^{}]*\}\}/g, "")
     .replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, "$1")
     .replace(/\[https?:\/\/\S+\s+([^\]]*)\]/g, "$1")
     .replace(/'{2,}/g, "")
     .replace(/<[^>]+>/g, "")
-    .replace(/\([^A-Za-z0-9]*\)/g, "") // parens emptied to just punctuation
-    .replace(/\(\s*[,;\s]+/g, "(") // leading punctuation residue inside parens
-    .replace(/\s+([.,;:)])/g, "$1") // tidy space left before punctuation
-    .replace(/([,;])\1+/g, "$1") // collapsed duplicate separators
+    .replace(/\([^A-Za-z0-9]*\)/g, "")
+    .replace(/\(\s*[,;\s]+/g, "(")
+    .replace(/\s+([.,;:)])/g, "$1")
+    .replace(/([,;])\1+/g, "$1")
     .replace(/\(\s+/g, "(")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-/**
- * Render the readable payload of the handful of inline templates that carry
- * prose values, so stripping them doesn't leave gaps like "weighs and is long".
- * Everything else collapses to empty.
- */
 function unwrapTemplate(tpl: string): string {
   const inner = tpl.slice(2, -2);
   const parts = inner.split("|");
   const name = parts[0].trim().toLowerCase();
-  const args = parts.slice(1).filter((p) => !p.includes("=")); // drop named args
+  const args = parts.slice(1).filter((p) => !p.includes("="));
 
   if (name === "convert" || name === "cvt") {
-    // Keep the input value(s) and the first unit; drop the converted duplicate.
-    // {{convert|2.5|5|kg|lb}} → "2.5–5 kg"; {{convert|1.5|m}} → "1.5 m".
     const nums: string[] = [];
     let unit = "";
     for (const a of args) {
@@ -387,20 +322,17 @@ function unwrapTemplate(tpl: string): string {
     return `${value} ${unit}`.replace(/\s*–\s*/g, "–").trim();
   }
   if (["lang", "transl", "transliteration"].includes(name)) {
-    return args[args.length - 1] ?? ""; // last positional is the text
+    return args[args.length - 1] ?? "";
   }
   if (["nowrap", "nobr", "sic", "'"].includes(name)) return args.join(" ");
   return "";
 }
 
-/** A sentence worth auditing: real prose, not a stub of leftover markup. */
 function isAuditable(text: string): boolean {
-  if (text.length < 25) return false; // too short to be a claim
+  if (text.length < 25) return false;
   const letters = text.replace(/[^a-zA-Z]/g, "").length;
-  return letters >= 15 && /[a-z]/.test(text); // has real words
+  return letters >= 15 && /[a-z]/.test(text);
 }
-
-// --- Tally -----------------------------------------------------------------
 
 function tally(sections: AuditSection[]): ArticleAudit["summary"] {
   const body = emptyTally();

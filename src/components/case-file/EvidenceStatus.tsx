@@ -3,11 +3,6 @@ import { deriveSignals } from "@/lib/evidenceSignals";
 import { verdictStyle } from "@/lib/verdictStyle";
 import { VerdictStamp } from "./VerdictStamp";
 
-/**
- * The answer, up top: not "when did it appear" but "what is the epistemic state
- * of this claim." Leads the case file; the timeline below is the auditable
- * evidence for it.
- */
 export function EvidenceStatus({ data }: { data: ClaimProvenance }) {
   const s = verdictStyle[data.verdict.primary];
   const signals = deriveSignals(data.timeline, new Date());

@@ -2,15 +2,6 @@ import type { ClaimProvenance } from "@/types/ClaimProvenance";
 
 type Corpus = NonNullable<ClaimProvenance["meta"]["corpus"]>;
 
-/**
- * The closed-corpus receipt — the quiet proof that makes the verdict weigh more
- * than a spinner's flash. Not "I searched and found X," but "the whole history
- * is this big; because the corpus is closed, the origin is a proof of absence
- * below it, not a sample."
- *
- * Live engine traces carry a binary-search read count; hand traces don't, so
- * they show the corpus size and say plainly that they were traced by hand.
- */
 export function CorpusReceipt({
   corpus,
   manual,

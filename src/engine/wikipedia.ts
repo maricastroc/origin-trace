@@ -1,25 +1,14 @@
-/**
- * Thin typed client for the MediaWiki Action API.
- *
- * The engine's only door to the outside world. Everything downstream
- * (blame, trace) is pure and operates on the data this returns, so it can be
- * unit-tested against recorded fixtures by swapping the `fetchJson` transport.
- */
 import type { EngineCache } from "./cache.ts";
 
-/** One revision's metadata — the cheap enumeration, no content. */
 export interface RevisionMeta {
   revid: number;
   parentid: number;
-  /** ISO 8601, e.g. "2016-07-11T02:14:07Z". */
   timestamp: string;
   user?: string;
   comment?: string;
-  /** Marked as a minor edit by its author. */
   minor: boolean;
 }
 
-/** The transport seam: replace in tests to serve recorded API responses. */
 export type FetchJson = (url: string) => Promise<unknown>;
 
 const USER_AGENT =
@@ -36,22 +25,12 @@ const defaultFetchJson: FetchJson = async (url) => {
 export interface WikipediaClientOptions {
   lang?: string;
   fetchJson?: FetchJson;
-  /**
-   * Cap on revision-list pages (500 revs each). A closed corpus is the whole
-   * point, so the default is generous; callers get told when it bites.
-   */
   maxPages?: number;
-  /**
-   * Optional process-wide cache. When present, the revision list and per-revid
-   * wikitext are served from it — the dominant cost of a repeat trace. Left
-   * undefined in tests so injected fixtures stay deterministic.
-   */
   cache?: EngineCache;
 }
 
 export interface RevisionList {
   revisions: RevisionMeta[];
-  /** True if `maxPages` cut the enumeration short — closure is then unproven. */
   truncated: boolean;
 }
 
@@ -78,11 +57,6 @@ export class WikipediaClient {
     return `${base}?${query.toString()}`;
   }
 
-  /**
-   * Enumerate every revision of an article, oldest first (index 0 is the
-   * article's birth). Ascending index === chronological order, which is what
-   * the binary search in blame.ts assumes.
-   */
   async listRevisions(title: string): Promise<RevisionList> {
     const cached = this.cache?.getList(this.lang, title);
     if (cached) return cached;
@@ -96,9 +70,6 @@ export class WikipediaClient {
         action: "query",
         prop: "revisions",
         titles: title,
-        // Only ids + timestamp are consumed downstream (index order + dates).
-        // Dropping user/comment/flags shrinks every page of the sequential
-        // pagination — the enumeration is the trace's fixed up-front cost.
         rvprop: "ids|timestamp",
         rvlimit: "max",
         rvdir: "newer",
@@ -129,11 +100,6 @@ export class WikipediaClient {
     return result;
   }
 
-  /**
-   * Fetch the raw wikitext of specific revisions. Batched (the API takes up to
-   * 50 revids per request), returned as a revid→wikitext map. Missing/hidden
-   * revisions are simply absent from the map.
-   */
   async getContent(revids: number[]): Promise<Map<number, string>> {
     const out = new Map<number, string>();
     for (let i = 0; i < revids.length; i += 50) {
@@ -156,10 +122,9 @@ export class WikipediaClient {
     return out;
   }
 
-  /** Convenience: wikitext of a single revision, or null if unavailable. */
   async getRevisionContent(revid: number): Promise<string | null> {
     const cached = this.cache?.getContent(this.lang, revid);
-    if (cached !== undefined) return cached; // null is a valid cached value
+    if (cached !== undefined) return cached;
 
     const map = await this.getContent([revid]);
     const content = map.get(revid) ?? null;
@@ -167,12 +132,6 @@ export class WikipediaClient {
     return content;
   }
 
-  /**
-   * The current revision's wikitext in one request — the article audit's only
-   * network cost. No history walk: `rvlimit=1` newest-first is the live state.
-   * The content is cached by its (immutable) revid, so a subsequent trace of a
-   * claim in this article reuses it for free.
-   */
   async getCurrentContent(
     title: string,
   ): Promise<{ revid: number; content: string; timestamp: string } | null> {
@@ -183,7 +142,7 @@ export class WikipediaClient {
       rvprop: "ids|timestamp|content",
       rvslots: "main",
       rvlimit: "1",
-      rvdir: "older", // newest first ⇒ the current revision
+      rvdir: "older",
     };
     const data = (await this.fetchJson(this.endpoint(params))) as ApiResponse;
     const page = data.query?.pages?.[0];
@@ -197,11 +156,6 @@ export class WikipediaClient {
     return { revid: rev.revid, content, timestamp: rev.timestamp ?? "" };
   }
 
-  /**
-   * Full-text search over article titles/content. Used to resolve a phrase to
-   * candidate articles. Pass a raw query (e.g. a phrase) for ranked/fuzzy hits,
-   * or `insource:"exact phrase"` for verbatim current-wikitext matches.
-   */
   async search(query: string, limit = 8): Promise<SearchHit[]> {
     const params: Record<string, string> = {
       action: "query",
@@ -209,7 +163,7 @@ export class WikipediaClient {
       srsearch: query,
       srlimit: String(limit),
       srprop: "snippet",
-      srnamespace: "0", // articles only
+      srnamespace: "0",
     };
     const data = (await this.fetchJson(this.endpoint(params))) as ApiResponse;
     return (data.query?.search ?? []).map((h) => ({
@@ -219,13 +173,11 @@ export class WikipediaClient {
   }
 }
 
-/** One search result: an article title and a plain-text context snippet. */
 export interface SearchHit {
   title: string;
   snippet: string;
 }
 
-/** Strip the HTML the search API returns in snippets down to plain text. */
 function stripSnippet(html: string): string {
   return html
     .replace(/<[^>]+>/g, "")
@@ -236,8 +188,6 @@ function stripSnippet(html: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
-
-// --- Minimal shape of the formatversion=2 Action API JSON we consume. ---
 
 interface ApiRevision {
   revid: number;

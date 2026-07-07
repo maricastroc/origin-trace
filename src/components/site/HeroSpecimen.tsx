@@ -1,10 +1,8 @@
 import { VerdictStamp } from "../case-file/VerdictStamp";
 
-/** A showpiece case file for the hero — real Quokka provenance, at a glance. */
 export function HeroSpecimen() {
   return (
     <div className="relative">
-      {/* stacked-paper illusion behind the card */}
       <div
         className="absolute inset-0 translate-x-2 translate-y-2 rounded-xl border border-line bg-surface-2/60"
         aria-hidden="true"

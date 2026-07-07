@@ -1,38 +1,23 @@
-/**
- * Scope resolution: given only a phrase, find which article(s) it could belong
- * to — WITHOUT pretending to be confident when it isn't.
- *
- * The rule, on purpose: the engine only pins a scope by itself when the phrase
- * appears verbatim in exactly one current article. Every other case — several
- * verbatim matches (a propagation signal), only fuzzy matches (wording may have
- * drifted), or nothing — returns the ambiguity for the human to resolve. It
- * never silently traces the wrong article.
- */
 import { WikipediaClient, type FetchJson, type SearchHit } from "./wikipedia.ts";
 
 export interface ArticleCandidate {
   title: string;
   snippet: string;
-  /** The phrase appears verbatim in this article's current wikitext. */
   exactWikitextMatch: boolean;
-  /** 1-based rank in the fuzzy relevance search, or null if absent from it. */
   fuzzyRank: number | null;
 }
 
 export interface Resolution {
   phrase: string;
   scope: "unambiguous" | "ambiguous" | "not-found";
-  /** Set only when scope === "unambiguous". */
   resolved: string | null;
   candidates: ArticleCandidate[];
-  /** An honest one-line account of why the scope is (or isn't) settled. */
   note: string;
 }
 
 export interface ResolveOptions {
   lang?: string;
   fetchJson?: FetchJson;
-  /** How many candidates to surface. */
   limit?: number;
 }
 
@@ -46,7 +31,6 @@ export async function resolveArticles(
   });
   const limit = opts.limit ?? 6;
 
-  // Quotes would break the insource:"..." wrapper — strip them for the probe.
   const clean = phrase.replace(/["“”]/g, " ").replace(/\s+/g, " ").trim();
 
   const [exact, fuzzy] = await Promise.all([

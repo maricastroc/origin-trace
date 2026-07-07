@@ -1,4 +1,3 @@
-/** The provenance spine in miniature — an origin node dropping to a later one. */
 export function Mark({ className = "" }: { className?: string }) {
   return (
     <svg

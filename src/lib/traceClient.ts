@@ -1,21 +1,8 @@
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
-
-/** Mirrors the engine's TraceProgress — a type-only shape, no runtime import. */
-export type TraceProgress =
-  | { phase: "listing" }
-  | { phase: "listed"; revisions: number; truncated: boolean }
-  | { phase: "searching"; read: number; estimate: number }
-  | { phase: "located"; year: string; removed: boolean }
-  | { phase: "reading" }
-  | { phase: "detecting" };
+import type { TraceProgress } from "@/types/TraceProgress";
 
 const enc = encodeURIComponent;
 
-/**
- * Consume the /api/trace SSE stream to completion. Resolves with the provenance,
- * throws on a terminal error. Shared by the live claim explorer and the article
- * audit's per-sentence drill-down so the streaming logic lives in one place.
- */
 export async function streamTrace(opts: {
   article: string;
   phrase: string;
@@ -30,7 +17,6 @@ export async function streamTrace(opts: {
     { signal },
   );
 
-  // A non-stream error (e.g. 400 validation) still comes back as JSON.
   if (!res.ok || !res.body) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `Error ${res.status}`);
@@ -45,7 +31,6 @@ export async function streamTrace(opts: {
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
 
-    // SSE frames are separated by a blank line; keep the trailing partial.
     const frames = buffer.split("\n\n");
     buffer = frames.pop() ?? "";
     for (const frame of frames) {

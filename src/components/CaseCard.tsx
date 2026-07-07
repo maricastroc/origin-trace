@@ -25,7 +25,7 @@ export function CaseCard({
     >
       {active && (
         <span
-          className="absolute -left-px top-5 h-8 w-[3px] rounded-r bg-accent"
+          className="absolute -left-px top-5 h-8 w-0.75 rounded-r bg-accent"
           aria-hidden="true"
         />
       )}

@@ -1,43 +1,32 @@
 @import "tailwindcss";
 
-/*
- * Origin Trace — "archival dossier"
- * Warm paper, near-black ink, forensic monospace, editorial serif, and a
- * single oxblood accent. One art-directed light theme (no auto dark): the
- * paper is the point.
- */
-
 :root {
   color-scheme: light;
 
-  /* Paper & ink */
-  --paper: #f4efe4; /* the page — warm ivory */
-  --paper-sunken: #ebe3d3; /* aged insets, wells */
-  --paper-raised: #fcfaf4; /* raised cards, near-white warm */
-  --ink: #221e18; /* primary text — warm near-black */
-  --ink-muted: #5b5246; /* secondary text */
-  --ink-faint: #9a8c76; /* metadata, captions */
-  --line: #e2d9c7; /* hairline rules */
-  --line-strong: #cabda3; /* stronger borders */
+  --paper: #f4efe4;
+  --paper-sunken: #ebe3d3;
+  --paper-raised: #fcfaf4;
+  --ink: #221e18;
+  --ink-muted: #5b5246;
+  --ink-faint: #9a8c76;
+  --line: #e2d9c7;
+  --line-strong: #cabda3;
 
-  /* Oxblood — the signature */
   --accent: #8a2b26;
   --accent-strong: #6c201c;
-  --accent-tint: #efdfd7; /* accent wash on paper */
+  --accent-tint: #efdfd7;
 
-  /* Rubber-stamp verdict palette (ink + tint, tuned for paper) */
-  --success: #3f6b45; /* born-sourced */
+  --success: #3f6b45;
   --success-bg: #e4ecdf;
-  --warn: #8a6414; /* churn / contested — ochre */
+  --warn: #8a6414;
   --warn-bg: #efe6cd;
-  --danger: #8a2b26; /* retrofit / unsourced / no-source — oxblood */
+  --danger: #8a2b26;
   --danger-bg: #efdfd7;
-  --neutral: #5b5246; /* ambiguous */
+  --neutral: #5b5246;
   --neutral-bg: #e8e0d0;
 }
 
 @theme inline {
-  /* Surfaces keep their names; the palette beneath them changed. */
   --color-surface-0: var(--paper);
   --color-surface-1: var(--paper-sunken);
   --color-surface-2: var(--paper-raised);
@@ -69,7 +58,6 @@
 
 body {
   background-color: var(--paper);
-  /* Faint paper depth — barely-there warm vignette, no image. */
   background-image:
     radial-gradient(
       120% 80% at 50% -10%,
@@ -87,13 +75,11 @@ body {
   font-feature-settings: "ss01", "cv01";
 }
 
-/* Selection in oxblood — a small brand moment. */
 ::selection {
   background: var(--accent);
   color: var(--paper-raised);
 }
 
-/* Forensic kicker: the "// ..." and "01 · ..." mono labels. */
 .kicker {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
@@ -102,7 +88,6 @@ body {
   color: var(--ink-faint);
 }
 
-/* Blinking cursor for the hero. */
 @keyframes blink {
   0%,
   49% {
@@ -128,7 +113,6 @@ body {
   }
 }
 
-/* Gentle entrance for content that swaps in (the opened dossier). */
 @keyframes rise {
   from {
     opacity: 0;

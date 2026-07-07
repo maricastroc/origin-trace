@@ -3,10 +3,6 @@ import type { Verdict } from "@/types/Verdict";
 import { confidenceLabel } from "@/lib/confidenceLabel";
 import { verdictStyle } from "@/lib/verdictStyle";
 
-/**
- * The verdict as a rubber stamp on a case file — the punchline of the whole
- * investigation, given the weight it deserves.
- */
 export function VerdictStamp({
   verdict,
   confidence,

@@ -3,25 +3,15 @@ import type { Verdict } from "@/types/Verdict";
 export type Severity = "good" | "caution" | "warn" | "alert" | "neutral";
 
 interface VerdictStyle {
-  /** The enum, shown as-is — it is the product's vocabulary. */
   label: string;
-  /** One-word evidence-health read (the headline answer). */
   health: string;
-  /** Short gloss for chips and legends. */
   gloss: string;
-  /** Plain-language meaning — why this status matters. */
   meaning: string;
-  /** Risk tier, drives color and ordering. */
   severity: Severity;
-  /** Order in the taxonomy legend, best → worst. */
   rank: number;
-  /** Background wash (Tailwind class). */
   tint: string;
-  /** Ink/foreground (Tailwind class). */
   ink: string;
-  /** Border color (Tailwind class). */
   border: string;
-  /** Status dot background (Tailwind class). */
   dot: string;
 }
 
@@ -33,12 +23,6 @@ const PALETTE: Record<Severity, Pick<VerdictStyle, "tint" | "ink" | "border" | "
   neutral: { tint: "bg-neutral-bg", ink: "text-neutral", border: "border-neutral", dot: "bg-neutral" },
 };
 
-/**
- * Maps the semantic verdict to presentation. This is the ONLY place the
- * engine's meaning becomes a color — the contract itself stays styling-free.
- * The verdict is a classification of the claim's evidence history; the palette
- * grades it by epistemic risk, like rubber stamps on a case file.
- */
 export const verdictStyle: Record<Verdict, VerdictStyle> = {
   "born-sourced": {
     label: "born-sourced",

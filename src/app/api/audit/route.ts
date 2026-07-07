@@ -1,19 +1,9 @@
 import { ArticleNotFoundError, auditArticle } from "@/engine/audit.ts";
 import { sharedEngineCache } from "@/engine/cache.ts";
 
-/** Reads live wikitext with Node's fetch — Node.js runtime. */
 export const runtime = "nodejs";
-/** One big article fetch + parse; generous but bounded. */
 export const maxDuration = 60;
 
-/**
- * GET /api/audit?article=Quokka&lang=en
- *
- * The cheap tier: a single-fetch, deterministic "sourced map" of the article's
- * current revision — which sentences carry an inline citation and which assert
- * without one. Per-claim history (retrofit/churn) is the expensive tier, run on
- * demand via /api/trace against a flagged sentence.
- */
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const article = searchParams.get("article")?.trim();

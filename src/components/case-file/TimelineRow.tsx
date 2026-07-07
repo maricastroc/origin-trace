@@ -6,10 +6,10 @@ import { UnlinkIcon } from "./icons";
 
 function nodeClass(event: TimelineEvent): string {
   if (event.kind === "claim-absent") {
-    return "border-line-strong bg-surface-2"; // hollow — not yet present
+    return "border-line-strong bg-surface-2";
   }
   if (event.source === null) {
-    return "border-danger bg-danger"; // unsourced — the alarming state
+    return "border-danger bg-danger";
   }
   if (event.kind === "current") {
     return "border-ink bg-ink ring-2 ring-line-strong ring-offset-2 ring-offset-[color:var(--paper-raised)]";

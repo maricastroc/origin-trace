@@ -62,7 +62,6 @@ function NavLink({
   );
 }
 
-/** The pipeline, in miniature — nodes on a line. */
 function MethodIcon() {
   return (
     <svg
@@ -82,7 +81,6 @@ function MethodIcon() {
   );
 }
 
-/** A document with sourced/unsourced lines. */
 function AuditIcon() {
   return (
     <svg
@@ -101,7 +99,6 @@ function AuditIcon() {
   );
 }
 
-/** Stacked dossiers. */
 function CasesIcon() {
   return (
     <svg

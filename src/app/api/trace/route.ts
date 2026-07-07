@@ -1,21 +1,9 @@
 import { ClaimNotFoundError, traceClaim } from "@/engine/trace.ts";
 import { sharedEngineCache } from "@/engine/cache.ts";
 
-/** The engine uses Node's fetch and reads live wikitext — Node.js runtime. */
 export const runtime = "nodejs";
-/** A full trace does dozens of sequential reads; give it room (Vercel hint). */
 export const maxDuration = 120;
 
-/**
- * GET /api/trace?article=Quokka&phrase=happiest%20animal&lang=en
- *
- * Streams the WikiBlame pipeline as Server-Sent Events so the UI can show real
- * progress instead of a faked spinner. Each message is one JSON object:
- *   { type: "progress", progress: TraceProgress }
- *   { type: "result",   data: ClaimProvenance }   // terminal, success
- *   { type: "error",    message: string }          // terminal, failure
- * Repeat traces of the same article are served from an in-process cache.
- */
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const article = searchParams.get("article")?.trim();
@@ -38,7 +26,6 @@ export async function GET(request: Request): Promise<Response> {
         try {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
         } catch {
-          // Client went away mid-stream — stop trying to write.
           closed = true;
         }
       };
@@ -71,7 +58,6 @@ export async function GET(request: Request): Promise<Response> {
       "Content-Type": "text/event-stream; charset=utf-8",
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
-      // Defeat proxy buffering (e.g. nginx) so events flush as they happen.
       "X-Accel-Buffering": "no",
     },
   });

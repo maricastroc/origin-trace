@@ -1,6 +1,6 @@
-import { ArticleAudit } from "@/components/ArticleAudit";
+import { ArticleAudit } from "@/components/article-audit/ArticleAudit";
 import { CaseExplorer } from "@/components/CaseExplorer";
-import { LiveTrace } from "@/components/LiveTrace";
+import { LiveTrace } from "@/components/live-trace/LiveTrace";
 import { Hero } from "@/components/site/Hero";
 import { Masthead } from "@/components/site/Masthead";
 import { Method } from "@/components/site/Method";
@@ -16,7 +16,6 @@ export default function Home() {
         <Method />
         <Taxonomy />
 
-        {/* The cases — a sunken band to set the dossiers apart. */}
         <section
           id="cases"
           className="scroll-mt-16 border-y border-line bg-surface-1/45"
@@ -41,7 +40,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Live explorer. */}
         <section id="live" className="scroll-mt-16">
           <div className="mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
             <p className="kicker">{"// live"}</p>
@@ -62,7 +60,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Whole-article audit — the sourced map. A sunken band to set it apart. */}
         <section
           id="audit"
           className="scroll-mt-16 border-t border-line bg-surface-1/45"

@@ -1,14 +1,3 @@
-/**
- * The orchestrator — the seam the whole project was built around.
- *
- * It composes the API client and the blame primitive into a ClaimProvenance,
- * the exact contract the UI already consumes from the hand-written mocks. The
- * only visible difference is `meta.generatedBy: "wikiblame-pipeline"`.
- *
- * It is deliberately conservative: the engine reports `confidence: "low"` and
- * spells out its assumptions in `meta.notes`, because a single-phrase trace with
- * heuristic <ref> detection is a first cut, not the manual traces' authority.
- */
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
 import type { TimelineEvent } from "@/types/TimelineEvent";
 import type { Verdict } from "@/types/Verdict";
@@ -21,10 +10,6 @@ import {
 import { WikipediaClient, type FetchJson } from "./wikipedia.ts";
 import type { EngineCache } from "./cache.ts";
 
-/**
- * A live milestone from the pipeline. Structured, not prose — the UI decides
- * the wording and turns `read`/`estimate` into a real progress bar.
- */
 export type TraceProgress =
   | { phase: "listing" }
   | { phase: "listed"; revisions: number; truncated: boolean }
@@ -34,24 +19,16 @@ export type TraceProgress =
   | { phase: "detecting" };
 
 export interface TraceInput {
-  /** Article title as it appears in the URL, e.g. "Quokka". */
   article: string;
-  /** The claim phrase to locate in the revision history. */
   phrase: string;
   lang?: string;
-  /** Display text for the claim; defaults to `phrase`. */
   claimText?: string;
-  /** Cap on revision-list pages (see WikipediaClient). */
   maxPages?: number;
-  /** Test seam: inject a recorded transport. */
   fetchJson?: FetchJson;
-  /** Process-wide cache for the live API path; omit in tests. */
   cache?: EngineCache;
-  /** Live milestone sink — the seam for a streaming/progress UI. */
   onProgress?: (progress: TraceProgress) => void;
 }
 
-/** Thrown when the phrase is not found in any revision we read. */
 export class ClaimNotFoundError extends Error {
   readonly article: string;
   readonly phrase: string;
@@ -73,16 +50,10 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   });
 
   const emit = input.onProgress ?? (() => {});
-  // The binary search is the phase whose reads we can count and report; the two
-  // tail reads below are almost always cache hits from the search, so we don't
-  // narrate them individually.
   let phase: "searching" | "reading" = "searching";
   let reads = 0;
   let estimate = 12;
 
-  // One cache shared by the whole trace — the binary search and the later
-  // detail reads never fetch the same revision twice. Each real read (cache
-  // miss) advances the progress bar during the search phase.
   const cache = new Map<number, string | null>();
   const read: ContentReader = async (revid) => {
     if (cache.has(revid)) return cache.get(revid)!;
@@ -98,8 +69,6 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   emit({ phase: "listing" });
   const { revisions, truncated } = await client.listRevisions(input.article);
   if (revisions.length === 0) throw new ClaimNotFoundError(input.article, input.phrase);
-  // A gap-robust search costs a handful of O(log n) passes; this is a generous
-  // upper hint so the bar advances smoothly and rarely saturates early.
   estimate = Math.max(6, Math.ceil(Math.log2(revisions.length + 1)) * 2);
   emit({ phase: "listed", revisions: revisions.length, truncated });
 
@@ -129,8 +98,6 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   const nowSourced = currentRef.sourced;
   const bornAtLatest = intro.index === revisions.length - 1;
 
-  // An explanatory footnote sits on the claim but sources nothing — only worth
-  // surfacing where the claim is otherwise unsourced (a real citation would win).
   const bornNoteOnly = !bornSourced && introRef.note;
   const nowNoteOnly = !nowSourced && currentRef.note;
 
@@ -140,7 +107,6 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       ? "retrofit"
       : "unsourced-stable";
 
-  // --- Timeline ---
   const timeline: TimelineEvent[] = [];
 
   if (intro.priorRevision) {
@@ -157,7 +123,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     date: yearMonth(intro.revision.timestamp),
     kind: "claim-introduced",
     wording: excerpt(introContent, input.phrase),
-    source: introRef.source, // null ⇒ provably unsourced at birth
+    source: introRef.source,
     revId: intro.revision.revid,
     ...(bornNoteOnly ? { hasExplanatoryNote: true } : {}),
   });
@@ -229,8 +195,6 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   };
 }
 
-// --- Prose (Portuguese, matching the hand-written mocks' voice) -------------
-
 function summarize(primary: Verdict, removed: boolean): string {
   if (removed) return "The claim existed and was later removed from the article.";
   switch (primary) {
@@ -287,16 +251,10 @@ function sourceQualityFor(
   };
 }
 
-/**
- * Caveats worth spelling out. The revisions-read count now lives in
- * `meta.corpus` (the receipt), so notes carry only what the reader must weigh.
- */
 function buildNotes(intro: { assumptionViolated: boolean }): string | undefined {
   if (!intro.assumptionViolated) return undefined;
   return "non-monotonic presence at the boundary — the window may not be the first occurrence; verify.";
 }
-
-// --- Small text helpers -----------------------------------------------------
 
 function year(timestamp: string): string {
   return timestamp.slice(0, 4) || "?";
@@ -306,11 +264,6 @@ function yearMonth(timestamp: string): string {
   return timestamp.slice(0, 7) || "?";
 }
 
-/**
- * Pull the human-readable wording around the phrase at a given revision — this
- * is how the UI shows that "frases mudam". Cleans wiki markup, keeps case and
- * light punctuation, trims to a sentence-ish window.
- */
 function excerpt(content: string, phrase: string): string {
   const clean = content
     .replace(/<ref[^>]*\/>/g, "")

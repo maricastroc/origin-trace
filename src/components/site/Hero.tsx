@@ -29,7 +29,6 @@ export function Hero() {
             instead of inventing a provenance.
           </p>
 
-          {/* The mechanism, planted at first glance — not a fact-checker, not an LLM. */}
           <p className="mt-6 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">
             <span className="text-accent" aria-hidden="true">
               ▪
@@ -48,7 +47,7 @@ export function Hero() {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <a
               href="#cases"
-              className="group inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-[color:var(--paper-raised)] transition-colors hover:bg-accent-strong"
+              className="group inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-surface-2 transition-colors hover:bg-accent-strong"
             >
               Open a case
               <span className="transition-transform group-hover:translate-x-0.5">

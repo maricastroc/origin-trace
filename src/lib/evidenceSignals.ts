@@ -1,16 +1,10 @@
 import type { TimelineEvent } from "@/types/TimelineEvent";
 
-/**
- * Derives the at-a-glance epistemic signals from a timeline — the "so what"
- * a reader wants: how old the claim is, whether it's backed right now, and how
- * much its evidence has moved.
- */
 export interface EvidenceSignals {
   ageLabel: string | null;
   sourcedNow: "yes" | "no" | "removed" | "unknown";
   currentSourceLabel: string | null;
   evidenceChanges: number;
-  /** The current revision carries an explanatory footnote that cites nothing. */
   explanatoryNoteNow: boolean;
 }
 
@@ -56,7 +50,6 @@ export function deriveSignals(
   };
 }
 
-/** Best-effort age from a variable-granularity date ("2005", "2016-07", "~2013"). */
 function formatAge(dateStr: string, now: Date): string | null {
   const m = dateStr.match(/(\d{4})(?:-(\d{2}))?/);
   if (!m) return null;

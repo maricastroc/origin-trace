@@ -1,6 +1,5 @@
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
 
-/** The seam, made visible: how this case file was produced. */
 const GENERATOR: Record<
   ClaimProvenance["meta"]["generatedBy"],
   { label: string; live: boolean }

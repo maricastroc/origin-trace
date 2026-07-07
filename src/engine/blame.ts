@@ -164,13 +164,26 @@ async function sampleTrue(
 export interface RefDetection {
   sourced: boolean;
   source: ClaimSource | null;
-  /** The raw <ref>…</ref> block we found attached, if any. */
+  /** The raw citation/note block we found attached, if any. */
   refText: string | null;
+  /**
+   * An explanatory footnote ({{efn}}/{{refn}} or a grouped <ref group=…>) sits
+   * on the claim, but it cites no source. This is the "[α]" marker that reads
+   * like a reference yet backs nothing — reported so the UI can say exactly that
+   * instead of a bare "unsourced".
+   */
+  note: boolean;
 }
 
 export function detectRefNear(content: string, phrase: string): RefDetection {
+  const nothing: RefDetection = {
+    sourced: false,
+    source: null,
+    refText: null,
+    note: false,
+  };
   const paragraph = findParagraph(content, phrase);
-  if (paragraph == null) return { sourced: false, source: null, refText: null };
+  if (paragraph == null) return nothing;
 
   // Anchor on the phrase where it appears as *prose*, not where it happens to
   // occur inside a citation's own title/URL — otherwise we'd start the search
@@ -178,18 +191,96 @@ export function detectRefNear(content: string, phrase: string): RefDetection {
   const masked = maskedRanges(paragraph);
   const at = anchorInProse(paragraph, phrase, masked);
   const from = at >= 0 ? at : 0;
-
-  // Match the next <ref> from the anchor over the *whole* remaining paragraph
-  // (a citation can be longer than the claim), but only accept it if it opens
-  // close enough to be this sentence's — not a later one's.
-  const MAX_GAP = 400;
   const tail = paragraph.slice(from);
-  const ref = tail.match(/<ref[^>]*>[\s\S]*?<\/ref>|<ref[^>]*\/>/);
-  if (!ref || ref.index === undefined || ref.index > MAX_GAP) {
-    return { sourced: false, source: null, refText: null };
+
+  // A real citation anywhere in the window wins — the claim is backed. Only when
+  // there is none do we fall back to reporting an explanatory note, which looks
+  // like a reference but sources nothing (the classic {{efn}} "[α]" marker).
+  const markers = collectMarkers(tail, 400);
+  const citation = markers.find((m) => m.kind === "citation");
+  if (citation) {
+    return {
+      sourced: true,
+      source: citation.source,
+      refText: citation.text,
+      note: false,
+    };
+  }
+  const explanatory = markers.find((m) => m.kind === "note");
+  if (explanatory) {
+    return { sourced: false, source: null, refText: explanatory.text, note: true };
+  }
+  return nothing;
+}
+
+/**
+ * Markers attached to a claim within `maxGap` chars of the anchor, classified.
+ *
+ * A <ref> with no group, and inline citation templates, are *citations*. A
+ * grouped <ref group=…> tag and {{efn}}/{{refn}} note templates are *explanatory
+ * notes* — unless such a note itself embeds a citation, in which case it counts
+ * as backing the claim after all.
+ */
+interface Marker {
+  index: number;
+  kind: "citation" | "note";
+  text: string;
+  source: ClaimSource | null;
+}
+
+function collectMarkers(text: string, maxGap: number): Marker[] {
+  const markers: Marker[] = [];
+
+  // <ref …/> reuse and <ref …>…</ref> blocks. `group=` ⇒ a footnote group
+  // (notes), otherwise the article's real references.
+  const refRe = /<ref\b([^>]*)\/>|<ref\b([^>]*)>([\s\S]*?)<\/ref>/gi;
+  for (const m of text.matchAll(refRe)) {
+    if (m.index === undefined || m.index > maxGap) continue;
+    const attrs = `${m[1] ?? ""}${m[2] ?? ""}`;
+    if (/\bgroup\s*=/.test(attrs)) {
+      markers.push({ index: m.index, kind: "note", text: m[0], source: null });
+    } else {
+      markers.push({
+        index: m.index,
+        kind: "citation",
+        text: m[0],
+        source: parseCitation(m[0]),
+      });
+    }
   }
 
-  return { sourced: true, source: parseCitation(ref[0]), refText: ref[0] };
+  // {{efn|…}} / {{refn|…}} explanatory notes — brace-balanced so nested {{cite}}
+  // templates don't truncate the block.
+  for (const m of text.matchAll(/\{\{\s*(?:efn|refn|notetag)\b/gi)) {
+    if (m.index === undefined || m.index > maxGap) continue;
+    const block = balancedTemplate(text, m.index);
+    if (!block) continue;
+    const carriesSource =
+      /<ref\b[^>]*>[\s\S]*?<\/ref>|\{\{\s*(?:cite|citation)\b/i.test(block);
+    markers.push(
+      carriesSource
+        ? { index: m.index, kind: "citation", text: block, source: parseCitation(block) }
+        : { index: m.index, kind: "note", text: block, source: null },
+    );
+  }
+
+  return markers.sort((a, b) => a.index - b.index);
+}
+
+/** From a "{{" at `start`, return the full brace-balanced template text, or null. */
+function balancedTemplate(text: string, start: number): string | null {
+  let depth = 0;
+  for (let i = start; i < text.length - 1; i++) {
+    if (text[i] === "{" && text[i + 1] === "{") {
+      depth++;
+      i++;
+    } else if (text[i] === "}" && text[i + 1] === "}") {
+      depth--;
+      i++;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
 }
 
 /** Character spans occupied by <ref>…</ref> blocks and {{templates}}. */

@@ -10,6 +10,8 @@ export interface EvidenceSignals {
   sourcedNow: "yes" | "no" | "removed" | "unknown";
   currentSourceLabel: string | null;
   evidenceChanges: number;
+  /** The current revision carries an explanatory footnote that cites nothing. */
+  explanatoryNoteNow: boolean;
 }
 
 export function deriveSignals(
@@ -26,6 +28,7 @@ export function deriveSignals(
 
   let sourcedNow: EvidenceSignals["sourcedNow"] = "unknown";
   let currentSourceLabel: string | null = null;
+  let explanatoryNoteNow = false;
   if (removed) {
     sourcedNow = "removed";
   } else if (present) {
@@ -34,6 +37,7 @@ export function deriveSignals(
       sourcedNow = "yes";
       currentSourceLabel = present.source.label;
     }
+    explanatoryNoteNow = Boolean(present.hasExplanatoryNote);
   }
 
   const evidenceChanges = events.filter(
@@ -48,6 +52,7 @@ export function deriveSignals(
     sourcedNow,
     currentSourceLabel,
     evidenceChanges,
+    explanatoryNoteNow,
   };
 }
 

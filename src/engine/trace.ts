@@ -122,12 +122,17 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
 
   const introRef = detectRefNear(introContent, input.phrase);
   const currentRef = intro.removedSince
-    ? { sourced: false, source: null, refText: null }
+    ? { sourced: false, source: null, refText: null, note: false }
     : detectRefNear(latestContent, input.phrase);
 
   const bornSourced = introRef.sourced;
   const nowSourced = currentRef.sourced;
   const bornAtLatest = intro.index === revisions.length - 1;
+
+  // An explanatory footnote sits on the claim but sources nothing — only worth
+  // surfacing where the claim is otherwise unsourced (a real citation would win).
+  const bornNoteOnly = !bornSourced && introRef.note;
+  const nowNoteOnly = !nowSourced && currentRef.note;
 
   const primary: Verdict = bornSourced
     ? "born-sourced"
@@ -154,6 +159,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     wording: excerpt(introContent, input.phrase),
     source: introRef.source, // null ⇒ provably unsourced at birth
     revId: intro.revision.revid,
+    ...(bornNoteOnly ? { hasExplanatoryNote: true } : {}),
   });
 
   if (intro.removedSince) {
@@ -172,6 +178,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       wording: excerpt(latestContent, input.phrase),
       source: currentRef.source,
       revId: latest.revid,
+      ...(nowNoteOnly ? { hasExplanatoryNote: true } : {}),
       ...(evidenceChanged
         ? {
             transition: {
@@ -203,6 +210,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       introRef: introRef.source,
       currentRef: currentRef.source,
       removedSince: intro.removedSince,
+      noteOnly: nowNoteOnly || bornNoteOnly,
     }),
     ...sourceQualityFor(introRef.source, currentRef.source),
     meta: {
@@ -235,6 +243,7 @@ function credibilityRead(
     introRef: { label: string } | null;
     currentRef: { label: string } | null;
     removedSince: boolean;
+    noteOnly: boolean;
   },
 ): string {
   if (ctx.removedSince) {
@@ -246,7 +255,9 @@ function credibilityRead(
     case "retrofit":
       return `Presented as fact with no source at introduction; the citation (${ctx.currentRef?.label ?? "current"}) only stuck on later. The backing is retroactive.`;
     case "unsourced-stable":
-      return "Introduced unsourced and still unsourced in the current revision — never backed, never removed.";
+      return ctx.noteOnly
+        ? "Introduced unsourced and still unsourced. It carries an explanatory footnote — the “[α]”-style marker that reads like a reference — but that note only adds context; it cites no source."
+        : "Introduced unsourced and still unsourced in the current revision — never backed, never removed.";
     default:
       return "";
   }

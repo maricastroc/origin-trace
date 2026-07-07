@@ -72,10 +72,20 @@ export function TimelineRow({
       )}
 
       {event.source === null ? (
-        <span className="mt-3 inline-flex items-center gap-2 rounded-md border border-danger/30 bg-danger-bg px-2.5 py-1.5 text-[12.5px] font-medium text-danger">
-          <UnlinkIcon className="h-4 w-4" />
-          no source
-        </span>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-2 rounded-md border border-danger/30 bg-danger-bg px-2.5 py-1.5 text-[12.5px] font-medium text-danger">
+            <UnlinkIcon className="h-4 w-4" />
+            no source
+          </span>
+          {event.hasExplanatoryNote && (
+            <span
+              className="rounded-md border border-line-strong bg-surface-2 px-2.5 py-1.5 text-[12.5px] text-ink-muted"
+              title="An explanatory footnote ([α]-style) sits on the claim, but it cites no source."
+            >
+              explanatory note only
+            </span>
+          )}
+        </div>
       ) : event.source ? (
         <div className="mt-3">
           <SourceChip source={event.source} />

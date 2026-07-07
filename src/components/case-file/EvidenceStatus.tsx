@@ -57,6 +57,9 @@ export function EvidenceStatus({ data }: { data: ClaimProvenance }) {
         {signals.sourcedNow === "no" && (
           <Signal tone="danger">unsourced now</Signal>
         )}
+        {signals.explanatoryNoteNow && (
+          <Signal tone="warn">note, not a source</Signal>
+        )}
         {signals.sourcedNow === "yes" && (
           <Signal tone="ok">
             sourced now

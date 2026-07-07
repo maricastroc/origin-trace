@@ -168,6 +168,36 @@ export class WikipediaClient {
   }
 
   /**
+   * The current revision's wikitext in one request — the article audit's only
+   * network cost. No history walk: `rvlimit=1` newest-first is the live state.
+   * The content is cached by its (immutable) revid, so a subsequent trace of a
+   * claim in this article reuses it for free.
+   */
+  async getCurrentContent(
+    title: string,
+  ): Promise<{ revid: number; content: string; timestamp: string } | null> {
+    const params: Record<string, string> = {
+      action: "query",
+      prop: "revisions",
+      titles: title,
+      rvprop: "ids|timestamp|content",
+      rvslots: "main",
+      rvlimit: "1",
+      rvdir: "older", // newest first ⇒ the current revision
+    };
+    const data = (await this.fetchJson(this.endpoint(params))) as ApiResponse;
+    const page = data.query?.pages?.[0];
+    if (page?.missing) {
+      throw new Error(`Article not found: "${title}" (${this.lang}.wikipedia)`);
+    }
+    const rev = page?.revisions?.[0];
+    const content = rev?.slots?.main?.content;
+    if (!rev || typeof content !== "string") return null;
+    this.cache?.setContent(this.lang, rev.revid, content);
+    return { revid: rev.revid, content, timestamp: rev.timestamp ?? "" };
+  }
+
+  /**
    * Full-text search over article titles/content. Used to resolve a phrase to
    * candidate articles. Pass a raw query (e.g. a phrase) for ranked/fuzzy hits,
    * or `insource:"exact phrase"` for verbatim current-wikitext matches.

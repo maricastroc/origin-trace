@@ -221,14 +221,34 @@ export function detectRefNear(content: string, phrase: string): RefDetection {
  * notes* — unless such a note itself embeds a citation, in which case it counts
  * as backing the claim after all.
  */
-interface Marker {
+export interface Marker {
   index: number;
   kind: "citation" | "note";
   text: string;
   source: ClaimSource | null;
 }
 
-function collectMarkers(text: string, maxGap: number): Marker[] {
+/**
+ * Classify an isolated span of prose (a single sentence) by the citation it
+ * carries, if any. The article-audit reuses this so "what counts as a citation
+ * vs. an explanatory note" lives in exactly one place — the same rules the
+ * per-claim trace applies. Returns the first real citation in the span, else an
+ * explanatory note, else unsourced.
+ */
+export function classifyInline(sentence: string): RefDetection {
+  const markers = collectMarkers(sentence, sentence.length);
+  const citation = markers.find((m) => m.kind === "citation");
+  if (citation) {
+    return { sourced: true, source: citation.source, refText: citation.text, note: false };
+  }
+  const explanatory = markers.find((m) => m.kind === "note");
+  if (explanatory) {
+    return { sourced: false, source: null, refText: explanatory.text, note: true };
+  }
+  return { sourced: false, source: null, refText: null, note: false };
+}
+
+export function collectMarkers(text: string, maxGap: number): Marker[] {
   const markers: Marker[] = [];
 
   // <ref …/> reuse and <ref …>…</ref> blocks. `group=` ⇒ a footnote group
@@ -284,7 +304,7 @@ function balancedTemplate(text: string, start: number): string | null {
 }
 
 /** Character spans occupied by <ref>…</ref> blocks and {{templates}}. */
-function maskedRanges(text: string): [number, number][] {
+export function maskedRanges(text: string): [number, number][] {
   const ranges: [number, number][] = [];
   for (const re of [
     /<ref[^>]*>[\s\S]*?<\/ref>/g,

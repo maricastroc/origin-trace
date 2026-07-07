@@ -1,3 +1,4 @@
+import { ArticleAudit } from "@/components/ArticleAudit";
 import { CaseExplorer } from "@/components/CaseExplorer";
 import { LiveTrace } from "@/components/LiveTrace";
 import { Hero } from "@/components/site/Hero";
@@ -57,6 +58,30 @@ export default function Home() {
             </p>
             <div className="mt-10">
               <LiveTrace />
+            </div>
+          </div>
+        </section>
+
+        {/* Whole-article audit — the sourced map. A sunken band to set it apart. */}
+        <section
+          id="audit"
+          className="scroll-mt-16 border-t border-line bg-surface-1/45"
+        >
+          <div className="mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
+            <p className="kicker">{"// audit"}</p>
+            <h2 className="mt-4 max-w-2xl font-display text-3xl font-medium tracking-[-0.015em] text-ink sm:text-[2.5rem]">
+              Or audit a whole{" "}
+              <span className="text-accent">article</span>.
+            </h2>
+            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-muted">
+              One read of the current revision maps every sentence to its
+              evidence: which carry an inline citation, which assert without one.
+              The claim boundary comes free from Wikipedia&rsquo;s own structure —
+              no NLP. Then click any uncited sentence to trace its history down to
+              the revision that introduced it.
+            </p>
+            <div className="mt-10">
+              <ArticleAudit />
             </div>
           </div>
         </section>

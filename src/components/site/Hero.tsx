@@ -3,7 +3,7 @@ import { HeroSpecimen } from "./HeroSpecimen";
 export function Hero() {
   return (
     <section id="top" className="relative overflow-hidden">
-      <div className="mx-auto grid w-full max-w-5xl grid-cols-1 items-center gap-12 px-5 pb-16 pt-16 sm:px-8 sm:pb-24 sm:pt-24 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="mx-auto grid w-full max-w-5xl grid-cols-1 items-center gap-12 px-5 pb-16 pt-16 sm:px-8 sm:pb-24 lg:grid-cols-[1.05fr_0.95fr]">
         <div>
           <p className="kicker">{"// claim provenance, traced"}</p>
 

@@ -21,6 +21,9 @@ export function Masthead() {
           <NavLink href="#cases" icon={<CasesIcon />}>
             Cases
           </NavLink>
+          <NavLink href="#audit" icon={<AuditIcon />}>
+            Audit
+          </NavLink>
           <a
             href="#live"
             className="group ml-1 inline-flex items-center gap-2 rounded-md bg-accent px-3.5 py-1.5 text-[13px] font-medium text-[color:var(--paper-raised)] shadow-[0_1px_2px_rgba(90,60,30,0.25)] transition-colors hover:bg-accent-strong"
@@ -75,6 +78,25 @@ function MethodIcon() {
       <circle cx="3" cy="8" r="1.6" fill="currentColor" stroke="none" />
       <circle cx="8" cy="8" r="1.6" />
       <circle cx="13" cy="8" r="1.6" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+/** A document with sourced/unsourced lines. */
+function AuditIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="h-3.5 w-3.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="2.5" width="10" height="11" rx="1.2" />
+      <path d="M5.5 6h5M5.5 8.5h5M5.5 11h2.5" />
     </svg>
   );
 }

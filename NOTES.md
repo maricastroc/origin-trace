@@ -93,22 +93,62 @@ src/
 - Dev server compila limpo (Next 16 + Turbopack) e renderiza as 3 abas, a timeline, as
   transições, o laço circular (coati), as duas leituras (butterbur), e os blocos de
   credibilidade/qualidade-da-fonte.
+- **O motor (#3) existe e roda ao vivo** (ver abaixo). `tsc --noEmit` e `eslint` limpos.
+
+## O motor (WikiBlame) — feito
+
+`src/engine/` produz um `ClaimProvenance` real a partir da API da Wikipedia. A costura
+funcionou: mesmo objeto do contrato, só muda `meta.generatedBy` → `"wikiblame-pipeline"`.
+
+- **`wikipedia.ts`** — cliente da Action API (lista revisões paginada, oldest-first; busca
+  wikitext por revid, batched). `fetchJson` injetável → testável com fixtures gravados.
+- **`blame.ts`** — puro. `normalize` (dropa `<ref>`, desembrulha links, colapsa markup);
+  busca da introdução **robusta a gaps** (histórias não são monotônicas — a frase entra,
+  some numa reformulação, volta; a busca acha a borda de uma banda e re-busca o prefixo
+  abaixo até convergir na origem real); `detectRefNear` (ancora na frase *em prosa*, não
+  dentro do título de uma citação; casa o `<ref>` inteiro limitando só a *distância*);
+  `parseCitation` (extrai label/ano/tipo de `{{cite …}}`).
+- **`trace.ts`** — orquestra tudo → `ClaimProvenance`. Conservador de propósito:
+  `confidence: "low"` e premissas explícitas em `meta.notes`.
+- **`cli.ts`** / **`validate.ts`** — `npm run trace -- Quokka "happiest animal"` e
+  `npm run engine:validate` (os manuais viraram automáticos).
+
+Eficiente: 37–75 revisões lidas de 1000–1700 (busca binária, não varredura).
+
+### Achado que muda o plano: o motor bate o trace manual
+
+Nos **3 fixtures**, o motor encontrou uma origem **mais antiga** que a pinada à mão:
+
+| caso | origem no mock | origem do motor | efeito |
+|---|---|---|---|
+| quokka | 2016-07 (HuffPost) | **2014-05, sem fonte** | churn → **retrofit** |
+| coati | 2008-08 | **2008-07, sem fonte** | ainda presente hoje (não removida) |
+| petasites | 2009 | **2007-02, sem fonte** | **retrofit** |
+
+Não é bug — é a tese se confirmando. O trace manual do quokka começou na citação de 2016 e
+perdeu que a frase já existia *sem fonte* desde 2014. Rastreamento determinístico revela a
+proveniência que o resumo humano perde. **Consequência:** a validação NÃO pode exigir
+"motor == mock". A invariante certa (imutável, em `validate.ts`) é
+`origem_do_motor ≤ origem_manual` — só quebra se o motor *perder* a origem.
 
 ## Próximos passos
 
-1. **O motor (#3, estilo WikiBlame):** o primeiro código que *produz* o `ClaimProvenance`
-   a partir da API real, em vez de ler um mock. É a busca binária no histórico de revisões
-   para localizar (a) onde uma frase entrou e (b) quando o `<ref>` foi anexado.
-   Prior art: WikiBlame, "Who Wrote That?" / token-provenance (WikiWho). É integração, não
-   invenção. (Nota: a API do WikiWho deu erro de SSL numa tentativa — confirmar; o WikiBlame
-   é o prior art sólido.)
-2. **Deixar o contrato evoluir** conforme a implementação pedir — provavelmente
-   `contested`/edit-war como evento, e talvez normalizar as fontes num registro à parte
-   para deduplicar. A filosofia é: contrato como ponto de partida, não como previsão total.
+1. **Deixar o contrato evoluir** (seu ponto original). O motor v0 já pede:
+   - um `verdict` "não-encontrada"/abstenção explícito (hoje `traceClaim` lança
+     `ClaimNotFoundError`);
+   - eventos intermediários reais (hoje o motor só emite intro + estado atual; falta o
+     *quando* exato da troca de fonte e das reformulações — mais buscas binárias por evento);
+   - `SourceType` mais rico: `cite web` cai em `"other"` mesmo quando é jornal (ex.: The
+     West Australian). Normalizar fontes num registro à parte ajudaria a deduplicar e tipar.
+   - `contested`/edit-war ainda não detectado (precisa ler `comment`/reverts das revisões).
+2. **Casar motor × UI:** apontar a galeria para a saída do motor (um caso ao vivo ao lado
+   dos mocks), ou um input de "cole um artigo + frase". Hoje a UI só lê `src/mocks`.
 3. **Polir a UI** com base no uso real.
 
 ## Como rodar
 
 ```bash
-npm run dev        # http://localhost:3000 (ou -- -p 3117 para uma porta dedicada)
+npm run dev                              # http://localhost:3000
+npm run trace -- Quokka "happiest animal"  # roda o motor ao vivo, imprime o JSON
+npm run engine:validate                  # invariante do motor vs os 3 traces manuais
 ```

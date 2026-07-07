@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "trace": "node --experimental-strip-types src/engine/cli.ts",
+    "engine:validate": "node --experimental-strip-types src/engine/validate.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "next": "16.2.10",

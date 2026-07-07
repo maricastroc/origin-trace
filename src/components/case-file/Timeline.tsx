@@ -12,8 +12,19 @@ export function Timeline({
 }) {
   return (
     <section>
-      <h2 className="text-xs font-medium tracking-wide text-ink">{label}</h2>
-      <p className="mb-4 mt-0.5 text-xs text-ink-faint">{subtitle}</p>
+      <div className="mb-6 flex items-baseline justify-between gap-4 border-t border-line pt-5">
+        <div>
+          <h3 className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink">
+            {label}
+          </h3>
+          <p className="mt-1.5 max-w-md text-[13px] leading-relaxed text-ink-faint">
+            {subtitle}
+          </p>
+        </div>
+        <span className="hidden shrink-0 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint sm:block">
+          {events.length} nodes
+        </span>
+      </div>
       <ol>
         {events.map((event, i) => (
           <TimelineRow

@@ -6,11 +6,28 @@ import { quokka } from "./quokka";
 export interface CaseEntry {
   id: string;
   label: string;
+  /** One-line stakes — why this case is worth opening. */
+  hook: string;
   data: ClaimProvenance;
 }
 
 export const cases: CaseEntry[] = [
-  { id: "quokka", label: "Quokka", data: quokka },
-  { id: "coati", label: "Coati", data: coati },
-  { id: "butterbur", label: "Butterbur", data: butterbur },
+  {
+    id: "quokka",
+    label: "Quokka",
+    hook: "A 2013 meme wearing a 2019 newspaper citation.",
+    data: quokka,
+  },
+  {
+    id: "coati",
+    label: "Coati",
+    hook: "A hoax the source itself copied back from Wikipedia.",
+    data: coati,
+  },
+  {
+    id: "butterbur",
+    label: "Butterbur",
+    hook: "The same fact, two verdicts — the boundary decides.",
+    data: butterbur,
+  },
 ];

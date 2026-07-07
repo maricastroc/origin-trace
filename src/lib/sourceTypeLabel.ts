@@ -1,10 +1,10 @@
 import type { SourceType } from "@/types/SourceType";
 
 export const sourceTypeLabel: Record<SourceType, string> = {
-  "peer-reviewed": "revisado por pares",
-  newspaper: "jornal",
-  "popular-media": "mídia popular",
-  "travel-site": "site de turismo",
-  "self-published": "autopublicada",
-  other: "fonte",
+  "peer-reviewed": "peer-reviewed",
+  newspaper: "newspaper",
+  "popular-media": "popular media",
+  "travel-site": "travel site",
+  "self-published": "self-published",
+  other: "source",
 };

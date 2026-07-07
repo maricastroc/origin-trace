@@ -8,15 +8,18 @@ export function VerdictBadge({
   confidence,
 }: {
   verdict: Verdict;
-  confidence: Confidence;
+  confidence?: Confidence;
 }) {
-  const style = verdictStyle[verdict];
+  const s = verdictStyle[verdict];
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-2 rounded-md px-2.5 py-1 text-[11px] font-medium ${style.chip}`}
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] ${s.border}/45 ${s.tint} ${s.ink}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} aria-hidden="true" />
-      {style.label} · conf. {confidenceLabel[confidence]}
+      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} aria-hidden="true" />
+      {s.label}
+      {confidence && (
+        <span className="opacity-70">· {confidenceLabel[confidence]}</span>
+      )}
     </span>
   );
 }

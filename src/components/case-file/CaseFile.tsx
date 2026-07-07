@@ -11,17 +11,15 @@ import { VerdictSummary } from "./VerdictSummary";
 export function CaseFile({ data }: { data: ClaimProvenance }) {
   const isAmbiguous = data.verdict.primary === "ambiguous";
   return (
-    <article className="flex flex-col gap-5">
+    <article className="flex flex-col gap-6">
       <CaseFileHeader claim={data.claim} verdict={data.verdict} />
       <Timeline
         events={data.timeline}
-        label={
-          isAmbiguous ? "Cadeia de reformulação" : "Linha do tempo da credibilidade"
-        }
+        label={isAmbiguous ? "Chain of rewording" : "Credibility timeline"}
         subtitle={
           isAmbiguous
-            ? "a protagonista — como a redação e a evidência mudaram; entre elas, o tipo de mudança"
-            : "o protagonista — cada nó é uma revisão auditável; entre eles, o que mudou"
+            ? "the protagonist — how the wording and evidence changed; between them, the kind of change"
+            : "the protagonist — each node is an auditable revision; between them, what changed"
         }
       />
       {data.annotations?.circularLoop && (

@@ -10,7 +10,7 @@ export const coati: ClaimProvenance = {
   verdict: {
     primary: "retrofit",
     confidence: "high",
-    summary: "Nasceu sem fonte; a citação que a respalda saiu dela mesma.",
+    summary: "Born unsourced; the citation backing it came from itself.",
   },
   timeline: [
     {
@@ -20,7 +20,7 @@ export const coati: ClaimProvenance = {
       wording: "also known as… Brazilian Aardvark",
       source: null,
       revId: 229827595,
-      note: "adicionada por um usuário anônimo, como brincadeira",
+      note: "added by an anonymous user, as a joke",
     },
     {
       id: "e1",
@@ -31,40 +31,40 @@ export const coati: ClaimProvenance = {
         label: "The Telegraph",
         year: 2010,
         type: "newspaper",
-        note: "pegou o termo deste mesmo artigo (2008)",
+        note: "took the term from this very article (2008)",
       },
       revId: 557100001,
       transition: {
         changes: ["evidence-changed"],
         magnitude: "minor",
-        note: "citação grudada ~5 anos depois",
+        note: "citation stuck on ~5 years later",
       },
     },
     {
       id: "e2",
       date: "2014",
       kind: "removed",
-      note: "exposta como invenção e removida do artigo",
+      note: "exposed as fabrication and removed from the article",
     },
   ],
   credibilityRead:
-    "A citação parece dar respaldo, mas a fonte (Telegraph, 2010) tirou o termo deste mesmo artigo (2008). A 'evidência' é a própria afirmação voltando disfarçada de jornal — zero evidência independente.",
+    "The citation looks like backing, but the source (Telegraph, 2010) took the term from this very article (2008). The “evidence” is the claim itself coming back dressed as a newspaper — zero independent evidence.",
   annotations: {
     circularLoop: {
       cycle: [
-        { actor: "Wikipedia", year: 2008, action: "inventa" },
-        { actor: "Telegraph", year: 2010, action: "repete" },
-        { actor: "Wikipedia", year: 2013, action: "cita de volta" },
+        { actor: "Wikipedia", year: 2008, action: "invents" },
+        { actor: "Telegraph", year: 2010, action: "repeats" },
+        { actor: "Wikipedia", year: 2013, action: "cites it back" },
       ],
-      note: "A fonte tirou o termo deste mesmo artigo — zero evidência independente.",
+      note: "The source took the term from this very article — zero independent evidence.",
     },
     unsourcedGap: {
-      note: "~5 anos apresentada como fato, sem nenhuma fonte",
+      note: "~5 years presented as fact, with no source at all",
     },
   },
   meta: {
     generatedBy: "manual-trace",
     notes:
-      "confirmado por leitura direta do wikitext das revisões 229827595 (2008, sem fonte) e 557100001 (2013, cita o Telegraph)",
+      "confirmed by directly reading the wikitext of revisions 229827595 (2008, unsourced) and 557100001 (2013, cites the Telegraph)",
   },
 };

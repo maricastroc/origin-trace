@@ -5,37 +5,44 @@ const GENERATOR: Record<
   ClaimProvenance["meta"]["generatedBy"],
   { label: string; live: boolean }
 > = {
-  "manual-trace": { label: "trace manual", live: false },
-  "wikiblame-pipeline": { label: "motor WikiBlame", live: true },
+  "manual-trace": { label: "manual trace", live: false },
+  "wikiblame-pipeline": { label: "WikiBlame engine", live: true },
 };
 
 export function ProvenanceFooter({ meta }: { meta: ClaimProvenance["meta"] }) {
   const gen = GENERATOR[meta.generatedBy];
   return (
-    <div className="flex flex-col gap-1.5 border-t border-line pt-3">
-      <p className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-faint">
+    <div className="rounded-lg border border-line bg-surface-1/50 px-4 py-3">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-faint">
         {gen.live && (
           <span
             className="h-1.5 w-1.5 shrink-0 rounded-full bg-success"
             aria-hidden="true"
           />
         )}
-        <span>proveniência: {gen.label}</span>
+        <span className="text-ink-muted">provenance</span>
+        <span aria-hidden="true">·</span>
+        <span className={gen.live ? "text-accent" : "text-ink-muted"}>
+          {gen.label}
+        </span>
         {meta.fetchedAt && (
-          <span className="normal-case tracking-normal text-ink-faint">
-            · {formatFetchedAt(meta.fetchedAt)}
-          </span>
+          <>
+            <span aria-hidden="true">·</span>
+            <span className="normal-case tracking-normal">
+              {formatFetchedAt(meta.fetchedAt)}
+            </span>
+          </>
         )}
       </p>
       {meta.notes && (
-        <p className="text-[12px] leading-relaxed text-ink-faint">{meta.notes}</p>
+        <p className="mt-1.5 text-[12px] leading-relaxed text-ink-faint">
+          {meta.notes}
+        </p>
       )}
     </div>
   );
 }
 
 function formatFetchedAt(iso: string): string {
-  // Keep it stable across locales/timezones: date + minute, UTC.
-  const t = iso.replace("T", " ").slice(0, 16);
-  return `${t} UTC`;
+  return `${iso.replace("T", " ").slice(0, 16)} UTC`;
 }

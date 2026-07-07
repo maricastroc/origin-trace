@@ -6,7 +6,7 @@ export function SourceQualityNote({
   return (
     <section className="rounded-xl border border-line px-5 py-3.5">
       <p className="text-[13px] leading-relaxed text-ink-muted">
-        <span className="font-medium text-ink">Qualidade da fonte · </span>
+        <span className="font-medium text-ink">Source quality · </span>
         {quality.note}.
       </p>
     </section>

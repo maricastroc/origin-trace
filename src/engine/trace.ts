@@ -97,7 +97,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       id: "e0",
       date: year(intro.priorRevision.timestamp),
       kind: "claim-absent",
-      note: "a afirmação ainda não existe no artigo",
+      note: "the claim does not exist in the article yet",
     });
   }
 
@@ -115,7 +115,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       id: "e2",
       date: "?",
       kind: "removed",
-      note: "não está mais na revisão atual (revisão de remoção não localizada nesta passagem)",
+      note: "no longer in the current revision (removal revision not located in this pass)",
     });
   } else if (!bornAtLatest) {
     const evidenceChanged = nowSourced && !bornSourced;
@@ -131,7 +131,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
             transition: {
               changes: ["evidence-changed"],
               magnitude: "major",
-              note: "citação anexada depois da introdução",
+              note: "citation attached after introduction",
             } as const,
           }
         : {}),
@@ -170,14 +170,14 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
 // --- Prose (Portuguese, matching the hand-written mocks' voice) -------------
 
 function summarize(primary: Verdict, removed: boolean): string {
-  if (removed) return "A afirmação existiu e depois foi removida do artigo.";
+  if (removed) return "The claim existed and was later removed from the article.";
   switch (primary) {
     case "born-sourced":
-      return "Afirmação e citação entraram juntas na introdução.";
+      return "Claim and citation entered together at introduction.";
     case "retrofit":
-      return "Nasceu sem fonte; a citação foi anexada depois.";
+      return "Born unsourced; the citation was attached later.";
     case "unsourced-stable":
-      return "Nunca teve fonte, mas nunca foi removida.";
+      return "Never sourced, but never removed.";
     default:
       return "";
   }
@@ -192,15 +192,15 @@ function credibilityRead(
   },
 ): string {
   if (ctx.removedSince) {
-    return "A afirmação foi introduzida e mais tarde removida do artigo. A janela em que esteve presente está rastreada até a revisão de introdução.";
+    return "The claim was introduced and later removed from the article. The window in which it was present is traced down to the introduction revision.";
   }
   switch (primary) {
     case "born-sourced":
-      return `Nasceu com fonte (${ctx.introRef?.label ?? "citação"}) na mesma revisão que introduziu a afirmação — o respaldo precede ou acompanha a alegação.`;
+      return `Born with a source (${ctx.introRef?.label ?? "citation"}) in the same revision that introduced the claim — the backing precedes or accompanies the assertion.`;
     case "retrofit":
-      return `Foi apresentada como fato sem nenhuma fonte na introdução; a citação (${ctx.currentRef?.label ?? "atual"}) só grudou depois. O respaldo é retroativo.`;
+      return `Presented as fact with no source at introduction; the citation (${ctx.currentRef?.label ?? "current"}) only stuck on later. The backing is retroactive.`;
     case "unsourced-stable":
-      return "Foi introduzida sem fonte e permanece sem fonte na revisão atual — nunca respaldada, nunca removida.";
+      return "Introduced unsourced and still unsourced in the current revision — never backed, never removed.";
     default:
       return "";
   }
@@ -216,7 +216,7 @@ function sourceQualityFor(
   if (hasPrimary) return {};
   return {
     sourceQuality: {
-      note: "nenhuma fonte primária ou revisada por pares detectada nesta passagem",
+      note: "no primary or peer-reviewed source detected in this pass",
       flags: ["no-primary-source"],
     },
   };
@@ -228,15 +228,15 @@ function buildNotes(
   truncated: boolean,
 ): string {
   const parts = [
-    `${intro.contentFetches} de ${total} revisões lidas (introdução por busca binária)`,
+    `${intro.contentFetches} of ${total} revisions read (introduction by binary search)`,
   ];
   if (intro.assumptionViolated) {
     parts.push(
-      "presença não-monotônica no limite — a janela pode não ser a primeira ocorrência; verificar",
+      "non-monotonic presence at the boundary — the window may not be the first occurrence; verify",
     );
   }
   if (truncated) {
-    parts.push("histórico truncado por maxPages — closure do corpus não provada");
+    parts.push("history truncated by maxPages — corpus closure not proven");
   }
   return parts.join("; ") + ".";
 }

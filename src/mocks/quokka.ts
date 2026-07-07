@@ -10,14 +10,14 @@ export const quokka: ClaimProvenance = {
   verdict: {
     primary: "churn",
     confidence: "medium",
-    summary: "Sempre teve fonte, mas a evidência girou 3× — todas mídia popular.",
+    summary: "Always sourced, but the evidence spun 3× — all popular media.",
   },
   timeline: [
     {
       id: "e0",
       date: "2005",
       kind: "claim-absent",
-      note: "a afirmação ainda não existe no artigo",
+      note: "the claim does not exist in the article yet",
     },
     {
       id: "e1",
@@ -57,14 +57,14 @@ export const quokka: ClaimProvenance = {
     },
   ],
   credibilityRead:
-    "Nunca esteve sem fonte, mas a evidência foi trocada 3× em 8 anos, e as três fontes são mídia popular, nenhuma primária. Um meme de 2013 vestindo uma citação de jornal de 2019.",
+    "Never unsourced, but the evidence was swapped 3× in 8 years, and all three sources are popular media, none primary. A 2013 meme wearing a 2019 newspaper citation.",
   sourceQuality: {
-    note: "as três fontes são mídia popular, nenhuma primária ou científica",
+    note: "all three sources are popular media, none primary or scientific",
     flags: ["no-primary-source"],
   },
   meta: {
     generatedBy: "manual-trace",
     notes:
-      "trocas bracketadas por leitura de conteúdo; revids exatos das trocas não pinados",
+      "swaps bracketed by content reading; exact revids of the swaps not pinned",
   },
 };

@@ -18,7 +18,7 @@ export async function GET(request: Request): Promise<Response> {
 
   if (!article || !phrase) {
     return Response.json(
-      { error: "Informe 'article' e 'phrase'." },
+      { error: "Provide 'article' and 'phrase'." },
       { status: 400 },
     );
   }
@@ -30,7 +30,7 @@ export async function GET(request: Request): Promise<Response> {
     if (err instanceof ClaimNotFoundError) {
       return Response.json(
         {
-          error: `A frase não foi encontrada no histórico de "${article}". Tente um trecho mais curto e literal.`,
+          error: `The phrase wasn't found in the history of "${article}". Try a shorter, more literal excerpt.`,
         },
         { status: 404 },
       );

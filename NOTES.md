@@ -131,6 +131,32 @@ proveniência que o resumo humano perde. **Consequência:** a validação NÃO p
 "motor == mock". A invariante certa (imutável, em `validate.ts`) é
 `origem_do_motor ≤ origem_manual` — só quebra se o motor *perder* a origem.
 
+## Design — "dossiê arquival" (light)
+
+Reformulação completa da UI para nível de portfólio (régua: o Git Investigator).
+Conceito: um **dossiê de proveniência forense** em papel.
+
+- **Fontes** (`layout.tsx`, next/font): **Fraunces** (display, `--font-display`) nas
+  manchetes e títulos; **Newsreader** itálico (`--font-voice`) nas citações — a afirmação
+  sob exame; **Geist Mono** nos rótulos forenses (revids, datas, kickers `// ...`, `01 ·`);
+  Geist Sans no corpo.
+- **Paleta** (`globals.css`): papel quente off-white, tinta quase-preta, **acento oxblood**
+  (`--accent: #8a2b26`) como assinatura. Um único tema claro art-directed (sem dark auto).
+  Verdict = carimbo de borracha: born-sourced=verde, retrofit/unsourced=oxblood,
+  churn/contested=ocre, ambiguous=neutro. `verdictStyle.ts` continua o **único** lugar
+  onde semântica vira cor (contrato segue styling-free).
+- **Narrativa** (`page.tsx`): masthead → **hero** (tese + specimen do dossiê) → **método**
+  (01 genealogia · 02 corpus fechado · 03 honestidade) → **casos** como dossiês (cards com
+  aposta + `CaseFile` aberto) → **explorador ao vivo** → rodapé (“proveniência > resumo”).
+  As abas anônimas viraram um explorador de casos curado.
+- **Elementos-assinatura**: a **timeline** (espinha 2px, nós com presença, rupturas
+  coloridas por magnitude, revids como recibos mono, citações em serif) e o **carimbo de
+  veredito** (`VerdictStamp`, moldura dupla rotacionada). Componentes novos em
+  `components/site/` (Masthead, Hero, HeroSpecimen, Method, SiteFooter, Mark) e
+  `CaseExplorer`/`CaseCard`.
+- Verificado: `next build` limpo, `tsc`/`eslint` limpos, responsivo (mobile 375px sem
+  overflow — o bug das abas sumiu com as abas).
+
 ## Próximos passos
 
 1. **Deixar o contrato evoluir** (seu ponto original). O motor v0 já pede:

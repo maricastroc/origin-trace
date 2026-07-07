@@ -1,10 +1,10 @@
 export function CredibilityRead({ text }: { text: string }) {
   return (
-    <section className="rounded-xl bg-surface-1 px-5 py-4">
-      <h2 className="mb-1.5 text-[13px] font-medium text-ink">
-        Leitura de credibilidade
-      </h2>
-      <p className="text-sm leading-relaxed text-ink-muted">{text}</p>
+    <section className="border-l-2 border-accent py-0.5 pl-5">
+      <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.12em] text-accent">
+        credibility read
+      </p>
+      <p className="font-voice text-[17px] leading-relaxed text-ink">{text}</p>
     </section>
   );
 }

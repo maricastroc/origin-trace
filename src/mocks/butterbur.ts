@@ -10,19 +10,20 @@ export const butterbur: ClaimProvenance = {
   verdict: {
     primary: "ambiguous",
     confidence: "medium",
-    summary: "Ambíguo por design — depende do que conta como 'a mesma afirmação'.",
+    summary:
+      "Ambiguous by design — it depends on what counts as “the same claim.”",
     readings: [
       {
-        lens: "como o fato contínuo",
+        lens: "as the continuous fact",
         verdict: "retrofit",
         reason:
-          "O fato sobre alcaloides existe desde 2009, começou sem fonte, e a citação foi trocada (Fu 2002 → Sun-Edelstein).",
+          "The fact about alkaloids has existed since 2009, started unsourced, and the citation was swapped (Fu 2002 → Sun-Edelstein).",
       },
       {
-        lens: "como a frase atual exata",
+        lens: "as the exact current sentence",
         verdict: "born-sourced",
         reason:
-          "A redação atual e a citação Sun-Edelstein nasceram juntas no rewrite de 2014.",
+          "The current wording and the Sun-Edelstein citation were born together in the 2014 rewrite.",
       },
     ],
   },
@@ -45,7 +46,7 @@ export const butterbur: ClaimProvenance = {
       transition: {
         changes: ["reframed"],
         magnitude: "major",
-        note: '"foram removidos" → "contém"',
+        note: "“were removed” → “contains”",
       },
     },
     {
@@ -63,15 +64,15 @@ export const butterbur: ClaimProvenance = {
       transition: {
         changes: ["reworded", "evidence-changed"],
         magnitude: "major",
-        note: '"é tóxico" → "pode conter, se não purificado"',
+        note: "“is toxic” → “may contain, if not purified”",
       },
     },
   ],
   credibilityRead:
-    "A redação e a evidência mudaram várias vezes. A fronteira 'o que conta como a mesma afirmação?' é sua — o produto mostra as duas leituras e a evolução que as separa.",
+    "The wording and the evidence changed several times. The boundary “what counts as the same claim?” is yours — the product shows both readings and the evolution that separates them.",
   meta: {
     generatedBy: "manual-trace",
     notes:
-      "janelas bracketadas por leitura de conteúdo; revid exato do rewrite de 2014 não pinado",
+      "windows bracketed by content reading; exact revid of the 2014 rewrite not pinned",
   },
 };

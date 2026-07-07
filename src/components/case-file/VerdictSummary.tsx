@@ -8,14 +8,14 @@ export function VerdictSummary({
 }) {
   const style = verdictStyle[verdict.primary];
   return (
-    <div className="flex items-center gap-2.5 border-t border-line pt-3">
+    <div className="flex items-start gap-2.5">
       <span
-        className={`h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`}
+        className={`mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`}
         aria-hidden="true"
       />
-      <p className="text-[13px] text-ink-muted">
-        <span className="font-medium text-ink">{style.label}</span> — é só o
-        resumo da história acima, não o produto.
+      <p className="text-[13px] leading-relaxed text-ink-muted">
+        <span className="font-mono text-ink">{style.label}</span> — {style.gloss}.
+        The stamp is just the summary of the story above, not the product.
       </p>
     </div>
   );

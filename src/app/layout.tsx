@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Geist, Geist_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,10 +12,27 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Display serif — the editorial voice of the headlines and case titles.
+const fraunces = Fraunces({
+  variable: "--font-display",
+  subsets: ["latin"],
+  axes: ["opsz", "SOFT"],
+  display: "swap",
+});
+
+// Reading serif — the claim itself, the thing under examination.
+const newsreader = Newsreader({
+  variable: "--font-voice",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  weight: ["400", "500"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Origin Trace",
+  title: "Origin Trace — the provenance of a claim",
   description:
-    "Reconstrói a história da credibilidade de uma afirmação na Wikipedia.",
+    "Reconstructs the genealogy of a claim's credibility on Wikipedia — when it entered, whether it was born with a source, down to the exact revision. Deterministic grounding, not summary.",
 };
 
 export default function RootLayout({
@@ -26,7 +43,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

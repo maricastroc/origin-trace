@@ -284,7 +284,7 @@ export function parseCitation(refText: string): ClaimSource | null {
     fields["title"] ||
     fields["last"] ||
     fields["author"] ||
-    "fonte sem título";
+    "untitled source";
 
   const year = extractYear(fields["date"] ?? fields["year"] ?? "");
   const source: ClaimSource = { label, type: sourceTypeFor(citeType, fields) };

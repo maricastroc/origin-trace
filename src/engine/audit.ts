@@ -113,6 +113,18 @@ export function segmentArticle(wikitext: string): AuditSection[] {
   return out;
 }
 
+// Raw body prose, section by section: the lead and apparatus (References / See
+// also / …) are excluded and comments stripped, but the wikitext is returned
+// *raw* (not cleaned) so it still normalize-matches against revision content.
+// Used to sample representative body claims rather than the lead's definitional
+// restatements.
+export function bodySections(wikitext: string): { heading: string; body: string }[] {
+  const clean = wikitext.replace(/<!--[\s\S]*?-->/g, "").replace(/<!--[\s\S]*$/g, "");
+  return splitSections(clean)
+    .filter((sec) => !sec.isLead && !APPARATUS.test(sec.heading.trim()))
+    .map((sec) => ({ heading: sec.heading, body: sec.body }));
+}
+
 function splitSections(text: string): RawSection[] {
   const headingRe = /^(={2,6})\s*(.+?)\s*\1\s*$/gm;
   const sections: RawSection[] = [];
@@ -316,7 +328,7 @@ function maskString(text: string): string {
   return chars.join("");
 }
 
-function cleanProse(sentence: string): string {
+export function cleanProse(sentence: string): string {
   return sentence
     .replace(/<ref[^>]*\/>/g, "")
     .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, "")

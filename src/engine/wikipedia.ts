@@ -70,7 +70,7 @@ export class WikipediaClient {
         action: "query",
         prop: "revisions",
         titles: title,
-        rvprop: "ids|timestamp",
+        rvprop: "ids|timestamp|comment",
         rvlimit: "max",
         rvdir: "newer",
       };

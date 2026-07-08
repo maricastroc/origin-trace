@@ -10,6 +10,25 @@ export function Timeline({
   label: string;
   subtitle: string;
 }) {
+  // A node whose wording is a verbatim repeat of the last one we already showed
+  // isn't new information — it's the same sentence, still alive. Rather than
+  // reprint it (which reads as "wait, didn't I just see this?"), we hand the row
+  // the date the wording first appeared so it can collapse to "unchanged since …".
+  let lastWording: string | undefined;
+  let lastWordingDate: string | undefined;
+  const rows = events.map((event) => {
+    let unchangedSince: string | undefined;
+    if (event.wording != null) {
+      if (event.wording === lastWording) {
+        unchangedSince = lastWordingDate;
+      } else {
+        lastWording = event.wording;
+        lastWordingDate = event.date;
+      }
+    }
+    return { event, unchangedSince };
+  });
+
   return (
     <section>
       <div className="mb-6 flex items-baseline justify-between gap-4 border-t border-line pt-5">
@@ -26,11 +45,12 @@ export function Timeline({
         </span>
       </div>
       <ol>
-        {events.map((event, i) => (
+        {rows.map(({ event, unchangedSince }, i) => (
           <TimelineRow
             key={event.id}
             event={event}
             isLast={i === events.length - 1}
+            unchangedSince={unchangedSince}
           />
         ))}
       </ol>

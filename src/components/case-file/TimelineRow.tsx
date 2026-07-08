@@ -21,9 +21,13 @@ function nodeClass(event: TimelineEvent): string {
 export function TimelineRow({
   event,
   isLast,
+  unchangedSince,
 }: {
   event: TimelineEvent;
   isLast: boolean;
+  /** When set, this node's wording is a verbatim repeat first seen on this date —
+   *  render a compact "unchanged since …" line instead of reprinting the quote. */
+  unchangedSince?: string;
 }) {
   return (
     <li className="relative pb-9 pl-9 last:pb-0">
@@ -59,11 +63,19 @@ export function TimelineRow({
         )}
       </div>
 
-      {event.wording && (
-        <p className="mt-2 border-l-2 border-line pl-3 font-voice text-[15px] italic leading-relaxed text-ink-muted">
-          &ldquo;{event.wording}&rdquo;
-        </p>
-      )}
+      {event.wording &&
+        (unchangedSince ? (
+          <p className="mt-2 flex items-center gap-1.5 font-mono text-[12px] text-ink-faint">
+            <span aria-hidden="true" className="text-ink-muted">
+              &#8618;
+            </span>
+            same wording since {unchangedSince} &mdash; never reworded
+          </p>
+        ) : (
+          <p className="mt-2 border-l-2 border-line pl-3 font-voice text-[15px] italic leading-relaxed text-ink-muted">
+            &ldquo;{event.wording}&rdquo;
+          </p>
+        ))}
 
       {event.note && (
         <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">

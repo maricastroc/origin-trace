@@ -59,12 +59,12 @@ export const REGISTRY: InvestigationSeed[] = [
     seed: { kind: "audit", article: "Quokka" },
   },
   {
-    slug: "black-hole-audit",
-    title: "A featured article, measured",
-    dek: "Even Wikipedia's top tier leaves half its sentences without an inline cite.",
+    slug: "cleopatra-audit",
+    title: "A biography that holds up",
+    dek: "One of Wikipedia's most-read pages — and nearly every sentence is backed.",
     phenomenon: "coverage",
     narrative:
-      "Black hole is a featured article — the encyclopedia's highest quality tier. Its per-sentence coverage still lands near half, because citations legitimately cluster at the end of a paragraph rather than on every sentence. The control case: it shows what the coverage number measures, and what it deliberately does not.",
-    seed: { kind: "audit", article: "Black hole" },
+      "Cleopatra is a Featured Article and one of the encyclopedia's most-read biographies. Almost every sentence in the body carries a citation — here through shortened footnotes ({{sfn}}) rather than inline <ref> tags. It's the healthy end of the coverage spectrum, and the counterweight to the meme articles: this is what thorough sourcing looks like when you count every sentence.",
+    seed: { kind: "audit", article: "Cleopatra" },
   },
 ];

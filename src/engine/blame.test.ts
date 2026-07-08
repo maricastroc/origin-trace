@@ -9,6 +9,7 @@ import {
   maskedRanges,
   normalize,
   parseCitation,
+  parseShortFootnote,
   type ContentReader,
 } from "@/engine/blame.ts";
 import type { RevisionMeta } from "@/engine/wikipedia.ts";
@@ -139,6 +140,26 @@ describe("classifyInline", () => {
     const det = classifyInline("The quokka is a small marsupial.");
     expect(det).toMatchObject({ sourced: false, note: false });
   });
+
+  it("counts a {{sfn}} shortened footnote as sourced", () => {
+    const det = classifyInline("Cleopatra ruled as co-regent.{{sfn|Roller|2010|p=53}}");
+    expect(det.sourced).toBe(true);
+    expect(det.note).toBe(false);
+    expect(det.source).toMatchObject({ label: "Roller", year: 2010 });
+  });
+
+  it("counts a Harvard {{harvnb}} footnote as sourced", () => {
+    const det = classifyInline("The date is contested.{{harvnb|Smith|Jones|1998|pp=4–7}}");
+    expect(det.sourced).toBe(true);
+    expect(det.source).toMatchObject({ label: "Smith & Jones", year: 1998 });
+  });
+
+  it("does not confuse {{sfn}} with the note family", () => {
+    const sfn = classifyInline("A claim.{{sfnp|Author|2001}}");
+    const efn = classifyInline("A claim.{{efn|Just context.}}");
+    expect(sfn).toMatchObject({ sourced: true, note: false });
+    expect(efn).toMatchObject({ sourced: false, note: true });
+  });
 });
 
 describe("collectMarkers", () => {
@@ -195,6 +216,38 @@ describe("parseCitation", () => {
   });
 });
 
+describe("parseShortFootnote", () => {
+  it("reads a single author and year from {{sfn}}", () => {
+    expect(parseShortFootnote("{{sfn|Roller|2010|p=53}}")).toEqual({
+      label: "Roller",
+      type: "other",
+      year: 2010,
+    });
+  });
+
+  it("joins two authors and ignores named page params", () => {
+    expect(parseShortFootnote("{{harvnb|Smith|Jones|1998|pp=4–7}}")).toMatchObject({
+      label: "Smith & Jones",
+      year: 1998,
+    });
+  });
+
+  it("collapses three or more authors to et al.", () => {
+    expect(parseShortFootnote("{{sfn|Smith|Jones|Lee|2005}}").label).toBe("Smith et al.");
+  });
+
+  it("tolerates a year disambiguation letter", () => {
+    expect(parseShortFootnote("{{sfn|Roller|2010a|p=1}}").year).toBe(2010);
+  });
+
+  it("falls back to a generic label for the named-param {{sfnm}} form", () => {
+    expect(parseShortFootnote("{{sfnm|1a1=Smith|1y=2004|2a1=Jones|2y=2009}}")).toEqual({
+      label: "shortened footnote",
+      type: "other",
+    });
+  });
+});
+
 describe("detectRefNear", () => {
   it("detects an inline citation attached to the sentence carrying the phrase", () => {
     const content =
@@ -210,6 +263,14 @@ describe("detectRefNear", () => {
     const det = detectRefNear(content, "often disputed among scholars");
     expect(det.sourced).toBe(false);
     expect(det.note).toBe(true);
+  });
+
+  it("detects a shortened-footnote citation on the sentence carrying the phrase", () => {
+    const content =
+      "Cleopatra was the last active ruler of the Ptolemaic Kingdom of Egypt.{{sfn|Roller|2010|p=1}}\n\nUnrelated paragraph.";
+    const det = detectRefNear(content, "last active ruler of the Ptolemaic Kingdom");
+    expect(det.sourced).toBe(true);
+    expect(det.source).toMatchObject({ label: "Roller", year: 2010 });
   });
 
   it("returns nothing when the phrase is absent from the content", () => {

@@ -262,7 +262,55 @@ export function collectMarkers(text: string, maxGap: number): Marker[] {
     );
   }
 
+  // Shortened footnotes ({{sfn}}, Harvard {{harvnb}} et al.) render a real
+  // inline citation link into a full reference — they count as sourcing, not
+  // notes. Common in Featured/academic articles that eschew inline <ref>.
+  for (const m of text.matchAll(SHORT_CITE_RE)) {
+    if (m.index === undefined || m.index > maxGap) continue;
+    const block = balancedTemplate(text, m.index);
+    if (!block) continue;
+    markers.push({
+      index: m.index,
+      kind: "citation",
+      text: block,
+      source: parseShortFootnote(block),
+    });
+  }
+
   return markers.sort((a, b) => a.index - b.index);
+}
+
+// Longer names first so the alternation doesn't settle on a prefix (e.g. "sfn"
+// inside "sfnp") before the word boundary check.
+const SHORT_CITE_RE =
+  /\{\{\s*(?:sfnp|sfnm|sfn|harvnb|harvtxt|harvcolnb|harvcoltxt|harvcol|harvp|harv)\b/gi;
+
+export function parseShortFootnote(block: string): ClaimSource {
+  // {{sfn|Author|Author2|Year|p=…}} — authors and year are positional. Named
+  // params (p=, loc=) and the multi-source {{sfnm}} form (1a1=, 1y=) are skipped.
+  const inner = block.replace(/^\{\{\s*/, "").replace(/\}\}\s*$/, "");
+  const parts = inner.split("|").map((p) => p.trim());
+  parts.shift(); // template name
+
+  let year: number | undefined;
+  const authors: string[] = [];
+  for (const part of parts) {
+    if (!part || part.includes("=")) continue;
+    const y = part.match(/^(1[89]\d{2}|20\d{2})[a-z]?$/);
+    if (y && year === undefined) year = Number(y[1]);
+    else authors.push(part);
+  }
+
+  const label =
+    authors.length === 0
+      ? "shortened footnote"
+      : authors.length <= 2
+        ? authors.join(" & ")
+        : `${authors[0]} et al.`;
+
+  const source: ClaimSource = { label, type: "other" };
+  if (year) source.year = year;
+  return source;
 }
 
 function balancedTemplate(text: string, start: number): string | null {

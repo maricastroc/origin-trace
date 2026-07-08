@@ -30,6 +30,37 @@ describe("traceClaim — verdicts", () => {
     expect(prov.meta.corpus?.total).toBe(3);
   });
 
+  it("marks a born-sourced claim whose <ref> can't be parsed as refUnparsed, not no-source", async () => {
+    // A real <ref> is attached (so the claim IS sourced → born-sourced), but it
+    // carries no cite template and no URL, so parseCitation returns null. The node
+    // must read as "cited · source unreadable", never the red "no source" that
+    // would contradict the born-sourced verdict.
+    const unparsable =
+      "The numbat forages for termites in the eucalypt woodlands of the south-west.<ref>Field notes, unpublished.</ref>";
+    const fetchJson = history([
+      { revid: 1, timestamp: "2015-01-01T00:00:00Z", content: UNRELATED },
+      { revid: 2, timestamp: "2016-06-01T00:00:00Z", content: unparsable },
+      { revid: 3, timestamp: "2020-01-01T00:00:00Z", content: unparsable },
+    ]);
+
+    const prov = await traceClaim({
+      article: "Subject",
+      phrase: "forages for termites in the eucalypt woodlands",
+      fetchJson,
+    });
+
+    expect(prov.verdict.primary).toBe("born-sourced");
+    const introduced = prov.timeline.find((e) => e.kind === "claim-introduced");
+    expect(introduced?.source).toBeNull();
+    expect(introduced?.refUnparsed).toBe(true);
+    // No node in a born-sourced trace may render as an outright no-source (source
+    // null without the refUnparsed flag).
+    const looksUncited = prov.timeline.some(
+      (e) => e.source === null && !e.refUnparsed && e.kind !== "claim-absent",
+    );
+    expect(looksUncited).toBe(false);
+  });
+
   it("classifies a claim that gained its citation later as retrofit", async () => {
     const bare = "The quokka is widely called the happiest animal on the earth.";
     const cited =

@@ -2,13 +2,13 @@ import type { TimelineEvent } from "@/types/TimelineEvent";
 import { eventKindLabel } from "@/lib/eventKindLabel";
 import { SourceChip } from "./SourceChip";
 import { TransitionLabel } from "./TransitionLabel";
-import { UnlinkIcon } from "./icons";
+import { UnlinkIcon, UnreadableRefIcon } from "./icons";
 
 function nodeClass(event: TimelineEvent): string {
   if (event.kind === "claim-absent") {
     return "border-line-strong bg-surface-2";
   }
-  if (event.source === null) {
+  if (event.source === null && !event.refUnparsed) {
     return "border-danger bg-danger";
   }
   if (event.kind === "current") {
@@ -83,7 +83,17 @@ export function TimelineRow({
         </p>
       )}
 
-      {event.source === null ? (
+      {event.source === null && event.refUnparsed ? (
+        <div className="mt-3">
+          <span
+            className="inline-flex items-center gap-2 rounded-md border border-line-strong bg-surface-2 px-2.5 py-1.5 text-[12.5px] font-medium text-ink-muted"
+            title="A citation (<ref>) is attached here, but it couldn't be parsed into an attributable source — a bare URL, an unknown template, or a reuse pointer. The claim is cited; there's just nothing structured to display."
+          >
+            <UnreadableRefIcon className="h-4 w-4" />
+            cited &middot; source unreadable
+          </span>
+        </div>
+      ) : event.source === null ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-2 rounded-md border border-danger/30 bg-danger-bg px-2.5 py-1.5 text-[12.5px] font-medium text-danger">
             <UnlinkIcon className="h-4 w-4" />

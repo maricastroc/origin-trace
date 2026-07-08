@@ -171,6 +171,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       latest,
       latestContent,
       currentRef.source,
+      currentRef.sourced,
       intro.removedSince,
       input.phrase,
       abstained,
@@ -191,6 +192,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       kind: "claim-introduced",
       wording: excerpt(introContent, input.phrase),
       source: introRef.source,
+      ...(bornSourced && introRef.source == null ? { refUnparsed: true } : {}),
       revId: intro.revision.revid,
       ...(bornNoteOnly ? { hasExplanatoryNote: true } : {}),
       ...(abstained
@@ -212,6 +214,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
         kind: nowSourced && !bornSourced ? "source-added" : "current",
         wording: excerpt(latestContent, input.phrase),
         source: currentRef.source,
+        ...(nowSourced && currentRef.source == null ? { refUnparsed: true } : {}),
         revId: latest.revid,
         ...(nowNoteOnly ? { hasExplanatoryNote: true } : {}),
         ...(evidenceChanged
@@ -313,6 +316,7 @@ function chainTimeline(
   latest: RevisionMeta,
   latestContent: string,
   currentSource: ClaimSource | null,
+  currentSourced: boolean,
   removedSince: boolean,
   phrase: string,
   abstained: boolean,
@@ -338,6 +342,7 @@ function chainTimeline(
         kind: "claim-introduced",
         wording: clip(hop.wording),
         source: hop.source,
+        ...(hop.sourced && hop.source == null ? { refUnparsed: true } : {}),
         revId: hop.revId,
         ...(abstained
           ? { note: "an earlier wording likely exists but couldn't be confirmed (low lexical overlap)" }
@@ -359,6 +364,7 @@ function chainTimeline(
       kind,
       wording: clip(hop.wording),
       source: hop.source,
+      ...(hop.sourced && hop.source == null ? { refUnparsed: true } : {}),
       revId: hop.revId,
       transition: {
         changes,
@@ -387,6 +393,7 @@ function chainTimeline(
       kind: "current",
       wording: excerpt(latestContent, phrase),
       source: currentSource,
+      ...(currentSourced && currentSource == null ? { refUnparsed: true } : {}),
       revId: latest.revid,
     });
   }

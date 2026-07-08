@@ -116,6 +116,59 @@ describe("traceClaim — verdicts", () => {
     ).rejects.toBeInstanceOf(ClaimNotFoundError);
   });
 
+  it("reconstructs the reformulation chain and shows dual readings on a correction", async () => {
+    // Current wording (sourced) descends via copy-edits from an unsourced 2006 origin.
+    const cited =
+      "In 1911 she received the prize and was hospitalised with a serious illness.<ref>{{cite book|title=Bio|date=2010}}</ref>";
+    const fetchJson = history([
+      { revid: 1, timestamp: "2006-01-01T00:00:00Z", content: UNRELATED },
+      { revid: 2, timestamp: "2006-06-01T00:00:00Z", content: "In 1911 Marie received the prize and was hospitalized with a serious illness." },
+      { revid: 3, timestamp: "2009-06-01T00:00:00Z", content: "In 1911 Marie received the prize and was hospitalised with a serious illness." },
+      { revid: 4, timestamp: "2013-06-01T00:00:00Z", content: cited },
+      { revid: 5, timestamp: "2020-01-01T00:00:00Z", content: cited },
+    ]);
+
+    const prov = await traceClaim({
+      article: "Subject",
+      phrase: "she received the prize and was hospitalised",
+      fetchJson,
+    });
+
+    // Lexical trace would say born-sourced (cited at its 2013 first appearance);
+    // genealogy corrects to a retrofit born unsourced in 2006 — show both.
+    expect(prov.verdict.primary).toBe("ambiguous");
+    expect(prov.verdict.readings).toHaveLength(2);
+    expect(prov.verdict.readings![0].verdict).toBe("born-sourced");
+    expect(prov.verdict.readings![1].verdict).toBe("retrofit");
+
+    const intro = prov.timeline.find((e) => e.kind === "claim-introduced");
+    expect(intro?.date).toBe("2006-06");
+    expect(intro?.source ?? null).toBeNull();
+    expect(prov.timeline.some((e) => e.kind === "source-added")).toBe(true);
+    expect(prov.timeline[prov.timeline.length - 1].kind).toBe("current");
+    // origin (2006) predates the cited 2010 source → citogenesis surfaces at the true origin.
+    expect(prov.annotations?.circularLoop).toBeDefined();
+  });
+
+  it("abstains from asserting an origin it can't confirm (low-overlap reword)", async () => {
+    const fetchJson = history([
+      { revid: 1, timestamp: "2008-01-01T00:00:00Z", content: UNRELATED },
+      { revid: 2, timestamp: "2010-01-01T00:00:00Z", content: "In 1838 William Whewell recruited Darwin as society secretary." },
+      { revid: 3, timestamp: "2014-01-01T00:00:00Z", content: "In 1838 he went geologising across the Scottish highlands." },
+    ]);
+
+    const prov = await traceClaim({
+      article: "Subject",
+      phrase: "geologising across the Scottish highlands",
+      fetchJson,
+    });
+
+    // The prior sentence shares only the year 1838 — genealogy must NOT claim it as the origin.
+    expect(prov.verdict.readings).toBeUndefined();
+    const intro = prov.timeline.find((e) => e.kind === "claim-introduced");
+    expect(intro?.note ?? "").toMatch(/low lexical overlap/i);
+  });
+
   it("reports progress phases to the onProgress callback", async () => {
     const bare = "The subject has an unusually complicated administrative boundary here.";
     const fetchJson = history([

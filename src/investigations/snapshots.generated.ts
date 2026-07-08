@@ -30,7 +30,8 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
           "kind": "claim-introduced",
           "wording": "Quokkas are known to be the happiest animals in the world and are usually seen smiling in photographs, Like other marsupials in the macropod family (such as …",
           "source": null,
-          "revId": 609716334
+          "revId": 609716334,
+          "note": "an earlier wording likely exists but couldn't be confirmed (low lexical overlap)"
         },
         {
           "id": "e2",
@@ -84,9 +85,9 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       },
       "meta": {
         "generatedBy": "wikiblame-pipeline",
-        "fetchedAt": "2026-07-08T00:25:36.627Z",
+        "fetchedAt": "2026-07-08T17:36:52.511Z",
         "corpus": {
-          "read": 75,
+          "read": 150,
           "total": 1690,
           "truncated": false
         }
@@ -109,21 +110,35 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       },
       "timeline": [
         {
-          "id": "e0",
+          "id": "e-absent",
           "date": "2008",
           "kind": "claim-absent",
-          "note": "the claim does not exist in the article yet"
+          "note": "the idea does not appear in the article yet"
         },
         {
-          "id": "e1",
+          "id": "g0",
           "date": "2008-07",
           "kind": "claim-introduced",
-          "wording": "Coatis are also known as Coatimundis, Hog-Nosed Raccoons, snookum bears and Brazilian Aardvarks",
+          "wording": "Coatis are also known as Coatimundis, Hog-Nosed Raccoons, and snookum bears.",
           "source": null,
-          "revId": 225140818
+          "revId": 224679361
         },
         {
-          "id": "e2",
+          "id": "g1",
+          "date": "2008-07",
+          "kind": "reworded",
+          "wording": "Coatis are also known as Coatimundis, Hog-Nosed Raccoons, snookum bears and Brazilian Aardvarks.",
+          "source": null,
+          "revId": 225140818,
+          "transition": {
+            "changes": [
+              "reworded"
+            ],
+            "magnitude": "minor"
+          }
+        },
+        {
+          "id": "e-current",
           "date": "2026-07",
           "kind": "current",
           "wording": "Brazilian aardvark",
@@ -134,9 +149,9 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       "credibilityRead": "Introduced unsourced and still unsourced in the current revision — never backed, never removed.",
       "meta": {
         "generatedBy": "wikiblame-pipeline",
-        "fetchedAt": "2026-07-08T00:25:48.593Z",
+        "fetchedAt": "2026-07-08T17:37:25.024Z",
         "corpus": {
-          "read": 37,
+          "read": 84,
           "total": 1159,
           "truncated": false
         }
@@ -191,9 +206,9 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       "credibilityRead": "Presented as fact with no source at introduction; the citation (current) only stuck on later. The backing is retroactive.",
       "meta": {
         "generatedBy": "wikiblame-pipeline",
-        "fetchedAt": "2026-07-08T00:25:54.952Z",
+        "fetchedAt": "2026-07-08T17:37:39.737Z",
         "corpus": {
-          "read": 22,
+          "read": 44,
           "total": 291,
           "truncated": false
         }
@@ -235,17 +250,17 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
           "kind": "current",
           "wording": "Neymar is one of only five players to have scored 100 goals with three different clubs, both the all-time Brazilian top goalscorer (43) and assist provider (…",
           "source": null,
-          "revId": 1362991603,
+          "revId": 1363155915,
           "hasExplanatoryNote": true
         }
       ],
       "credibilityRead": "Introduced unsourced and still unsourced. It carries an explanatory footnote — the “[α]”-style marker that reads like a reference — but that note only adds context; it cites no source.",
       "meta": {
         "generatedBy": "wikiblame-pipeline",
-        "fetchedAt": "2026-07-08T00:26:27.338Z",
+        "fetchedAt": "2026-07-08T17:39:19.388Z",
         "corpus": {
-          "read": 59,
-          "total": 9131,
+          "read": 118,
+          "total": 9132,
           "truncated": false
         }
       }
@@ -918,7 +933,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       },
       "meta": {
         "generatedBy": "wikiblame-audit",
-        "fetchedAt": "2026-07-08T00:26:27.613Z",
+        "fetchedAt": "2026-07-08T17:39:20.572Z",
         "notes": "Sentence boundaries are inferred structurally (heuristic). “Unsourced” means no inline citation sits on the sentence — descriptive, not a verdict: some sentences legitimately need none, and lead-section claims are conventionally cited in the body."
       }
     }
@@ -5662,7 +5677,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       },
       "meta": {
         "generatedBy": "wikiblame-audit",
-        "fetchedAt": "2026-07-08T00:26:28.318Z",
+        "fetchedAt": "2026-07-08T17:39:21.772Z",
         "notes": "Sentence boundaries are inferred structurally (heuristic). “Unsourced” means no inline citation sits on the sentence — descriptive, not a verdict: some sentences legitimately need none, and lead-section claims are conventionally cited in the body."
       }
     }

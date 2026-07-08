@@ -55,8 +55,17 @@ function readProgress(p: TraceProgress | null): {
     case "detecting":
       return {
         label: "Detecting the attached citation…",
-        fraction: 0.97,
+        fraction: 0.9,
         detail: "Looking for a <ref> on the claim.",
+      };
+    case "genealogy":
+      return {
+        label: "Reconstructing the reformulation chain…",
+        fraction: 0.94,
+        detail:
+          p.hop > 0
+            ? `Walked back ${p.hop} rewording${p.hop === 1 ? "" : "s"}.`
+            : "Reading the diff of each rewording.",
       };
   }
 }

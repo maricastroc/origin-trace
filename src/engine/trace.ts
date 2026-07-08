@@ -2,13 +2,17 @@ import type { ClaimProvenance } from "@/types/ClaimProvenance";
 import type { ClaimSource } from "@/types/ClaimSource";
 import type { TimelineEvent } from "@/types/TimelineEvent";
 import type { Verdict } from "@/types/Verdict";
+import type { VerdictReading } from "@/types/VerdictReading";
+import type { EventKind } from "@/types/EventKind";
+import type { ChangeTag } from "@/types/ChangeTag";
 import {
   anchorIndex,
   detectRefNear,
   findIntroduction,
   type ContentReader,
 } from "./blame.ts";
-import { WikipediaClient, type FetchJson } from "./wikipedia.ts";
+import { reconstructGenealogy, type GenealogyHop } from "./genealogy.ts";
+import { WikipediaClient, type FetchJson, type RevisionMeta } from "./wikipedia.ts";
 import type { EngineCache } from "./cache.ts";
 
 export type TraceProgress =
@@ -17,7 +21,8 @@ export type TraceProgress =
   | { phase: "searching"; read: number; estimate: number }
   | { phase: "located"; year: string; removed: boolean }
   | { phase: "reading" }
-  | { phase: "detecting" };
+  | { phase: "detecting" }
+  | { phase: "genealogy"; hop: number };
 
 export interface TraceInput {
   article: string;
@@ -102,71 +107,145 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   const bornNoteOnly = !bornSourced && introRef.note;
   const nowNoteOnly = !nowSourced && currentRef.note;
 
-  const primary: Verdict = bornSourced
+  const introYear = Number(year(intro.revision.timestamp));
+  const lexicalPrimary: Verdict = bornSourced
     ? "born-sourced"
     : nowSourced
       ? "retrofit"
       : "unsourced-stable";
 
-  const introYear = Number(year(intro.revision.timestamp));
+  // Reconstruct the reformulation chain (Camada 1). The same cache is reused, so
+  // the revision list and contents aren't re-fetched. A genealogy failure must
+  // never break the base lexical trace.
+  emit({ phase: "genealogy", hop: 0 });
+  const genealogy = await reconstructGenealogy({
+    article: input.article,
+    phrase: input.phrase,
+    lang,
+    maxPages: input.maxPages,
+    fetchJson: input.fetchJson,
+    cache: input.cache,
+    onHop: (hop) => emit({ phase: "genealogy", hop }),
+  }).catch(() => null);
+
+  const chainOldToNew: GenealogyHop[] = genealogy ? [...genealogy.chain].reverse() : [];
+  const originHop = chainOldToNew[0] ?? null;
+  const moved = (genealogy?.movedEarlier ?? false) && originHop != null;
+
+  // When genealogy reaches an earlier origin, the verdict is computed there.
+  const effectiveBornSourced = moved ? originHop!.sourced : bornSourced;
+  const effectiveIntroYear = moved ? Number(originHop!.date.slice(0, 4)) : introYear;
+  const effectiveIntroSource = moved ? originHop!.source : introRef.source;
+
+  const genealogyPrimary: Verdict = effectiveBornSourced
+    ? "born-sourced"
+    : nowSourced
+      ? "retrofit"
+      : "unsourced-stable";
+
+  // Dual readings when genealogy corrects the lexical reading — never silently
+  // override; show both and let the reader judge (the `ambiguous` identity).
+  const corrected = moved && genealogyPrimary !== lexicalPrimary;
+  const primary: Verdict = corrected ? "ambiguous" : moved ? genealogyPrimary : lexicalPrimary;
+  const narrativePrimary: Verdict = moved ? genealogyPrimary : lexicalPrimary;
+
+  // A reword existed just before the origin but couldn't be safely followed.
+  const abstained =
+    genealogy?.terminus === "broke:low-overlap" ||
+    genealogy?.terminus === "broke:no-anchor-reword";
+
+  const isRetrofit = !effectiveBornSourced && nowSourced && !intro.removedSince;
   const circularLoop =
-    primary === "retrofit" &&
-    !intro.removedSince &&
+    isRetrofit &&
     currentRef.source?.year !== undefined &&
-    Number.isFinite(introYear) &&
-    currentRef.source.year > introYear
-      ? citogenesisLoop(currentRef.source, introYear, year(latest.timestamp))
+    Number.isFinite(effectiveIntroYear) &&
+    currentRef.source.year > effectiveIntroYear
+      ? citogenesisLoop(currentRef.source, effectiveIntroYear, year(latest.timestamp))
       : null;
 
-  const timeline: TimelineEvent[] = [];
-
-  if (intro.priorRevision) {
+  let timeline: TimelineEvent[];
+  if (moved) {
+    timeline = chainTimeline(
+      chainOldToNew,
+      revisions,
+      latest,
+      latestContent,
+      currentRef.source,
+      intro.removedSince,
+      input.phrase,
+      abstained,
+    );
+  } else {
+    timeline = [];
+    if (intro.priorRevision) {
+      timeline.push({
+        id: "e0",
+        date: year(intro.priorRevision.timestamp),
+        kind: "claim-absent",
+        note: "the claim does not exist in the article yet",
+      });
+    }
     timeline.push({
-      id: "e0",
-      date: year(intro.priorRevision.timestamp),
-      kind: "claim-absent",
-      note: "the claim does not exist in the article yet",
-    });
-  }
-
-  timeline.push({
-    id: "e1",
-    date: yearMonth(intro.revision.timestamp),
-    kind: "claim-introduced",
-    wording: excerpt(introContent, input.phrase),
-    source: introRef.source,
-    revId: intro.revision.revid,
-    ...(bornNoteOnly ? { hasExplanatoryNote: true } : {}),
-  });
-
-  if (intro.removedSince) {
-    timeline.push({
-      id: "e2",
-      date: "?",
-      kind: "removed",
-      note: "no longer in the current revision (removal revision not located in this pass)",
-    });
-  } else if (!bornAtLatest) {
-    const evidenceChanged = nowSourced && !bornSourced;
-    timeline.push({
-      id: "e2",
-      date: yearMonth(latest.timestamp),
-      kind: nowSourced && !bornSourced ? "source-added" : "current",
-      wording: excerpt(latestContent, input.phrase),
-      source: currentRef.source,
-      revId: latest.revid,
-      ...(nowNoteOnly ? { hasExplanatoryNote: true } : {}),
-      ...(evidenceChanged
-        ? {
-            transition: {
-              changes: ["evidence-changed"],
-              magnitude: "major",
-              note: "citation attached after introduction",
-            } as const,
-          }
+      id: "e1",
+      date: yearMonth(intro.revision.timestamp),
+      kind: "claim-introduced",
+      wording: excerpt(introContent, input.phrase),
+      source: introRef.source,
+      revId: intro.revision.revid,
+      ...(bornNoteOnly ? { hasExplanatoryNote: true } : {}),
+      ...(abstained
+        ? { note: "an earlier wording likely exists but couldn't be confirmed (low lexical overlap)" }
         : {}),
     });
+    if (intro.removedSince) {
+      timeline.push({
+        id: "e2",
+        date: "?",
+        kind: "removed",
+        note: "no longer in the current revision (removal revision not located in this pass)",
+      });
+    } else if (!bornAtLatest) {
+      const evidenceChanged = nowSourced && !bornSourced;
+      timeline.push({
+        id: "e2",
+        date: yearMonth(latest.timestamp),
+        kind: nowSourced && !bornSourced ? "source-added" : "current",
+        wording: excerpt(latestContent, input.phrase),
+        source: currentRef.source,
+        revId: latest.revid,
+        ...(nowNoteOnly ? { hasExplanatoryNote: true } : {}),
+        ...(evidenceChanged
+          ? {
+              transition: {
+                changes: ["evidence-changed"],
+                magnitude: "major",
+                note: "citation attached after introduction",
+              } as const,
+            }
+          : {}),
+      });
+    }
   }
+
+  const readings: VerdictReading[] | undefined = corrected
+    ? [
+        {
+          lens: "by current wording",
+          verdict: lexicalPrimary,
+          reason: readingReason(lexicalPrimary, introYear, currentRef.source?.label ?? null),
+        },
+        {
+          lens: "by idea genealogy",
+          verdict: genealogyPrimary,
+          reason: genealogyReason(
+            genealogyPrimary,
+            effectiveIntroYear,
+            chainOldToNew.length - 1,
+            currentRef.source?.label ?? null,
+          ),
+        },
+      ]
+    : undefined;
 
   return {
     claim: {
@@ -180,23 +259,26 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     verdict: {
       primary,
       confidence: "low",
-      summary: summarize(primary, intro.removedSince, circularLoop != null),
+      summary: corrected
+        ? correctedSummary(lexicalPrimary, genealogyPrimary, effectiveIntroYear)
+        : summarize(narrativePrimary, intro.removedSince, circularLoop != null),
+      ...(readings ? { readings } : {}),
     },
     timeline,
     ...(circularLoop ? { annotations: { circularLoop } } : {}),
-    credibilityRead: credibilityRead(primary, {
-      introRef: introRef.source,
+    credibilityRead: credibilityRead(narrativePrimary, {
+      introRef: effectiveIntroSource,
       currentRef: currentRef.source,
       removedSince: intro.removedSince,
       noteOnly: nowNoteOnly || bornNoteOnly,
       circular: circularLoop != null,
     }),
-    ...sourceQualityFor(introRef.source, currentRef.source),
+    ...sourceQualityFor(effectiveIntroSource, currentRef.source),
     meta: {
       generatedBy: "wikiblame-pipeline",
       fetchedAt: new Date().toISOString(),
       corpus: {
-        read: intro.contentFetches,
+        read: intro.contentFetches + (genealogy?.contentFetches ?? 0),
         total: revisions.length,
         truncated,
       },
@@ -206,6 +288,134 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       })(),
     },
   };
+}
+
+const VERDICT_PHRASE: Record<Verdict, string> = {
+  "born-sourced": "born-sourced",
+  retrofit: "a retrofit (born unsourced)",
+  "unsourced-stable": "unsourced",
+  churn: "churned",
+  contested: "contested",
+  ambiguous: "ambiguous",
+};
+
+function clip(s: string): string {
+  return s.length > 160 ? `${s.slice(0, 157)}…` : s;
+}
+
+// Build the timeline from the reformulation chain (oldest → newest): the genealogy
+// origin as `claim-introduced`, each hop as `reworded`/`source-added`/`source-replaced`,
+// then the current state. Reuses the EventKind / Transition vocabulary the timeline
+// already renders.
+function chainTimeline(
+  oldToNew: GenealogyHop[],
+  revisions: RevisionMeta[],
+  latest: RevisionMeta,
+  latestContent: string,
+  currentSource: ClaimSource | null,
+  removedSince: boolean,
+  phrase: string,
+  abstained: boolean,
+): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+  const origin = oldToNew[0];
+
+  const originIdx = revisions.findIndex((r) => r.revid === origin.revId);
+  if (originIdx > 0) {
+    events.push({
+      id: "e-absent",
+      date: year(revisions[originIdx - 1].timestamp),
+      kind: "claim-absent",
+      note: "the idea does not appear in the article yet",
+    });
+  }
+
+  oldToNew.forEach((hop, i) => {
+    if (i === 0) {
+      events.push({
+        id: `g${i}`,
+        date: hop.date,
+        kind: "claim-introduced",
+        wording: clip(hop.wording),
+        source: hop.source,
+        revId: hop.revId,
+        ...(abstained
+          ? { note: "an earlier wording likely exists but couldn't be confirmed (low lexical overlap)" }
+          : {}),
+      });
+      return;
+    }
+    const prev = oldToNew[i - 1];
+    // Only call it a source change when there's an attributable citation to show —
+    // an unparseable <ref> (sourced but source === null) reads as a plain reword.
+    const gained = !prev.sourced && hop.sourced && hop.source != null;
+    const swapped =
+      prev.sourced && hop.sourced && hop.source != null && prev.sourceLabel !== hop.sourceLabel;
+    const kind: EventKind = gained ? "source-added" : swapped ? "source-replaced" : "reworded";
+    const changes: ChangeTag[] = kind === "reworded" ? ["reworded"] : ["reworded", "evidence-changed"];
+    events.push({
+      id: `g${i}`,
+      date: hop.date,
+      kind,
+      wording: clip(hop.wording),
+      source: hop.source,
+      revId: hop.revId,
+      transition: {
+        changes,
+        magnitude: kind === "reworded" ? "minor" : "major",
+        ...(gained
+          ? { note: "citation attached at this rewording" }
+          : swapped
+            ? { note: "citation swapped at this rewording" }
+            : {}),
+      },
+    });
+  });
+
+  const lexIntro = oldToNew[oldToNew.length - 1];
+  if (removedSince) {
+    events.push({
+      id: "e-current",
+      date: "?",
+      kind: "removed",
+      note: "no longer in the current revision (removal revision not located in this pass)",
+    });
+  } else if (latest.revid !== lexIntro.revId) {
+    events.push({
+      id: "e-current",
+      date: yearMonth(latest.timestamp),
+      kind: "current",
+      wording: excerpt(latestContent, phrase),
+      source: currentSource,
+      revId: latest.revid,
+    });
+  }
+
+  return events;
+}
+
+function readingReason(v: Verdict, introYear: number, currentLabel: string | null): string {
+  if (v === "born-sourced") return `The current wording first appears in ${introYear}, cited from the start.`;
+  if (v === "retrofit")
+    return `The current wording first appears in ${introYear} unsourced; the citation${currentLabel ? ` (${currentLabel})` : ""} attached later.`;
+  return `The current wording first appears in ${introYear} and is still uncited.`;
+}
+
+function genealogyReason(
+  v: Verdict,
+  originYear: number,
+  rewordings: number,
+  currentLabel: string | null,
+): string {
+  const via = rewordings > 0 ? ` through ${rewordings} rewording${rewordings > 1 ? "s" : ""}` : "";
+  if (v === "born-sourced") return `The idea traces back to ${originYear}${via}, cited then too.`;
+  if (v === "retrofit")
+    return `The idea traces back to ${originYear}${via}, where it stood uncited — the citation${currentLabel ? ` (${currentLabel})` : ""} is retroactive.`;
+  return `The idea traces back to ${originYear}${via}, where it stood uncited.`;
+}
+
+function correctedSummary(lexical: Verdict, genealogy: Verdict, originYear: number): string {
+  return `Reads ${VERDICT_PHRASE[lexical]} by the current wording, but the idea traces back to ${originYear} — ${VERDICT_PHRASE[genealogy]}. The two readings disagree; both are shown.`;
 }
 
 function citogenesisLoop(

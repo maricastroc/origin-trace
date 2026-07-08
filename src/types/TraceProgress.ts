@@ -4,4 +4,5 @@ export type TraceProgress =
   | { phase: "searching"; read: number; estimate: number }
   | { phase: "located"; year: string; removed: boolean }
   | { phase: "reading" }
-  | { phase: "detecting" };
+  | { phase: "detecting" }
+  | { phase: "genealogy"; hop: number };

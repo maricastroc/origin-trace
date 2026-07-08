@@ -23,6 +23,7 @@ import {
 import { cleanProse, sentences } from "./audit.ts";
 import { extractAnchors, sharedAnchors, type Anchor } from "./anchors.ts";
 import { ClaimNotFoundError } from "./trace.ts";
+import type { ClaimSource } from "@/types/ClaimSource";
 import {
   WikipediaClient,
   type FetchJson,
@@ -64,6 +65,7 @@ export interface GenealogyHop {
   date: string; // YYYY-MM
   sourced: boolean; // was it cited at introduction?
   sourceLabel: string | null;
+  source: ClaimSource | null; // full citation at this revision (for rendering a SourceChip)
   anchorsShared: string[]; // anchors linking this wording to the older wording it descended from (empty on the origin)
   overlap?: number; // content-word Dice with the wording it descended from (undefined on the origin)
 }
@@ -97,6 +99,7 @@ export interface GenealogyInput {
   fetchJson?: FetchJson;
   cache?: EngineCache;
   overlapMin?: number; // content-word Dice floor for a link (default 0.55); below it the chain abstains
+  onHop?: (hop: number) => void; // progress: called at the start of each backward hop
 }
 
 const MAX_HOPS = 40; // runaway guard; real reformulation chains are short
@@ -142,6 +145,7 @@ export async function reconstructGenealogy(input: GenealogyInput): Promise<Genea
   let terminus: Terminus = "broke:anchors-elsewhere";
 
   for (let guard = 0; guard < MAX_HOPS; guard++) {
+    input.onHop?.(guard);
     const intro = await findIntroduction(window, current, read);
     if (!intro) {
       // hop 0: the phrase isn't in the article at all. Later hops: a predecessor
@@ -164,6 +168,7 @@ export async function reconstructGenealogy(input: GenealogyInput): Promise<Genea
       date: yearMonth(intro.revision.timestamp),
       sourced: ref.sourced,
       sourceLabel: ref.source?.label ?? null,
+      source: ref.source,
       anchorsShared: [],
     };
     if (chain.length === 0) lexicalOrigin = originOf(hop);

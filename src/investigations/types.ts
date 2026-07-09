@@ -8,9 +8,7 @@ import type { ClaimProvenance } from "../types/ClaimProvenance.ts";
 export type PhenomenonId =
   | "citogenesis"
   | "retrofit"
-  | "churn"
   | "unsourced-stable"
-  | "contested"
   | "ambiguous"
   | "note-not-source"
   | "born-sourced"

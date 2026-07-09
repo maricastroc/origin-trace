@@ -98,7 +98,7 @@ phrase → resolve scope       — which article carries it? honest about ambigu
 
 **Detect ([`src/engine/blame.ts`](src/engine/blame.ts)).** At the origin revision and the current one, the engine anchors on the claim as _prose_ (not where it happens to appear inside a citation's own title) and reads whether a real `<ref>`/`{{cite}}` sits on that claim's **own sentence** — bounded to the sentence so it can't borrow the neighbour's citation.
 
-**Classify ([`src/engine/trace.ts`](src/engine/trace.ts)).** From "sourced at birth?" and "sourced now?" it derives the verdict — `born-sourced`, `retrofit`, or `unsourced-stable` (plus a _removed_ state) — assembles the timeline, and reports its confidence and caveats honestly in `meta.notes`. On a retrofit, it also cross-checks dates: when the citation that later backed the claim was _published after_ the claim first appeared here, that source can't be its origin — the engine emits a **citogenesis loop** (unsourced here → source published later → cited back) and marks the backing as possibly circular.
+**Classify ([`src/engine/trace.ts`](src/engine/trace.ts)).** From "sourced at birth?" and "sourced now?" it derives the verdict — `born-sourced`, `retrofit`, `source-lost` (born cited, later stripped), or `unsourced-stable` (plus a _removed_ state) — assembles the timeline, and reports its confidence and caveats honestly in `meta.notes`. On a retrofit, it also cross-checks dates: when the citation that later backed the claim was _published after_ the claim first appeared here, that source can't be its origin — the engine emits a **citogenesis loop** (unsourced here → source published later → cited back) and marks the backing as possibly circular.
 
 **Audit ([`src/engine/audit.ts`](src/engine/audit.ts)).** For a whole article, a single fetch of the current revision is segmented structurally — `<ref>`/template spans masked, sentences split with an abbreviation guard, the trailing citation after each period attached to the sentence it backs — and each sentence is classified with the _same_ citation rules as the per-claim trace.
 
@@ -114,12 +114,11 @@ Origin Trace doesn't return true or false. Every claim resolves to one of these 
 | -------------------- | ------------ | -------------------------------------------------------------------- |
 | **born-sourced**     | sourced      | Claim and citation entered the article in the same revision.         |
 | **retrofit**         | back-filled  | Lived as unsourced fact first; a citation was attached only later.   |
-| **churn**            | unstable     | Stayed put while its citation was swapped again and again.           |
-| **contested**        | contested    | Reverted or fought over — its place in the article is disputed.      |
+| **source-lost**      | unsourced    | Born with a citation that was later stripped — the claim now stands uncited. |
 | **unsourced-stable** | unsourced    | Has carried no citation in its entire history, yet no one removed it. |
 | **ambiguous**        | ambiguous    | The verdict flips depending on where you draw the line around "the same claim" — both readings are shown. |
 
-> The live engine currently classifies claims into **born-sourced**, **retrofit** and **unsourced-stable** (plus a _removed_ state). `churn`, `contested` and `ambiguous` are part of the vocabulary and appear in the hand-traced case files; `contested`/`churn` detection (revert and edit-war analysis) is on the roadmap — until it lands, the engine deliberately says "no removal recorded" rather than "never challenged".
+> The live engine classifies claims into **born-sourced**, **retrofit**, **source-lost**, **unsourced-stable** and **ambiguous**, plus a terminal **removed** state. `churn` (a citation swapped repeatedly) and `contested` (revert / edit-war analysis) are on the roadmap and are **not shown** in the UI until the engine actually emits them — until then it deliberately says "no removal recorded" rather than "never challenged".
 
 <br/>
 
@@ -144,7 +143,7 @@ A tool that stakes its value on honesty should be just as honest about its own e
 - **Reworded claims may not be found.** The trace matches a phrase across history; if the wording drifted substantially, the exact phrase won't be in the older revisions, and the tool returns an honest "not found" rather than a wrong origin.
 - **Contested and churn aren't detected yet.** Revert and edit-war analysis is unimplemented, so the engine says "no removal recorded" rather than "never challenged", and doesn't yet surface a citation that was swapped repeatedly.
 - **Circular-source detection needs a live citation.** The citogenesis check compares the cited source's publication _year_ to the claim's introduction year, so it only fires on a retrofit still present in the current revision — a claim exposed and _removed_ (the canonical "Brazilian aardvark") no longer carries a citation to test. It also reasons at year granularity, and doesn't pin the exact revision that attached the citation — the loop's note says so rather than overstating it.
-- **Current-state vs. history can differ — legitimately.** The audit reads the _current_ revision; the drill-down reads the _history_. A claim that was born with a source later stripped shows as `uncited` now but `born-sourced` in its trace. Both are true; they describe different points in time.
+- **Current-state vs. history can differ — legitimately.** The audit reads the _current_ revision; the drill-down reads the _history_. A claim that was born with a source later stripped shows as `uncited` now in the audit, and as `source-lost` in its trace — the badge names the loss instead of asserting the birth state. Both are true; they describe different points in time.
 - **Very long histories can be truncated.** Enumeration is capped at a generous page limit. When it bites, closure is _unproven_ — and the receipt says so, rather than quietly presenting a partial search as complete.
 
 <br/>
@@ -154,7 +153,7 @@ A tool that stakes its value on honesty should be just as honest about its own e
 Because the pipeline is a set of pure, deterministic functions, it's tested the same way — **no network, no live API**. The engine takes an injectable `fetchJson`, so a small in-memory stand-in for the MediaWiki API drives whole traces end to end; every assertion is reproducible offline, exactly like the verdicts themselves.
 
 - **178 tests across 18 files**, run with **Vitest**.
-- **Engine** — the gap-robust binary search (including removed-and-reintroduced histories) and its **speculative-prefetch descent** (proven to locate the identical origin with far fewer round-trips), citation-vs-note detection, `{{cite}}` parsing, structural article segmentation, and every verdict path: `born-sourced`, `retrofit`, `unsourced-stable`, _removed_, and the **citogenesis loop**.
+- **Engine** — the gap-robust binary search (including removed-and-reintroduced histories) and its **speculative-prefetch descent** (proven to locate the identical origin with far fewer round-trips), citation-vs-note detection, `{{cite}}` parsing, structural article segmentation, and every verdict path: `born-sourced`, `retrofit`, `source-lost`, `unsourced-stable`, _removed_, and the **citogenesis loop**.
 - **Wikipedia client** — `rvcontinue` pagination, truncation, missing pages, wikitext-snippet cleaning, and the **parallel windowed enumeration proven equivalent to a serial walk** — same revisions, same order, nothing lost or duplicated even when a window boundary splits a same-timestamp cluster.
 - **Caching** — the two-tier cache (in-process LRU + gzip'd Redis round-trip, backfill, and cached-`null`-vs-miss), exercised against an in-memory Redis stand-in.
 - **Lib** — high-impact phrase detection (EN + PT), audit metrics/model, evidence signals, and the label/verdict maps.

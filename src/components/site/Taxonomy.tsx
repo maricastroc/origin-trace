@@ -1,9 +1,12 @@
 import type { Verdict } from "@/types/Verdict";
 import { verdictStyle } from "@/lib/verdictStyle";
 
-// `removed` is a terminal state surfaced on the case file, not one of the
-// evidence-life *patterns* this vocabulary teaches — keep it out of the section.
-const VERDICTS = (Object.keys(verdictStyle) as Verdict[]).filter((v) => v !== "removed");
+// Only the patterns the engine actually produces AND teaches here. `churn` and
+// `contested` are on the roadmap (revert / edit-war analysis) — not shown until
+// the engine emits them, so the section can't promise a verdict it never returns.
+// `source-lost` and `removed` are real outputs but terminal/edge states, surfaced
+// on the case file rather than taught as headline patterns.
+const VERDICTS: Verdict[] = ["born-sourced", "retrofit", "unsourced-stable", "ambiguous"];
 
 export function Taxonomy() {
   const ordered = [...VERDICTS].sort(

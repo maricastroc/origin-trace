@@ -119,6 +119,37 @@ describe("traceClaim — verdicts", () => {
     expect(prov.verdict.primary).toBe("unsourced-stable");
   });
 
+  it("classifies a claim born cited then stripped of its citation as source-lost", async () => {
+    // Born with a real citation (rev 2), the <ref> is later removed while the
+    // sentence stays intact (rev 3) — so it is NOT a removal. `born-sourced` would
+    // stamp a "sourced" health word over a claim the timeline shows as uncited now.
+    const cited =
+      "The bridge was the longest single-span structure in the country at the time.<ref>{{cite news|newspaper=The Herald|title=Span|date=2011}}</ref>";
+    const stripped =
+      "The bridge was the longest single-span structure in the country at the time.";
+    const fetchJson = history([
+      { revid: 1, timestamp: "2010-01-01T00:00:00Z", content: UNRELATED },
+      { revid: 2, timestamp: "2011-06-01T00:00:00Z", content: cited },
+      { revid: 3, timestamp: "2020-01-01T00:00:00Z", content: stripped },
+    ]);
+
+    const prov = await traceClaim({
+      article: "Subject",
+      phrase: "longest single-span structure in the country",
+      fetchJson,
+    });
+
+    expect(prov.verdict.primary).toBe("source-lost");
+    // Born with a source...
+    const intro = prov.timeline.find((e) => e.kind === "claim-introduced");
+    expect(intro?.source).not.toBeNull();
+    // ...uncited now (null source, no unreadable-ref caveat) — no contradiction.
+    const present = [...prov.timeline].reverse().find((e) => e.kind !== "claim-absent");
+    expect(present?.source).toBeNull();
+    expect(present?.refUnparsed).toBeUndefined();
+    expect(prov.verdict.summary).toMatch(/removed|unsourced/i);
+  });
+
   it("records a removal when the claim is gone from the latest revision", async () => {
     const withClaim = "The stadium once held the outright world attendance record for football.";
     const fetchJson = history([

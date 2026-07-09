@@ -1,6 +1,10 @@
 export type Verdict =
   | "born-sourced"
   | "retrofit"
+  // Mirror of retrofit: born with a citation, later stripped of it — the claim
+  // now stands unsourced. Without this, a born-sourced badge (health "sourced")
+  // sits over a claim the timeline shows as currently uncited.
+  | "source-lost"
   | "churn"
   | "unsourced-stable"
   | "contested"

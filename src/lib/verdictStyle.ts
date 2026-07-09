@@ -44,6 +44,17 @@ export const verdictStyle: Record<Verdict, VerdictStyle> = {
     rank: 3,
     ...PALETTE.caution,
   },
+  "source-lost": {
+    label: "source-lost",
+    health: "unsourced",
+    gloss: "born cited, since stripped of its source",
+    meaning:
+      "Entered the article with a citation, but that citation was later removed — the claim now stands unsourced. Its evidence was there and is gone.",
+    // Not the single critical red (that stays unsourced-stable): it once had backing.
+    severity: "warn",
+    rank: 4,
+    ...PALETTE.warn,
+  },
   churn: {
     label: "churn",
     health: "unstable",

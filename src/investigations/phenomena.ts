@@ -29,17 +29,6 @@ export const PHENOMENA: Phenomenon[] = [
       "Born as an unsourced assertion; a citation was bolted on later. The backing is retroactive.",
   },
   {
-    id: "churn",
-    label: "Churn",
-    blurb:
-      "The claim stayed put while its evidence was swapped again and again — the ground keeps shifting underneath it.",
-  },
-  {
-    id: "contested",
-    label: "Contested",
-    blurb: "Reverted or fought over — its place in the article is disputed.",
-  },
-  {
     id: "note-not-source",
     label: "Note, not source",
     blurb:

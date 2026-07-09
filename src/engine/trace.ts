@@ -121,8 +121,13 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   const nowNoteOnly = !nowSourced && currentRef.note;
 
   const introYear = Number(year(intro.revision.timestamp));
+  // `bornSourced` no longer short-circuits: a claim born with a citation that is
+  // gone now (text intact, so not a removal) is `source-lost`, not `born-sourced`
+  // — otherwise a "sourced" health word sits over a currently-uncited claim.
   const lexicalPrimary: Verdict = bornSourced
-    ? "born-sourced"
+    ? nowSourced
+      ? "born-sourced"
+      : "source-lost"
     : nowSourced
       ? "retrofit"
       : "unsourced-stable";
@@ -151,7 +156,9 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   const effectiveIntroSource = moved ? originHop!.source : introRef.source;
 
   const genealogyPrimary: Verdict = effectiveBornSourced
-    ? "born-sourced"
+    ? nowSourced
+      ? "born-sourced"
+      : "source-lost"
     : nowSourced
       ? "retrofit"
       : "unsourced-stable";
@@ -337,6 +344,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
 const VERDICT_PHRASE: Record<Verdict, string> = {
   "born-sourced": "born-sourced",
   retrofit: "a retrofit (born unsourced)",
+  "source-lost": "born-sourced but since stripped of its source",
   "unsourced-stable": "unsourced",
   churn: "churned",
   contested: "contested",
@@ -451,6 +459,8 @@ function readingReason(v: Verdict, introYear: number, currentLabel: string | nul
   if (v === "born-sourced") return `The current wording first appears in ${introYear}, cited from the start.`;
   if (v === "retrofit")
     return `The current wording first appears in ${introYear} unsourced; the citation${currentLabel ? ` (${currentLabel})` : ""} attached later.`;
+  if (v === "source-lost")
+    return `The current wording first appears in ${introYear} cited, but the citation was later removed — it now stands uncited.`;
   return `The current wording first appears in ${introYear} and is still uncited.`;
 }
 
@@ -464,6 +474,8 @@ function genealogyReason(
   if (v === "born-sourced") return `The idea traces back to ${originYear}${via}, cited then too.`;
   if (v === "retrofit")
     return `The idea traces back to ${originYear}${via}, where it stood uncited — the citation${currentLabel ? ` (${currentLabel})` : ""} is retroactive.`;
+  if (v === "source-lost")
+    return `The idea traces back to ${originYear}${via}, cited then; the citation was later stripped, so it now stands uncited.`;
   return `The idea traces back to ${originYear}${via}, where it stood uncited.`;
 }
 
@@ -500,6 +512,8 @@ function summarize(primary: Verdict, removed: boolean, circular: boolean): strin
       return circular
         ? "Born unsourced; the citation attached later was published after the claim — the backing may be circular."
         : "Born unsourced; the citation was attached later.";
+    case "source-lost":
+      return "Born with a citation that was later removed; the claim now stands unsourced.";
     case "unsourced-stable":
       return "Never sourced, but never removed.";
     default:
@@ -527,6 +541,8 @@ function credibilityRead(
       return ctx.circular
         ? `Presented as fact with no source at introduction; the citation that later stuck (${ctx.currentRef?.label ?? "current"}) was published after the claim already lived here, so it cannot be the origin — the backing may trace back to this article itself.`
         : `Presented as fact with no source at introduction; the citation (${ctx.currentRef?.label ?? "current"}) only stuck on later. The backing is retroactive.`;
+    case "source-lost":
+      return `Born with a source (${ctx.introRef?.label ?? "citation"}) at introduction, but the citation was later removed — the claim now stands unsourced in the current revision. Its backing was there and is gone.`;
     case "unsourced-stable":
       return ctx.noteOnly
         ? "Introduced unsourced and still unsourced. It carries an explanatory footnote — the “[α]”-style marker that reads like a reference — but that note only adds context; it cites no source."

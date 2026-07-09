@@ -29,7 +29,8 @@ function traceStatus(p: TraceProgress | null): { label: string; pct: number } {
     case "reading":
       return { label: "Reading the revisions…", pct: 92 };
     case "detecting":
-      return { label: "Detecting the attached citation…", pct: 90 };
+      // Emitted after `reading`, so it must not sit below it or the bar rewinds.
+      return { label: "Detecting the attached citation…", pct: 93 };
     case "genealogy":
       return { label: "Reconstructing the reformulation chain…", pct: 95 };
   }

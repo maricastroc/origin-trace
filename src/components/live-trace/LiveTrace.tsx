@@ -70,6 +70,23 @@ export function LiveTrace() {
     }
   }
 
+  // Warm the cache for an explicitly-scoped article while the user is still typing
+  // the phrase, so the revision list is resident by the time they hit Trace. Deduped
+  // per (lang, title) so re-blurring the field doesn't refire. Fire-and-forget.
+  const prewarmed = useRef("");
+  function prewarm(rawArticle: string, lang: string) {
+    const parsed = parseArticleInput(rawArticle);
+    const effLang = parsed.lang ?? lang;
+    const title = parsed.title.trim();
+    if (!title) return;
+    const key = `${effLang}:${title}`;
+    if (prewarmed.current === key) return;
+    prewarmed.current = key;
+    void fetch(`/api/prewarm?article=${enc(title)}&lang=${enc(effLang)}`, {
+      keepalive: true,
+    }).catch(() => {});
+  }
+
   async function resolveAndTrace(p: string, a: string, lang = "en") {
     if (!p) return;
     if (a) {
@@ -167,6 +184,7 @@ export function LiveTrace() {
               value={article}
               onChange={setArticle}
               onClear={() => setArticle("")}
+              onBlur={() => prewarm(article, lang)}
               placeholder="leave empty and we'll try to resolve it"
             />
           </label>

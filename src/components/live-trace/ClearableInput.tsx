@@ -7,12 +7,14 @@ export function ClearableInput({
   value,
   onChange,
   onClear,
+  onBlur,
   placeholder,
   className = "",
 }: {
   value: string;
   onChange: (value: string) => void;
   onClear: () => void;
+  onBlur?: () => void;
   placeholder?: string;
   className?: string;
 }) {
@@ -21,6 +23,7 @@ export function ClearableInput({
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         className={inputClass.replace("px-3", "pl-3 pr-9")}
       />

@@ -138,6 +138,37 @@ describe("WikipediaClient.search", () => {
       { title: "Quokka", snippet: 'Quokka is "happy" & small' },
     ]);
   });
+
+  it("cleans wikitext markup out of insource snippets", async () => {
+    // insource:"…" matches land inside raw wikitext, so snippets arrive full of
+    // markup — including template halves sheared off at the fragment edges.
+    const cases: Record<string, string> = {
+      leadingOrphanTemplate:
+        'quote=Coati (also known as the Brazilian aardvark)}}&lt;/ref&gt; the "[[Daily Express]]",&lt;ref&gt;{{cite',
+      listItems:
+        "*[[Aardvark-Vanaheim]], a publisher *[[Brazilian aardvark]], an example of circular reporting",
+      sectionScaffolding:
+        "==See also== *{{Annotated link|Brazilian aardvark}} ==References== {{Reflist}}",
+    };
+    const fetchJson: FetchJson = async () => ({
+      query: {
+        search: Object.entries(cases).map(([title, snippet]) => ({ title, snippet })),
+      },
+    });
+    const byTitle = Object.fromEntries(
+      (await new WikipediaClient({ fetchJson }).search("x")).map((h) => [h.title, h.snippet]),
+    );
+
+    // No markup, entities, or template/ref debris survives.
+    for (const snippet of Object.values(byTitle)) {
+      expect(snippet).not.toMatch(/[{}<>]|&lt;|&gt;|&amp;|\[\[|\]\]|==/);
+    }
+    expect(byTitle.leadingOrphanTemplate).toBe('the "Daily Express",');
+    expect(byTitle.listItems).toBe(
+      "Aardvark-Vanaheim, a publisher Brazilian aardvark, an example of circular reporting",
+    );
+    expect(byTitle.sectionScaffolding).toBe("See also References");
+  });
 });
 
 describe("WikipediaClient caching", () => {

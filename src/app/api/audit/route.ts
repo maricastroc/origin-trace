@@ -1,5 +1,5 @@
 import { ArticleNotFoundError, auditArticle } from "@/engine/audit.ts";
-import { sharedEngineCache } from "@/engine/cache.ts";
+import { getEngineCache } from "@/engine/persistent-cache.ts";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -14,7 +14,7 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   try {
-    const audit = await auditArticle({ article, lang, cache: sharedEngineCache });
+    const audit = await auditArticle({ article, lang, cache: getEngineCache() });
     return Response.json(audit);
   } catch (err) {
     if (err instanceof ArticleNotFoundError) {

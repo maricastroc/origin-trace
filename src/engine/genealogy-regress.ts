@@ -22,16 +22,16 @@ import { WikipediaClient, type RevisionList } from "./wikipedia.ts";
 class RegressCache implements EngineCache {
   content = new Map<string, string | null>();
   list = new Map<string, RevisionList>();
-  getContent(lang: string, revid: number) {
+  async getContent(lang: string, revid: number) {
     return this.content.get(`${lang}:${revid}`);
   }
-  setContent(lang: string, revid: number, value: string | null) {
+  async setContent(lang: string, revid: number, value: string | null) {
     this.content.set(`${lang}:${revid}`, value);
   }
-  getList(lang: string, title: string) {
+  async getList(lang: string, title: string) {
     return this.list.get(`${lang}:${title}`);
   }
-  setList(lang: string, title: string, value: RevisionList) {
+  async setList(lang: string, title: string, value: RevisionList) {
     this.list.set(`${lang}:${title}`, value);
   }
 }

@@ -1,5 +1,5 @@
 import { ClaimNotFoundError, traceClaim } from "@/engine/trace.ts";
-import { sharedEngineCache } from "@/engine/cache.ts";
+import { getEngineCache } from "@/engine/persistent-cache.ts";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -35,7 +35,7 @@ export async function GET(request: Request): Promise<Response> {
           article,
           phrase,
           lang,
-          cache: sharedEngineCache,
+          cache: getEngineCache(),
           onProgress: (progress) => send({ type: "progress", progress }),
         });
         send({ type: "result", data: provenance });

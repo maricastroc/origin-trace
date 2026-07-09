@@ -9,6 +9,7 @@ import {
   anchorIndex,
   detectRefNear,
   findIntroduction,
+  normalize,
   type ContentReader,
 } from "./blame.ts";
 import {
@@ -16,6 +17,7 @@ import {
   residualShape,
   type GenealogyHop,
 } from "./genealogy.ts";
+import { cleanProse, sentences } from "./audit.ts";
 import { verdictConfidence } from "./confidence.ts";
 import { WikipediaClient, type FetchJson, type RevisionMeta } from "./wikipedia.ts";
 import type { EngineCache } from "./cache.ts";
@@ -550,6 +552,20 @@ function yearMonth(timestamp: string): string {
 }
 
 function excerpt(content: string, phrase: string): string {
+  // Prefer the same sentence pipeline the genealogy uses. It is nesting-aware
+  // (brace-counting media-link stripping) and drops section headers / list
+  // scaffolding, so a `[[File:…|thumb|caption [[nested link]]]]` doesn't leak
+  // "thumb|200px|" and raw brackets into the quote the way a single-pass regex
+  // does. Falls through to the anchor slice below when the phrase has been
+  // reworded and no cleaned sentence matches it verbatim.
+  const target = normalize(phrase);
+  if (target) {
+    for (const raw of sentences(content)) {
+      const clean = cleanProse(raw);
+      if (normalize(clean).includes(target)) return clip(clean);
+    }
+  }
+
   const clean = content
     .replace(/<ref[^>]*\/>/g, "")
     .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, "")
@@ -560,10 +576,10 @@ function excerpt(content: string, phrase: string): string {
     .replace(/\s+/g, " ");
 
   const idx = anchorIndex(clean, phrase);
-  if (idx < 0) return phrase;
+  if (idx < 0) return clip(cleanProse(phrase));
 
   const start = clean.lastIndexOf(".", idx);
   const end = clean.indexOf(".", idx);
   const sentence = clean.slice(start + 1, end < 0 ? idx + 120 : end).trim();
-  return sentence.length > 160 ? sentence.slice(0, 157) + "…" : sentence;
+  return clip(sentence);
 }

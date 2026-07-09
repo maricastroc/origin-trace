@@ -58,7 +58,7 @@ export class WikipediaClient {
   }
 
   async listRevisions(title: string): Promise<RevisionList> {
-    const cached = this.cache?.getList(this.lang, title);
+    const cached = await this.cache?.getList(this.lang, title);
     if (cached) return cached;
 
     const revisions: RevisionMeta[] = [];
@@ -96,7 +96,7 @@ export class WikipediaClient {
     } while (rvcontinue && pages < this.maxPages);
 
     const result: RevisionList = { revisions, truncated: Boolean(rvcontinue) };
-    this.cache?.setList(this.lang, title, result);
+    await this.cache?.setList(this.lang, title, result);
     return result;
   }
 
@@ -133,28 +133,30 @@ export class WikipediaClient {
     const misses = new Set<number>();
     for (const revid of revids) {
       if (out.has(revid) || misses.has(revid)) continue;
-      const cached = this.cache?.getContent(this.lang, revid);
+      const cached = await this.cache?.getContent(this.lang, revid);
       if (cached !== undefined) out.set(revid, cached);
       else misses.add(revid);
     }
     if (misses.size > 0) {
       const fetched = await this.getContent([...misses]);
-      for (const revid of misses) {
-        const content = fetched.get(revid) ?? null;
-        out.set(revid, content);
-        this.cache?.setContent(this.lang, revid, content);
-      }
+      await Promise.all(
+        [...misses].map((revid) => {
+          const content = fetched.get(revid) ?? null;
+          out.set(revid, content);
+          return this.cache?.setContent(this.lang, revid, content);
+        }),
+      );
     }
     return out;
   }
 
   async getRevisionContent(revid: number): Promise<string | null> {
-    const cached = this.cache?.getContent(this.lang, revid);
+    const cached = await this.cache?.getContent(this.lang, revid);
     if (cached !== undefined) return cached;
 
     const map = await this.getContent([revid]);
     const content = map.get(revid) ?? null;
-    this.cache?.setContent(this.lang, revid, content);
+    await this.cache?.setContent(this.lang, revid, content);
     return content;
   }
 
@@ -178,7 +180,7 @@ export class WikipediaClient {
     const rev = page?.revisions?.[0];
     const content = rev?.slots?.main?.content;
     if (!rev || typeof content !== "string") return null;
-    this.cache?.setContent(this.lang, rev.revid, content);
+    await this.cache?.setContent(this.lang, rev.revid, content);
     return { revid: rev.revid, content, timestamp: rev.timestamp ?? "" };
   }
 

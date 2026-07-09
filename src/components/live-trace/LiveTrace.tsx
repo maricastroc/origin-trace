@@ -183,15 +183,24 @@ export function LiveTrace() {
     <div className="flex flex-col gap-5">
       <form
         onSubmit={submit}
-        className="rounded-2xl border border-line-strong bg-surface-2 p-5 sm:p-6"
+        className="overflow-hidden rounded-xl border border-t-2 border-line-strong border-t-ink bg-surface-2"
       >
-        <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">
-          the claim
-        </p>
-        <div className="mt-4 flex flex-col gap-4">
-          <label className="flex flex-col gap-1.5">
-            <span className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">
-              Claim phrase
+        <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-2.5 sm:px-6">
+          <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink">
+            <span className="text-accent" aria-hidden="true">
+              ▪
+            </span>
+            the claim
+          </p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">
+            → case file
+          </p>
+        </div>
+
+        <div className="divide-y divide-line px-5 sm:px-6">
+          <label className="grid gap-1 py-3 sm:grid-cols-[7rem_1fr] sm:items-baseline sm:gap-5">
+            <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-muted">
+              Claim
             </span>
             <ClearableInput
               value={phrase}
@@ -200,9 +209,12 @@ export function LiveTrace() {
               placeholder="happiest animal"
             />
           </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">
-              Article — optional scope
+          <label className="grid gap-1 py-3 sm:grid-cols-[7rem_1fr] sm:items-baseline sm:gap-5">
+            <span className="font-mono text-[11px] uppercase leading-tight tracking-[0.1em] text-ink-muted">
+              Article
+              <span className="mt-0.5 block text-[10px] text-ink-faint">
+                scope · optional
+              </span>
             </span>
             <ClearableInput
               value={article}
@@ -212,18 +224,22 @@ export function LiveTrace() {
               placeholder="leave empty and we'll try to resolve it"
             />
           </label>
-          <div className="flex flex-col gap-1.5">
-            <span className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">
-              Wikipedia language
+          <div className="grid gap-1.5 py-3 sm:grid-cols-[7rem_1fr] sm:items-center sm:gap-5">
+            <span className="font-mono text-[11px] uppercase leading-tight tracking-[0.1em] text-ink-muted">
+              Language
+              <span className="mt-0.5 block text-[10px] text-ink-faint">
+                wikipedia
+              </span>
             </span>
             <LangPicker value={lang} onChange={setLang} />
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2.5">
+
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-t border-line bg-surface-1/30 px-5 py-3 sm:px-6">
           <button
             type="submit"
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-surface-2 transition-colors hover:bg-accent-strong disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-[3px] bg-accent px-4 py-2 text-sm font-medium text-surface-2 transition-colors hover:bg-accent-strong disabled:opacity-40"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
             {state.status === "resolving"
@@ -232,8 +248,12 @@ export function LiveTrace() {
                 ? "Tracing…"
                 : "Trace"}
           </button>
-          <span className="font-mono text-[11px] uppercase tracking-wide text-ink-faint">
-            examples:
+          <span
+            className="hidden h-4 w-px bg-line-strong sm:block"
+            aria-hidden="true"
+          />
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">
+            specimens
           </span>
           {EXAMPLES.map((ex) => (
             <button

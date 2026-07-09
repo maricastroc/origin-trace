@@ -17,7 +17,7 @@ export function LangPicker({
 }) {
   return (
     <div
-      className="flex flex-wrap gap-1.5"
+      className="inline-flex divide-x divide-line-strong overflow-hidden rounded-[3px] border border-line-strong"
       role="group"
       aria-label="Wikipedia language"
     >
@@ -30,10 +30,10 @@ export function LangPicker({
             onClick={() => onChange(l.code)}
             aria-pressed={active}
             title={`${l.name} — ${l.code}.wikipedia`}
-            className={`rounded-full border px-2.5 py-0.5 font-mono text-[12px] uppercase tracking-wide transition-colors ${
+            className={`px-3 py-1 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors ${
               active
-                ? "border-accent bg-accent text-surface-2"
-                : "border-line-strong text-ink-muted hover:border-ink hover:text-ink"
+                ? "bg-accent text-surface-2"
+                : "text-ink-muted hover:bg-surface-1 hover:text-ink"
             }`}
           >
             {l.code}

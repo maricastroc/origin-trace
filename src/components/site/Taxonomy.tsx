@@ -1,7 +1,9 @@
 import type { Verdict } from "@/types/Verdict";
 import { verdictStyle } from "@/lib/verdictStyle";
 
-const VERDICTS = Object.keys(verdictStyle) as Verdict[];
+// `removed` is a terminal state surfaced on the case file, not one of the
+// evidence-life *patterns* this vocabulary teaches — keep it out of the section.
+const VERDICTS = (Object.keys(verdictStyle) as Verdict[]).filter((v) => v !== "removed");
 
 export function Taxonomy() {
   const ordered = [...VERDICTS].sort(

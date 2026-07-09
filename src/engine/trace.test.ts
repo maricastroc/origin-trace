@@ -135,6 +135,9 @@ describe("traceClaim — verdicts", () => {
 
     expect(prov.timeline.some((e) => e.kind === "removed")).toBe(true);
     expect(prov.verdict.summary).toMatch(/removed/i);
+    // The badge must not contradict the removal: a removed claim resolves to the
+    // `removed` verdict, never `unsourced-stable` (whose gloss reads "never removed").
+    expect(prov.verdict.primary).toBe("removed");
   });
 
   it("throws ClaimNotFoundError when the phrase never appears", async () => {

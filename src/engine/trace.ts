@@ -156,10 +156,23 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       ? "retrofit"
       : "unsourced-stable";
 
+  // Removal dominates the badge. A claim that's gone from the current revision is
+  // "removed" — not a sourcing pattern. Without this the Verdict taxonomy had no
+  // slot for it, so a removed-and-never-cited claim leaked an `unsourced-stable`
+  // badge whose own gloss reads "never removed": a claim that both was and wasn't
+  // removed. narrativePrimary stays the sourcing reading for the timeline prose.
+  const removed = intro.removedSince;
+
   // Dual readings when genealogy corrects the lexical reading — never silently
   // override; show both and let the reader judge (the `ambiguous` identity).
-  const corrected = moved && genealogyPrimary !== lexicalPrimary;
-  const primary: Verdict = corrected ? "ambiguous" : moved ? genealogyPrimary : lexicalPrimary;
+  const corrected = !removed && moved && genealogyPrimary !== lexicalPrimary;
+  const primary: Verdict = removed
+    ? "removed"
+    : corrected
+      ? "ambiguous"
+      : moved
+        ? genealogyPrimary
+        : lexicalPrimary;
   const narrativePrimary: Verdict = moved ? genealogyPrimary : lexicalPrimary;
 
   // A reword existed just before the origin but couldn't be safely followed.
@@ -328,6 +341,7 @@ const VERDICT_PHRASE: Record<Verdict, string> = {
   churn: "churned",
   contested: "contested",
   ambiguous: "ambiguous",
+  removed: "removed",
 };
 
 function clip(s: string): string {

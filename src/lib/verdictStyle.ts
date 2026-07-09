@@ -84,4 +84,14 @@ export const verdictStyle: Record<Verdict, VerdictStyle> = {
     rank: 7,
     ...PALETTE.neutral,
   },
+  removed: {
+    label: "removed",
+    health: "removed",
+    gloss: "introduced, then taken out",
+    meaning:
+      "Existed in the article and was later removed. Its window of presence is traced down to the revision that introduced it — the current revision carries no such claim to source.",
+    severity: "neutral",
+    rank: 2,
+    ...PALETTE.neutral,
+  },
 };

@@ -68,6 +68,9 @@ export function EvidenceStatus({ data }: { data: ClaimProvenance }) {
             {signals.currentSourceLabel ? ` · ${signals.currentSourceLabel}` : ""}
           </Signal>
         )}
+        {signals.sourcedNow === "unreadable" && (
+          <Signal>cited &middot; source unreadable</Signal>
+        )}
         {signals.sourcedNow === "removed" && (
           <Signal>removed from article</Signal>
         )}

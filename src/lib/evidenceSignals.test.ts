@@ -28,6 +28,23 @@ describe("deriveSignals — sourced state now", () => {
     expect(s.currentSourceLabel).toBeNull();
   });
 
+  it("reports 'unreadable' — not 'no' — when the current ref is cited but unparsed", () => {
+    // refUnparsed: a real <ref> is attached but couldn't be parsed into a source.
+    // The claim IS cited, so this must never read as the red "unsourced now" chip.
+    const events: TimelineEvent[] = [
+      {
+        id: "e1",
+        date: "2015-06",
+        kind: "claim-introduced",
+        source: null,
+        refUnparsed: true,
+      },
+    ];
+    const s = deriveSignals(events, NOW);
+    expect(s.sourcedNow).toBe("unreadable");
+    expect(s.currentSourceLabel).toBeNull();
+  });
+
   it("reports 'removed' whenever a removal event exists, ignoring earlier sources", () => {
     const events: TimelineEvent[] = [
       {

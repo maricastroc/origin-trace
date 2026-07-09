@@ -2,7 +2,7 @@ import type { TimelineEvent } from "@/types/TimelineEvent";
 
 export interface EvidenceSignals {
   ageLabel: string | null;
-  sourcedNow: "yes" | "no" | "removed" | "unknown";
+  sourcedNow: "yes" | "no" | "removed" | "unreadable" | "unknown";
   currentSourceLabel: string | null;
   evidenceChanges: number;
   explanatoryNoteNow: boolean;
@@ -26,7 +26,11 @@ export function deriveSignals(
   if (removed) {
     sourcedNow = "removed";
   } else if (present) {
-    if (present.source === null) sourcedNow = "no";
+    // A cited-but-unparsed <ref> (refUnparsed) is NOT "no source": the claim IS
+    // cited, we just have nothing structured to render. Keep it a distinct third
+    // state so the panel never stamps a red "unsourced now" over a sourced verdict
+    // — matching how the timeline row and the audit row already render it.
+    if (present.source === null) sourcedNow = present.refUnparsed ? "unreadable" : "no";
     else if (present.source) {
       sourcedNow = "yes";
       currentSourceLabel = present.source.label;

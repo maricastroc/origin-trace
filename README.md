@@ -28,7 +28,7 @@ Reconstructed deterministically from Wikipedia's full revision history — no la
 | **🎯 Honest scope resolution**         | Given only a phrase, it finds the article(s) that carry it — and when several match _verbatim_ (itself a propagation signal) or none do, it shows you the candidates instead of guessing at the wrong one.                                                                                                          |
 | **🔕 A note is not a source**          | An `[α]`-style explanatory footnote (`{{efn}}` / a grouped `<ref group=…>`) reads like a reference but cites nothing. The engine tells them apart — and looks _inside_ a note for a nested citation — refusing to count a note as backing.                                                                          |
 | **🤐 Honest abstention**              | When a phrase isn't in the history, it says so rather than inventing an origin. It reports "no removal recorded" — never "never challenged" — because it can't yet prove the latter. Silence, and uncertainty, are results.                                                                                        |
-| **⚡ Live, streamed, zero setup**      | The whole pipeline runs against the public Wikipedia API with **no keys, no LLM, no database** — every verdict is reproducible from the revision history alone. Progress streams as the search runs, and repeat traces are served from an in-process cache.                                                         |
+| **⚡ Live, streamed, zero setup**      | The whole pipeline runs against the public Wikipedia API with **no keys, no LLM, no database required** — every verdict is reproducible from the revision history alone. Progress streams as the search runs; long histories are enumerated in parallel, the search speculatively prefetches its own descent, and repeat traces are served from a persistent cache (in-process, optionally backed by Redis/KV) that nothing the verdict depends on.                                                         |
 
 <br/>
 
@@ -48,11 +48,12 @@ Reconstructed deterministically from Wikipedia's full revision history — no la
 | **Framework**   | Next.js 16 (App Router), React 19                                                                      |
 | **Language**    | TypeScript 5                                                                                           |
 | **Styling**     | Tailwind CSS v4                                                                                        |
-| **Engine**      | Pure TypeScript — WikiBlame gap-robust binary search over a closed revision corpus, zero runtime deps  |
-| **Evidence**    | MediaWiki Action API — revision enumeration, wikitext content, and full-text search; nothing cloned or scraped |
+| **Engine**      | Pure TypeScript — WikiBlame gap-robust binary search over a closed revision corpus; the core is dependency-free (one optional dep, the Upstash Redis client, only for the cache layer) |
+| **Evidence**    | MediaWiki Action API — revision enumeration (fanned out across concurrent timestamp windows), wikitext content, and full-text search; nothing cloned or scraped |
 | **Determinism** | **No LLM, no database.** Every verdict is a reproducible function of the revision history              |
+| **Caching**     | Two-tier — an in-process LRU in front of an optional Upstash Redis/KV layer (gzipped). Immutable revision bodies never expire, so a warm article traces in seconds; with no store configured it degrades to in-memory, zero setup |
 | **Streaming**   | Server-Sent Events — real binary-search progress, not a faked spinner                                  |
-| **Runtime**     | Node.js API routes — `/api/trace` (SSE), `/api/resolve`, `/api/audit`                                  |
+| **Runtime**     | Node.js API routes — `/api/trace` (SSE), `/api/resolve`, `/api/audit`, `/api/prewarm`                  |
 | **Tooling**     | ESLint, `tsc`, **Vitest** (a unit suite over the engine + lib, no network), and a live validation harness (`engine:validate`) that checks the engine against hand traces |
 
 <br/>
@@ -93,13 +94,15 @@ phrase → resolve scope       — which article carries it? honest about ambigu
 
 **Resolve ([`src/engine/resolve.ts`](src/engine/resolve.ts)).** A phrase is searched two ways — `insource:"…"` for verbatim current-wikitext matches and a fuzzy relevance search — and only when it appears verbatim in exactly one article is a scope pinned. Everything else returns candidates, ranked, for a human to choose.
 
-**Collect + search ([`src/engine/wikipedia.ts`](src/engine/wikipedia.ts), [`src/engine/blame.ts`](src/engine/blame.ts)).** The article's revisions are enumerated oldest-first — the closed corpus — then a gap-robust binary search reads only `O(log n)` revisions to find the earliest one containing the claim. Substring matching survives re-linking and re-formatting by normalizing away wiki markup.
+**Collect + search ([`src/engine/wikipedia.ts`](src/engine/wikipedia.ts), [`src/engine/blame.ts`](src/engine/blame.ts)).** The article's revisions are enumerated oldest-first — the closed corpus. A long history is fanned out into concurrent timestamp windows rather than walked one paginated request at a time; the windows are deduped by revision id and re-ordered, so the result is byte-for-byte the serial list — nothing lost or duplicated at a seam. A gap-robust binary search then reads only `O(log n)` revisions to find the earliest one containing the claim, and **speculatively prefetches each descent** — warming, in one batched round-trip, every revision the next few comparisons could touch — so the search rarely blocks on a per-level fetch. Substring matching survives re-linking and re-formatting by normalizing away wiki markup.
 
 **Detect ([`src/engine/blame.ts`](src/engine/blame.ts)).** At the origin revision and the current one, the engine anchors on the claim as _prose_ (not where it happens to appear inside a citation's own title) and reads whether a real `<ref>`/`{{cite}}` sits on that claim's **own sentence** — bounded to the sentence so it can't borrow the neighbour's citation.
 
 **Classify ([`src/engine/trace.ts`](src/engine/trace.ts)).** From "sourced at birth?" and "sourced now?" it derives the verdict — `born-sourced`, `retrofit`, or `unsourced-stable` (plus a _removed_ state) — assembles the timeline, and reports its confidence and caveats honestly in `meta.notes`. On a retrofit, it also cross-checks dates: when the citation that later backed the claim was _published after_ the claim first appeared here, that source can't be its origin — the engine emits a **citogenesis loop** (unsourced here → source published later → cited back) and marks the backing as possibly circular.
 
 **Audit ([`src/engine/audit.ts`](src/engine/audit.ts)).** For a whole article, a single fetch of the current revision is segmented structurally — `<ref>`/template spans masked, sentences split with an abbreviation guard, the trailing citation after each period attached to the sentence it backs — and each sentence is classified with the _same_ citation rules as the per-claim trace.
+
+**Cache + prewarm ([`src/engine/cache.ts`](src/engine/cache.ts), [`src/engine/redis-cache.ts`](src/engine/redis-cache.ts), [`src/app/api/prewarm/route.ts`](src/app/api/prewarm/route.ts)).** A revision is immutable, so once its wikitext is read it never needs reading again. Revision bodies and lists are cached in an in-process LRU fronting an optional Redis/KV layer (gzipped — a 12k-revision list packs from ~1.8 MB to well under the store's request limit) that survives the serverless cold starts an in-memory cache can't. The moment you scope an article its history is prewarmed in the background, so it's already resident when you hit _Trace_ — and a repeat trace of a warm article skips the network almost entirely.
 
 <br/>
 
@@ -150,9 +153,10 @@ A tool that stakes its value on honesty should be just as honest about its own e
 
 Because the pipeline is a set of pure, deterministic functions, it's tested the same way — **no network, no live API**. The engine takes an injectable `fetchJson`, so a small in-memory stand-in for the MediaWiki API drives whole traces end to end; every assertion is reproducible offline, exactly like the verdicts themselves.
 
-- **101 tests across 12 files**, run with **Vitest**.
-- **Engine** — the gap-robust binary search (including removed-and-reintroduced histories), citation-vs-note detection, `{{cite}}` parsing, structural article segmentation, and every verdict path: `born-sourced`, `retrofit`, `unsourced-stable`, _removed_, and the **citogenesis loop**.
-- **Wikipedia client** — `rvcontinue` pagination, truncation, missing pages, snippet stripping, and the cache (LRU + TTL).
+- **178 tests across 18 files**, run with **Vitest**.
+- **Engine** — the gap-robust binary search (including removed-and-reintroduced histories) and its **speculative-prefetch descent** (proven to locate the identical origin with far fewer round-trips), citation-vs-note detection, `{{cite}}` parsing, structural article segmentation, and every verdict path: `born-sourced`, `retrofit`, `unsourced-stable`, _removed_, and the **citogenesis loop**.
+- **Wikipedia client** — `rvcontinue` pagination, truncation, missing pages, wikitext-snippet cleaning, and the **parallel windowed enumeration proven equivalent to a serial walk** — same revisions, same order, nothing lost or duplicated even when a window boundary splits a same-timestamp cluster.
+- **Caching** — the two-tier cache (in-process LRU + gzip'd Redis round-trip, backfill, and cached-`null`-vs-miss), exercised against an in-memory Redis stand-in.
 - **Lib** — high-impact phrase detection (EN + PT), audit metrics/model, evidence signals, and the label/verdict maps.
 - **API routes** — input-validation branches.
 
@@ -185,6 +189,8 @@ npm run dev
 ```
 
 > ⏩ Access [http://localhost:3000](http://localhost:3000) to view the web application.
+
+> **Optional — persistent cache.** To make repeat traces survive serverless cold starts, point it at an Upstash Redis / Vercel KV store by setting `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (or the `KV_REST_API_URL` / `KV_REST_API_TOKEN` pair). With neither set, the cache stays in-process and everything runs unchanged.
 
 > Or trace a claim straight from the terminal — it prints the full `ClaimProvenance` as JSON:
 

@@ -121,7 +121,11 @@ export interface RefDetection {
   note: boolean;
 }
 
-export function detectRefNear(content: string, phrase: string): RefDetection {
+export function detectRefNear(
+  content: string,
+  phrase: string,
+  refDefs?: Map<string, string>,
+): RefDetection {
   const nothing: RefDetection = {
     sourced: false,
     source: null,
@@ -131,12 +135,17 @@ export function detectRefNear(content: string, phrase: string): RefDetection {
   const paragraph = findParagraph(content, phrase);
   if (paragraph == null) return nothing;
 
+  // The claim's <ref> may be a reuse pointer (<ref name="x"/>) whose actual
+  // definition lives elsewhere in the same revision. Index the full content so
+  // collectMarkers can follow the pointer instead of reporting it unparsable.
+  const defs = refDefs ?? indexRefDefinitions(content);
+
   const masked = maskedRanges(paragraph);
   const at = anchorInProse(paragraph, phrase, masked);
   const from = at >= 0 ? at : 0;
   const tail = scopeToSentence(paragraph, from);
 
-  const markers = collectMarkers(tail, tail.length);
+  const markers = collectMarkers(tail, tail.length, defs);
   const citation = markers.find((m) => m.kind === "citation");
   if (citation) {
     return {
@@ -217,8 +226,11 @@ export interface Marker {
   source: ClaimSource | null;
 }
 
-export function classifyInline(sentence: string): RefDetection {
-  const markers = collectMarkers(sentence, sentence.length);
+export function classifyInline(
+  sentence: string,
+  refDefs?: Map<string, string>,
+): RefDetection {
+  const markers = collectMarkers(sentence, sentence.length, refDefs);
   const citation = markers.find((m) => m.kind === "citation");
   if (citation) {
     return { sourced: true, source: citation.source, refText: citation.text, note: false };
@@ -230,7 +242,11 @@ export function classifyInline(sentence: string): RefDetection {
   return { sourced: false, source: null, refText: null, note: false };
 }
 
-export function collectMarkers(text: string, maxGap: number): Marker[] {
+export function collectMarkers(
+  text: string,
+  maxGap: number,
+  refDefs?: Map<string, string>,
+): Marker[] {
   const markers: Marker[] = [];
 
   const refRe = /<ref\b([^>]*)\/>|<ref\b([^>]*)>([\s\S]*?)<\/ref>/gi;
@@ -240,12 +256,15 @@ export function collectMarkers(text: string, maxGap: number): Marker[] {
     if (/\bgroup\s*=/.test(attrs)) {
       markers.push({ index: m.index, kind: "note", text: m[0], source: null });
     } else {
-      markers.push({
-        index: m.index,
-        kind: "citation",
-        text: m[0],
-        source: parseCitation(m[0]),
-      });
+      let source = parseCitation(m[0]);
+      // Reuse pointer (<ref name="x"/>): nothing to parse inline, but the named
+      // definition elsewhere in the article carries the real source.
+      if (source == null && refDefs) {
+        const name = refName(attrs);
+        const def = name ? refDefs.get(name) : undefined;
+        if (def) source = parseCitation(def);
+      }
+      markers.push({ index: m.index, kind: "citation", text: m[0], source });
     }
   }
 
@@ -278,6 +297,28 @@ export function collectMarkers(text: string, maxGap: number): Marker[] {
   }
 
   return markers.sort((a, b) => a.index - b.index);
+}
+
+/** Map a normalized `name="…"` ref key to its full <ref …>body</ref> definition
+ *  text, scanning the whole revision/article. Self-closing pointers and empty
+ *  <ref></ref> tags are not definitions; the first body-bearing tag per name
+ *  wins (matching MediaWiki, which also warns on redefinition). */
+export function indexRefDefinitions(content: string): Map<string, string> {
+  const defs = new Map<string, string>();
+  const refRe = /<ref\b([^>]*)\/>|<ref\b([^>]*)>([\s\S]*?)<\/ref>/gi;
+  for (const m of content.matchAll(refRe)) {
+    if (m[3] === undefined) continue; // self-closing pointer, not a definition
+    const name = refName(m[2] ?? "");
+    if (!name || defs.has(name) || !m[3].trim()) continue;
+    defs.set(name, m[0]);
+  }
+  return defs;
+}
+
+function refName(attrs: string): string | null {
+  const m = attrs.match(/\bname\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s/>]+))/i);
+  const raw = m ? (m[1] ?? m[2] ?? m[3]) : null;
+  return raw ? raw.trim().toLowerCase() : null;
 }
 
 // Longer names first so the alternation doesn't settle on a prefix (e.g. "sfn"
@@ -394,7 +435,9 @@ export function anchorIndex(text: string, phrase: string): number {
 export function parseCitation(refText: string): ClaimSource | null {
   const tpl = refText.match(/\{\{\s*(cite|citation)\s+([\s\S]*?)\}\}/i);
   if (!tpl) {
-    const url = refText.match(/https?:\/\/\S+/)?.[0];
+    // Stop the URL at wiki-syntax delimiters so a bare {{citar web|url=…|title=…}}
+    // doesn't drag the trailing "|title=…}}" into the href.
+    const url = refText.match(/https?:\/\/[^\s|}\]<]+/)?.[0];
     return url ? { label: hostname(url), type: "other", url } : null;
   }
 

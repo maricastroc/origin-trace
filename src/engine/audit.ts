@@ -5,7 +5,7 @@ import type {
   AuditTally,
   SentenceStatus,
 } from "@/types/ArticleAudit";
-import { classifyInline, maskedRanges } from "./blame.ts";
+import { classifyInline, indexRefDefinitions, maskedRanges } from "./blame.ts";
 import { WikipediaClient, type FetchJson } from "./wikipedia.ts";
 import type { EngineCache } from "./cache.ts";
 
@@ -77,6 +77,10 @@ export function segmentArticle(wikitext: string): AuditSection[] {
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<!--[\s\S]*$/g, "");
 
+  // Reuse pointers (<ref name="x"/>) carry no inline source; index the article's
+  // named definitions once so each sentence's citation can be resolved to it.
+  const refDefs = indexRefDefinitions(clean);
+
   const raw = splitSections(clean);
   const out: AuditSection[] = [];
   let counter = 0;
@@ -87,7 +91,7 @@ export function segmentArticle(wikitext: string): AuditSection[] {
     for (const sentence of sentences(sec.body)) {
       const display = cleanProse(sentence);
       if (!isAuditable(display)) continue;
-      const det = classifyInline(sentence);
+      const det = classifyInline(sentence, refDefs);
       const status: SentenceStatus = det.sourced
         ? "sourced"
         : det.note
@@ -98,6 +102,7 @@ export function segmentArticle(wikitext: string): AuditSection[] {
         text: display,
         status,
         ...(status === "sourced" ? { source: det.source } : {}),
+        ...(status === "sourced" && det.source == null ? { refUnparsed: true } : {}),
       });
     }
     if (claims.length > 0) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Link2 } from "lucide-react";
+import { ArrowRight, FileWarning, Link2 } from "lucide-react";
 import type { ArticleAudit as ArticleAuditData } from "@/types/ArticleAudit";
 import type { AuditClaim } from "@/types/AuditClaim";
 import { ClaimDrillDown } from "./ClaimDrillDown";
@@ -74,12 +74,20 @@ export function ClaimRow({
           >
             {highlight(claim.text, query)}
           </span>
-          {claim.source?.label && (
+          {claim.source?.label ? (
             <span className="ml-2 inline-flex items-center gap-1 whitespace-nowrap font-mono text-[11px] text-success/90">
               <Link2 className="h-3 w-3" aria-hidden="true" />
               {claim.source.label}
             </span>
-          )}
+          ) : claim.refUnparsed ? (
+            <span
+              className="ml-2 inline-flex items-center gap-1 whitespace-nowrap font-mono text-[11px] text-ink-muted"
+              title="A citation (<ref>) is attached here, but it couldn't be parsed into an attributable source — a bare URL, an unknown template, or a reuse pointer. The claim is cited; there's just nothing structured to display."
+            >
+              <FileWarning className="h-3 w-3" aria-hidden="true" />
+              source unreadable
+            </span>
+          ) : null}
         </span>
         <span
           className={`mt-0.5 inline-flex shrink-0 items-center gap-1 font-mono text-[11px] transition-colors ${

@@ -38,6 +38,27 @@ describe("segmentArticle", () => {
     ]);
   });
 
+  it("flags a cited claim whose <ref> can't be parsed as refUnparsed, not unsourced", () => {
+    const secs = segmentArticle(
+      "The bandicoot is a nocturnal marsupial native to the Australian mainland.<ref>Field notes, unpublished.</ref>\n",
+    );
+    const claim = secs[0].claims[0];
+    expect(claim.status).toBe("sourced");
+    expect(claim.source).toBeNull();
+    expect(claim.refUnparsed).toBe(true);
+  });
+
+  it("resolves a reuse pointer (<ref name=x/>) to its named definition", () => {
+    const secs = segmentArticle(
+      "The quoll is a carnivorous marsupial native to mainland Australia and Tasmania.<ref name=abc>{{citar web|url=https://example.org/quoll|titulo=Quoll}}</ref>\n\n" +
+        "== Diet ==\nThe quoll hunts insects and small vertebrates across a wide home range each night.<ref name=abc/>\n",
+    );
+    const reuse = secs[1].claims[0];
+    expect(reuse.status).toBe("sourced");
+    expect(reuse.refUnparsed).toBeUndefined();
+    expect(reuse.source?.label).toBe("example.org");
+  });
+
   it("strips ref/markup from the displayed claim text", () => {
     for (const section of sections) {
       for (const claim of section.claims) {

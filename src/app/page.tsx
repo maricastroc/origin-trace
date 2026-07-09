@@ -23,9 +23,9 @@ export default function Home() {
           <div className="mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="kicker">{"// investigations"}</p>
+                <p className="kicker">{"// cases"}</p>
                 <h2 className="mt-4 font-display text-3xl font-medium tracking-[-0.015em] text-ink sm:text-[2.5rem]">
-                  Investigations.
+                  Cases.
                 </h2>
               </div>
               <p className="max-w-sm text-[14px] leading-relaxed text-ink-muted">
@@ -74,7 +74,9 @@ export default function Home() {
               evidence: which carry an inline citation, which assert without
               one. The claim boundary comes free from Wikipedia&rsquo;s own
               structure — no NLP. Then click any uncited sentence to trace its
-              history down to the revision that introduced it.
+              history — down to the revision that introduced it, or an honest
+              &ldquo;not found&rdquo; when the wording has drifted too far back
+              to match.
             </p>
             <div className="mt-10">
               <ArticleAudit />

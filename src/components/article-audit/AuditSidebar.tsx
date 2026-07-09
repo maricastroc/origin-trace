@@ -57,7 +57,7 @@ export function AuditSidebar({
           <p className="kicker px-1">legend</p>
           <ul className="mt-2 flex flex-col gap-1.5 px-1 text-[12px] text-ink-muted">
             <LegendItem status="sourced">inline citation</LegendItem>
-            <LegendItem status="note-only">note only, no source</LegendItem>
+            <LegendItem status="note-only">note, not a source</LegendItem>
             <LegendItem status="unsourced">no inline citation</LegendItem>
           </ul>
         </div>

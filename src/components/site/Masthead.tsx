@@ -47,15 +47,18 @@ function NavLink({
   icon: React.ReactNode;
   children: React.ReactNode;
 }) {
+  // On mobile the label collapses to icon-only (kept in the a11y tree via
+  // sr-only) so Method / Cases / Audit stay reachable from the sticky header —
+  // instead of vanishing entirely below the sm breakpoint. Labels return at sm.
   return (
     <a
       href={href}
-      className="group hidden items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-1/70 hover:text-ink sm:inline-flex"
+      className="group inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-1/70 hover:text-ink sm:px-2.5"
     >
       <span className="text-ink-faint transition-colors group-hover:text-ink">
         {icon}
       </span>
-      {children}
+      <span className="sr-only sm:not-sr-only">{children}</span>
     </a>
   );
 }

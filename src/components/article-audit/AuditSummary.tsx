@@ -46,7 +46,7 @@ export function AuditSummary({
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div>
           <p className="kicker">
-            evidence health · {model.sectionCount} sections
+            evidence health · {model.sectionCount} body sections
           </p>
           <div className="mt-2.5 flex items-end gap-3">
             <span className="font-display text-[34px] leading-none text-ink">
@@ -63,7 +63,7 @@ export function AuditSummary({
           {body.noteOnly > 0 && (
             <Chip tone="warn">{body.noteOnly} note-only</Chip>
           )}
-          <Chip tone="danger">{body.unsourced} uncited</Chip>
+          <Chip>{body.unsourced} uncited</Chip>
         </div>
       </div>
 
@@ -74,8 +74,12 @@ export function AuditSummary({
       />
 
       <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-3">
-        <Stat label="sentences read" value={String(model.totals.sentences)} />
-        <Stat label="sections mapped" value={String(model.sectionCount)} />
+        <Stat
+          label="sentences read"
+          value={String(model.totals.sentences)}
+          sub={lead.total > 0 ? `${body.total} body · ${lead.total} lead` : undefined}
+        />
+        <Stat label="sections mapped" value={String(data.sections.length)} />
         <Stat
           label="high-impact claims"
           value={String(model.highImpact.length)}

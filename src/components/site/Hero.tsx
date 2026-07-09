@@ -48,20 +48,30 @@ export function Hero() {
             <span className="text-ink-muted">never an LLM</span>
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          {/* One solid-accent primary that means the same thing as the nav's
+              "Trace live" — so the two red buttons reinforce a single entry
+              point instead of competing. Browsing cases is the outline
+              secondary; the method is a tertiary text link. */}
+          <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3">
             <a
-              href="#cases"
+              href="#live"
               className="group inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-surface-2 transition-colors hover:bg-accent-strong"
             >
-              Open a case
+              Trace a claim
               <ArrowRight
                 className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
                 aria-hidden="true"
               />
             </a>
             <a
-              href="#method"
+              href="#cases"
               className="inline-flex items-center rounded-md border border-line-strong bg-surface-2 px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-ink"
+            >
+              Open a case
+            </a>
+            <a
+              href="#method"
+              className="text-sm font-medium text-ink-muted underline decoration-line-strong underline-offset-4 transition-colors hover:text-ink"
             >
               The method
             </a>

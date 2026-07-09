@@ -14,7 +14,11 @@ type Filter = PhenomenonId | "all";
 export function Investigations() {
   const [filter, setFilter] = useState<Filter>("all");
 
-  const [activeSlug, setActiveSlug] = useState(investigations[0]?.slug);
+  // Collapsed by default: the section reads as a scannable index of cards, and
+  // the full case file (a heavy artifact that also appears under Live and Audit)
+  // opens only when a card is picked — so the page doesn't lead with the same
+  // dossier three times over. Re-clicking the open card collapses it.
+  const [activeSlug, setActiveSlug] = useState<string | undefined>(undefined);
 
   const filters = useMemo(() => {
     const present = new Set(investigations.map((i) => i.phenomenon));
@@ -29,10 +33,9 @@ export function Investigations() {
     [filter],
   );
 
-  const active =
-    visible.find((i) => i.slug === activeSlug) ??
-    visible[0] ??
-    investigations[0];
+  const active = activeSlug
+    ? visible.find((i) => i.slug === activeSlug)
+    : undefined;
 
   function pick(next: Filter) {
     setFilter(next);
@@ -40,10 +43,11 @@ export function Investigations() {
       next === "all"
         ? investigations
         : investigations.filter((i) => i.phenomenon === next);
-    if (!list.some((i) => i.slug === activeSlug)) setActiveSlug(list[0]?.slug);
+    // Collapse if the open card falls outside the new filter.
+    if (activeSlug && !list.some((i) => i.slug === activeSlug)) {
+      setActiveSlug(undefined);
+    }
   }
-
-  if (!active) return null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -70,43 +74,47 @@ export function Investigations() {
           <InvestigationCard
             key={inv.slug}
             inv={inv}
-            active={inv.slug === active.slug}
-            onSelect={() => setActiveSlug(inv.slug)}
+            active={inv.slug === activeSlug}
+            onSelect={() =>
+              setActiveSlug((prev) => (prev === inv.slug ? undefined : inv.slug))
+            }
           />
         ))}
       </div>
 
-      <div key={active.slug} className="animate-rise flex flex-col gap-5">
-        <div className="rounded-2xl border border-line bg-surface-1/45 p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <p className="max-w-md font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">
-              {phenomenonById(active.phenomenon).blurb}
+      {active && (
+        <div key={active.slug} className="animate-rise flex flex-col gap-5">
+          <div className="rounded-2xl border border-line bg-surface-1/45 p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <p className="max-w-md font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">
+                {phenomenonById(active.phenomenon).blurb}
+              </p>
+              <a
+                href={verifyHref(active)}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line-strong px-2.5 py-1 font-mono text-[11px] uppercase tracking-widest text-ink-muted transition-colors hover:border-ink hover:text-ink"
+              >
+                verify live
+                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </a>
+            </div>
+            <p className="mt-4 text-[15px] leading-relaxed text-ink">
+              {active.narrative}
             </p>
-            <a
-              href={verifyHref(active)}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line-strong px-2.5 py-1 font-mono text-[11px] uppercase tracking-widest text-ink-muted transition-colors hover:border-ink hover:text-ink"
-            >
-              verify live
-              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </a>
+            <p className="mt-3 font-mono text-[10.5px] uppercase tracking-widest text-ink-faint">
+              traced by the engine · pinned {active.pinnedAt} · receipt in the
+              timeline
+            </p>
           </div>
-          <p className="mt-4 text-[15px] leading-relaxed text-ink">
-            {active.narrative}
-          </p>
-          <p className="mt-3 font-mono text-[10.5px] uppercase tracking-widest text-ink-faint">
-            traced by the engine · pinned {active.pinnedAt} · receipt in the
-            timeline
-          </p>
-        </div>
 
-        <div className="rounded-2xl border border-line-strong bg-surface-2 p-5 shadow-[0_30px_60px_-40px_rgba(90,60,30,0.4)] sm:p-8">
-          {isTrace(active) ? (
-            <CaseFile data={active.data} />
-          ) : (
-            <AuditReport data={asAudit(active)} />
-          )}
+          <div className="rounded-2xl border border-line-strong bg-surface-2 p-5 shadow-[0_30px_60px_-40px_rgba(90,60,30,0.4)] sm:p-8">
+            {isTrace(active) ? (
+              <CaseFile data={active.data} />
+            ) : (
+              <AuditReport data={asAudit(active)} />
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

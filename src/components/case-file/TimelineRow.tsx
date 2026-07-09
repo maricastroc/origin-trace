@@ -102,7 +102,7 @@ export function TimelineRow({
               className="rounded-md border border-line-strong bg-surface-2 px-2.5 py-1.5 text-[12.5px] text-ink-muted"
               title="An explanatory footnote ([α]-style) sits on the claim, but it cites no source."
             >
-              explanatory note only
+              note, not a source
             </span>
           )}
         </div>

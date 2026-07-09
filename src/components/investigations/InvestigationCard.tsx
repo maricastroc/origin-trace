@@ -61,11 +61,13 @@ export function InvestigationCard({
             active ? "text-accent" : "text-ink-faint group-hover:text-ink"
           }`}
         >
-          {active ? "open" : "read"}
-          <ArrowRight
-            className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
-            aria-hidden="true"
-          />
+          {active ? "close" : "read"}
+          {!active && (
+            <ArrowRight
+              className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
+          )}
         </span>
       </div>
     </button>

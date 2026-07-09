@@ -45,11 +45,7 @@ export function EvidenceStatus({ data }: { data: ClaimProvenance }) {
           </p>
         </div>
         <div className="shrink-0">
-          <VerdictStamp
-            verdict={data.verdict.primary}
-            confidence={data.verdict.confidence}
-            confidenceReasons={data.verdict.confidenceReasons}
-          />
+          <VerdictStamp verdict={data.verdict.primary} />
         </div>
       </div>
 

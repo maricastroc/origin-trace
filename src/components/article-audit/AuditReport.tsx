@@ -50,7 +50,7 @@ export function AuditReport({ data }: { data: ArticleAuditData }) {
       },
       {
         key: "note",
-        label: "Note only",
+        label: "Note, not a source",
         count: noteOnly,
         Icon: STATUS_META["note-only"].Icon,
         iconClass: STATUS_META["note-only"].className,

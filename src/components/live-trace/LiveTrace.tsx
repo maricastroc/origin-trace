@@ -36,17 +36,25 @@ type State =
       lang?: string;
     };
 
-const EXAMPLES: { phrase: string; label: string }[] = [
-  { phrase: "happiest animal", label: "happiest animal" },
-  { phrase: "Brazilian aardvark", label: "Brazilian aardvark" },
-  { phrase: "pyrrolizidine alkaloids", label: "pyrrolizidine alkaloids" },
+// Each example carries its own article scope so the marquee case resolves
+// straight to the case file the hero promises — rather than falling into the
+// ambiguity picker when the phrase isn't a verbatim match anymore (e.g. the
+// current Quokka article says "happiest animals", plural). Scope resolution is
+// still demonstrated the moment a user clears the scope field or types their own.
+const EXAMPLES: { phrase: string; article: string; label: string }[] = [
+  { phrase: "happiest animal", article: "Quokka", label: "happiest animal" },
+  { phrase: "Brazilian aardvark", article: "Coati", label: "Brazilian aardvark" },
+  { phrase: "pyrrolizidine alkaloids", article: "Petasites", label: "pyrrolizidine alkaloids" },
 ];
 
 const enc = encodeURIComponent;
 
 export function LiveTrace() {
   const [phrase, setPhrase] = useState("happiest animal");
-  const [article, setArticle] = useState("");
+  // Pre-scope the default claim to the article the hero showcases, so the very
+  // first Trace click lands on the promised case file instead of the ambiguity
+  // picker. Cleared by the X button for anyone who wants to see scope resolution.
+  const [article, setArticle] = useState("Quokka");
   const [lang, setLang] = useState("en");
   const [state, setState] = useState<State>({ status: "idle" });
   const { items: history, remember, forget, clear } = useHistory("trace");
@@ -233,7 +241,7 @@ export function LiveTrace() {
               type="button"
               onClick={() => {
                 setPhrase(ex.phrase);
-                setArticle("");
+                setArticle(ex.article);
                 setLang("en");
               }}
               className="inline-flex items-center gap-1.5 rounded-full border border-line-strong px-2.5 py-0.5 text-[12px] text-ink-muted transition-colors hover:border-ink hover:text-ink"

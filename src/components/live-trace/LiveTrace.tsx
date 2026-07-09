@@ -6,6 +6,7 @@ import type { ClaimProvenance } from "@/types/ClaimProvenance";
 import type { Resolution } from "@/types/Resolution";
 import type { TraceProgress } from "@/types/TraceProgress";
 import { streamTrace } from "@/lib/traceClient";
+import { parseArticleInput } from "@/lib/articleInput";
 import { errMsg } from "@/lib/errMsg";
 import { useHistory } from "@/lib/history";
 import { paramsToKey, readParams, updateUrl } from "@/lib/permalink";
@@ -14,6 +15,7 @@ import { CopyLinkButton } from "../common/CopyLinkButton";
 import { HistoryStrip } from "../common/HistoryStrip";
 import { CaseFile } from "../case-file/CaseFile";
 import { ClearableInput } from "./ClearableInput";
+import { LangPicker } from "./LangPicker";
 import { LiveTraceLoading } from "./LiveTraceLoading";
 import { ScopeBanner } from "./ScopeBanner";
 import { ScopePicker } from "./ScopePicker";
@@ -25,7 +27,7 @@ type State =
   | { status: "ambiguous"; resolution: Resolution }
   | { status: "unresolved"; note: string }
   | { status: "tracing"; scope: string; progress: TraceProgress | null }
-  | { status: "error"; message: string }
+  | { status: "error"; message: string; lang: string }
   | { status: "done"; data: ClaimProvenance; scope: string; phrase: string; lang?: string };
 
 const EXAMPLES: { phrase: string; label: string }[] = [
@@ -39,10 +41,11 @@ const enc = encodeURIComponent;
 export function LiveTrace() {
   const [phrase, setPhrase] = useState("happiest animal");
   const [article, setArticle] = useState("");
+  const [lang, setLang] = useState("en");
   const [state, setState] = useState<State>({ status: "idle" });
   const { items: history, remember, forget, clear } = useHistory("trace");
 
-  async function trace(scope: string, claimPhrase: string, lang?: string) {
+  async function trace(scope: string, claimPhrase: string, lang = "en") {
     setState({ status: "tracing", scope, progress: null });
     try {
       const data = await streamTrace({
@@ -63,11 +66,11 @@ export function LiveTrace() {
       });
       updateUrl(params);
     } catch (err) {
-      setState({ status: "error", message: errMsg(err) });
+      setState({ status: "error", message: errMsg(err), lang });
     }
   }
 
-  async function resolveAndTrace(p: string, a: string, lang?: string) {
+  async function resolveAndTrace(p: string, a: string, lang = "en") {
     if (!p) return;
     if (a) {
       await trace(a, p, lang);
@@ -76,10 +79,10 @@ export function LiveTrace() {
 
     setState({ status: "resolving" });
     try {
-      const res = await fetch(`/api/resolve?phrase=${enc(p)}`);
+      const res = await fetch(`/api/resolve?phrase=${enc(p)}&lang=${enc(lang)}`);
       const body = await res.json();
       if (!res.ok) {
-        setState({ status: "error", message: body.error ?? `Error ${res.status}` });
+        setState({ status: "error", message: body.error ?? `Error ${res.status}`, lang });
         return;
       }
       const r = body as Resolution;
@@ -91,13 +94,19 @@ export function LiveTrace() {
         setState({ status: "ambiguous", resolution: r });
       }
     } catch (err) {
-      setState({ status: "error", message: errMsg(err) });
+      setState({ status: "error", message: errMsg(err), lang });
     }
   }
 
   async function submit(event?: React.FormEvent) {
     event?.preventDefault();
-    await resolveAndTrace(phrase.trim(), article.trim());
+    // A pasted Wikipedia URL carries both the title and its language — normalize
+    // the field and let the URL's language win over the picker.
+    const parsed = parseArticleInput(article);
+    const effLang = parsed.lang ?? lang;
+    if (parsed.title !== article) setArticle(parsed.title);
+    if (effLang !== lang) setLang(effLang);
+    await resolveAndTrace(phrase.trim(), parsed.title, effLang);
   }
 
   const bootstrapped = useRef(false);
@@ -108,10 +117,10 @@ export function LiveTrace() {
     const p = params.get("trace");
     if (!p) return;
     const a = params.get("article") ?? "";
-    const lang = params.get("lang") ?? undefined;
+    const lang = params.get("lang") ?? "en";
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPhrase(p); setArticle(a);
+    setPhrase(p); setArticle(a); setLang(lang);
     document.getElementById("live")?.scrollIntoView({ behavior: "smooth", block: "start" });
     void resolveAndTrace(p, a, lang);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -120,9 +129,10 @@ export function LiveTrace() {
   function replay(entry: (typeof history)[number]) {
     const p = entry.params.trace ?? "";
     const a = entry.params.article ?? "";
-    const lang = entry.params.lang ?? undefined;
+    const lang = entry.params.lang ?? "en";
     setPhrase(p);
     setArticle(a);
+    setLang(lang);
     void resolveAndTrace(p, a, lang);
   }
 
@@ -160,6 +170,12 @@ export function LiveTrace() {
               placeholder="leave empty and we'll try to resolve it"
             />
           </label>
+          <div className="flex flex-col gap-1.5">
+            <span className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">
+              Wikipedia language
+            </span>
+            <LangPicker value={lang} onChange={setLang} />
+          </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2.5">
           <button
@@ -184,6 +200,7 @@ export function LiveTrace() {
               onClick={() => {
                 setPhrase(ex.phrase);
                 setArticle("");
+                setLang("en");
               }}
               className="inline-flex items-center gap-1.5 rounded-full border border-line-strong px-2.5 py-0.5 text-[12px] text-ink-muted transition-colors hover:border-ink hover:text-ink"
             >
@@ -210,7 +227,7 @@ export function LiveTrace() {
       {state.status === "ambiguous" && (
         <ScopePicker
           resolution={state.resolution}
-          onPick={(title) => trace(title, phrase.trim())}
+          onPick={(title) => trace(title, phrase.trim(), lang)}
         />
       )}
 
@@ -236,10 +253,16 @@ export function LiveTrace() {
         <div className="rounded-xl border border-danger/30 bg-danger-bg px-5 py-4">
           <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-danger">
             couldn&rsquo;t trace
+            <span className="ml-2 text-ink-faint">· searched {state.lang}.wikipedia</span>
           </p>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-muted">
             {state.message}
           </p>
+          {state.lang !== "en" ? null : (
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-faint">
+              Not in English? Pick a different Wikipedia language above and trace again.
+            </p>
+          )}
         </div>
       )}
 

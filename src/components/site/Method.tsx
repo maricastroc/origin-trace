@@ -33,7 +33,8 @@ const PIPELINE: {
   {
     n: "05",
     title: "Classify the evidence",
-    detail: "Born-sourced, retrofit, unsourced — each verdict pinned to revision ids.",
+    detail:
+      "Born-sourced, retrofit, unsourced — each verdict pinned to revision ids.",
   },
 ];
 
@@ -100,7 +101,9 @@ export function Method() {
                     }`}
                   >
                     <span className="font-mono text-[12px]">
-                      <span className={accent ? "text-accent" : "text-ink-faint"}>
+                      <span
+                        className={accent ? "text-accent" : "text-ink-faint"}
+                      >
                         {s.n}
                       </span>
                     </span>

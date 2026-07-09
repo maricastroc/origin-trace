@@ -23,9 +23,14 @@ type State =
 
 function parseArticle(raw: string): { article: string; lang: string } {
   const t = raw.trim();
-  const m = t.match(/^https?:\/\/([a-z]{2,3})\.(?:m\.)?wikipedia\.org\/wiki\/([^#?]+)/i);
+  const m = t.match(
+    /^https?:\/\/([a-z]{2,3})\.(?:m\.)?wikipedia\.org\/wiki\/([^#?]+)/i,
+  );
   if (m) {
-    return { article: decodeURIComponent(m[2]).replace(/_/g, " "), lang: m[1].toLowerCase() };
+    return {
+      article: decodeURIComponent(m[2]).replace(/_/g, " "),
+      lang: m[1].toLowerCase(),
+    };
   }
   return { article: t, lang: "en" };
 }
@@ -39,10 +44,15 @@ export function ArticleAudit() {
     if (!article) return;
     setState({ status: "loading", article });
     try {
-      const res = await fetch(`/api/audit?article=${enc(article)}&lang=${enc(lang)}`);
+      const res = await fetch(
+        `/api/audit?article=${enc(article)}&lang=${enc(lang)}`,
+      );
       const body = await res.json();
       if (!res.ok) {
-        setState({ status: "error", message: body.error ?? `Error ${res.status}` });
+        setState({
+          status: "error",
+          message: body.error ?? `Error ${res.status}`,
+        });
         return;
       }
       const data = body as ArticleAuditData;
@@ -84,7 +94,9 @@ export function ArticleAudit() {
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setInput(article);
-    document.getElementById("audit")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document
+      .getElementById("audit")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
     void execute(article, lang);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -157,7 +169,8 @@ export function ArticleAudit() {
             </p>
           </div>
           <p className="mt-2.5 text-[12.5px] leading-relaxed text-ink-faint">
-            One fetch, then a structural read of every sentence — no history walk.
+            One fetch, then a structural read of every sentence — no history
+            walk.
           </p>
         </div>
       )}
@@ -177,7 +190,10 @@ export function ArticleAudit() {
         <div className="animate-rise flex flex-col gap-3">
           <div className="flex justify-end">
             <CopyLinkButton
-              params={{ audit: state.data.article.title, lang: state.data.article.lang }}
+              params={{
+                audit: state.data.article.title,
+                lang: state.data.article.lang,
+              }}
             />
           </div>
           <AuditReport data={state.data} />

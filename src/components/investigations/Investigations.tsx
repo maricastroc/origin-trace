@@ -13,9 +13,9 @@ type Filter = PhenomenonId | "all";
 
 export function Investigations() {
   const [filter, setFilter] = useState<Filter>("all");
+
   const [activeSlug, setActiveSlug] = useState(investigations[0]?.slug);
 
-  // Only phenomena that actually have a pinned case become filter chips.
   const filters = useMemo(() => {
     const present = new Set(investigations.map((i) => i.phenomenon));
     return PHENOMENA.filter((p) => present.has(p.id));
@@ -30,7 +30,9 @@ export function Investigations() {
   );
 
   const active =
-    visible.find((i) => i.slug === activeSlug) ?? visible[0] ?? investigations[0];
+    visible.find((i) => i.slug === activeSlug) ??
+    visible[0] ??
+    investigations[0];
 
   function pick(next: Filter) {
     setFilter(next);
@@ -82,7 +84,7 @@ export function Investigations() {
             </p>
             <a
               href={verifyHref(active)}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line-strong px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-muted transition-colors hover:border-ink hover:text-ink"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line-strong px-2.5 py-1 font-mono text-[11px] uppercase tracking-widest text-ink-muted transition-colors hover:border-ink hover:text-ink"
             >
               verify live
               <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -91,8 +93,9 @@ export function Investigations() {
           <p className="mt-4 text-[15px] leading-relaxed text-ink">
             {active.narrative}
           </p>
-          <p className="mt-3 font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-faint">
-            traced by the engine · pinned {active.pinnedAt} · receipt in the timeline
+          <p className="mt-3 font-mono text-[10.5px] uppercase tracking-widest text-ink-faint">
+            traced by the engine · pinned {active.pinnedAt} · receipt in the
+            timeline
           </p>
         </div>
 

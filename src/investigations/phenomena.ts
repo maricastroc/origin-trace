@@ -1,8 +1,5 @@
 import type { PhenomenonId } from "./types.ts";
 
-// The capability matrix. Ordering doubles as the reading order of the section —
-// from the most alarming failure mode to the most benign.
-
 export interface Phenomenon {
   id: PhenomenonId;
   label: string;

@@ -29,10 +29,10 @@ export default function Home() {
                 </h2>
               </div>
               <p className="max-w-sm text-[14px] leading-relaxed text-ink-muted">
-                A curated file of what the engine can catch — citogenesis, retrofit,
-                unsourced-stable claims. Every verdict is real engine output, pinned
-                and reproducible. Hit <span className="text-ink">verify live</span> on
-                any of them.
+                A curated file of what the engine can catch — citogenesis,
+                retrofit, unsourced-stable claims. Every verdict is real engine
+                output, pinned and reproducible. Hit{" "}
+                <span className="text-ink">verify live</span> on any of them.
               </p>
             </div>
             <div className="mt-12">
@@ -45,8 +45,7 @@ export default function Home() {
           <div className="mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
             <p className="kicker">{"// live"}</p>
             <h2 className="mt-4 max-w-2xl font-display text-3xl font-medium tracking-[-0.015em] text-ink sm:text-[2.5rem]">
-              Interrogate a claim{" "}
-              <span className="text-accent">yourself</span>.
+              Interrogate a claim <span className="text-accent">yourself</span>.
             </h2>
             <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-muted">
               Paste a claim. Origin Trace tries to resolve which article it
@@ -68,15 +67,14 @@ export default function Home() {
           <div className="mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
             <p className="kicker">{"// audit"}</p>
             <h2 className="mt-4 max-w-2xl font-display text-3xl font-medium tracking-[-0.015em] text-ink sm:text-[2.5rem]">
-              Or audit a whole{" "}
-              <span className="text-accent">article</span>.
+              Or audit a whole <span className="text-accent">article</span>.
             </h2>
             <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-muted">
               One read of the current revision maps every sentence to its
-              evidence: which carry an inline citation, which assert without one.
-              The claim boundary comes free from Wikipedia&rsquo;s own structure —
-              no NLP. Then click any uncited sentence to trace its history down to
-              the revision that introduced it.
+              evidence: which carry an inline citation, which assert without
+              one. The claim boundary comes free from Wikipedia&rsquo;s own
+              structure — no NLP. Then click any uncited sentence to trace its
+              history down to the revision that introduced it.
             </p>
             <div className="mt-10">
               <ArticleAudit />

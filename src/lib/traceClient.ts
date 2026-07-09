@@ -11,7 +11,9 @@ export async function streamTrace(opts: {
   signal?: AbortSignal;
 }): Promise<ClaimProvenance> {
   const { article, phrase, lang, onProgress, signal } = opts;
+
   const langQuery = lang ? `&lang=${enc(lang)}` : "";
+
   const res = await fetch(
     `/api/trace?article=${enc(article)}&phrase=${enc(phrase)}${langQuery}`,
     { signal },
@@ -23,19 +25,26 @@ export async function streamTrace(opts: {
   }
 
   const reader = res.body.getReader();
+
   const decoder = new TextDecoder();
   let buffer = "";
 
   while (true) {
     const { done, value } = await reader.read();
+
     if (done) break;
+
     buffer += decoder.decode(value, { stream: true });
 
     const frames = buffer.split("\n\n");
+
     buffer = frames.pop() ?? "";
+
     for (const frame of frames) {
       const json = frame.replace(/^data:\s?/, "").trim();
+
       if (!json) continue;
+
       const msg = JSON.parse(json) as
         | { type: "progress"; progress: TraceProgress }
         | { type: "result"; data: ClaimProvenance }

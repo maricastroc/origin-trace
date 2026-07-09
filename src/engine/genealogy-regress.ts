@@ -1,23 +1,7 @@
-// Genealogy regression suite — the pinned correctness gate.
-//
-// Runs the hand-audited real cases live and asserts the invariant that closed
-// Camada 1: false links must NOT be asserted as provenance (no verdict-shift),
-// and genuine retrofits must keep theirs. The offline synthetic tests in
-// genealogy.test.ts protect the *mechanism* deterministically; this suite pins
-// the *real Wikipedia cases* we audited, so a future change that re-breaks one
-// of them is caught end-to-end.
-//
-// The hard invariant is the verdict-shift (present / absent) — the ship-critical
-// safety property. `abstain` is informational: whether the chain stops at the
-// low-overlap guard (drift can change chain shape, so it never fails the run).
-// A case whose phrase no longer locates (the article was reworded away) SKIPs.
-//
-//   npm run engine:regress
-
 import type { EngineCache } from "./cache.ts";
 import { ClaimNotFoundError } from "./trace.ts";
 import { reconstructGenealogy, type Genealogy } from "./genealogy.ts";
-import { WikipediaClient, type RevisionList } from "./wikipedia.ts";
+import { type RevisionList } from "./wikipedia.ts";
 
 class RegressCache implements EngineCache {
   content = new Map<string, string | null>();
@@ -39,16 +23,13 @@ class RegressCache implements EngineCache {
 interface Case {
   label: string;
   article: string;
-  phrase: string; // a distinctive fragment of the audited claim's current wording
-  expectShift: boolean; // hard invariant: must a verdict-shift be present?
-  expectAbstain?: boolean; // informational: should the chain stop at the overlap guard?
+  phrase: string;
+  expectShift: boolean;
+  expectAbstain?: boolean;
   note: string;
 }
 
-// The cases audited in the correctness gate (see NOTES / memory). Verdicts refer
-// to the shift the *lexical* trace would assert vs. what genealogy concludes.
 const CASES: Case[] = [
-  // ── False links that must stay abstained (no laundered provenance) ──
   {
     label: "penicillin-paine",
     article: "Penicillin",
@@ -88,7 +69,6 @@ const CASES: Case[] = [
     expectAbstain: true,
     note: "Hébert's arrest must NOT link to the different 'Girondins arrested' sentence via a shared name.",
   },
-  // ── Genuine retrofits that must keep their verdict-shift ──
   {
     label: "curie-hospitalised",
     article: "Marie Curie",
@@ -105,7 +85,10 @@ const CASES: Case[] = [
   },
 ];
 
-async function evaluate(g: Genealogy, c: Case): Promise<{ pass: boolean; abstained: boolean }> {
+async function evaluate(
+  g: Genealogy,
+  c: Case,
+): Promise<{ pass: boolean; abstained: boolean }> {
   const hasShift = g.verdictShift !== null;
   const pass = hasShift === c.expectShift;
   const abstained = g.terminus === "broke:low-overlap";
@@ -119,24 +102,36 @@ async function main(): Promise<number> {
 
   for (const c of CASES) {
     try {
-      const g = await reconstructGenealogy({ article: c.article, phrase: c.phrase, cache });
+      const g = await reconstructGenealogy({
+        article: c.article,
+        phrase: c.phrase,
+        cache,
+      });
       const { pass, abstained } = await evaluate(g, c);
-      const shift = g.verdictShift ? `${g.verdictShift.from}→${g.verdictShift.to}` : "none";
+      const shift = g.verdictShift
+        ? `${g.verdictShift.from}→${g.verdictShift.to}`
+        : "none";
       const mark = pass ? "✓" : "✗";
       process.stdout.write(
         `${mark} ${c.label.padEnd(22)} shift=${shift.padEnd(28)} terminus=${g.terminus}\n`,
       );
       if (!pass) {
         failures++;
-        process.stdout.write(`    expected shift ${c.expectShift ? "present" : "absent"} — ${c.note}\n`);
+        process.stdout.write(
+          `    expected shift ${c.expectShift ? "present" : "absent"} — ${c.note}\n`,
+        );
       }
       if (c.expectAbstain && !abstained) {
-        process.stdout.write(`    · note: expected to abstain (broke:low-overlap) but got ${g.terminus} — check if the article drifted\n`);
+        process.stdout.write(
+          `    · note: expected to abstain (broke:low-overlap) but got ${g.terminus} — check if the article drifted\n`,
+        );
       }
     } catch (err) {
       if (err instanceof ClaimNotFoundError) {
         skips++;
-        process.stdout.write(`~ ${c.label.padEnd(22)} SKIP — phrase no longer in the article (drifted)\n`);
+        process.stdout.write(
+          `~ ${c.label.padEnd(22)} SKIP — phrase no longer in the article (drifted)\n`,
+        );
       } else {
         throw err;
       }

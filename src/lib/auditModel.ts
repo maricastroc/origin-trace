@@ -20,7 +20,12 @@ export interface UncitedRun {
 }
 
 export interface AuditModel {
-  totals: { sourced: number; noteOnly: number; unsourced: number; sentences: number };
+  totals: {
+    sourced: number;
+    noteOnly: number;
+    unsourced: number;
+    sentences: number;
+  };
   sectionCount: number;
   highImpact: HighImpactItem[];
   worstSections: RankedSection[];
@@ -77,7 +82,12 @@ export function buildAuditModel(data: ArticleAudit): AuditModel {
   );
 
   return {
-    totals: { sourced, noteOnly, unsourced, sentences: sourced + noteOnly + unsourced },
+    totals: {
+      sourced,
+      noteOnly,
+      unsourced,
+      sentences: sourced + noteOnly + unsourced,
+    },
     sectionCount: data.sections.filter((s) => !s.isLead).length,
     highImpact,
     worstSections: byCoverage.slice(0, 5),

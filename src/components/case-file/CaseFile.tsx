@@ -11,6 +11,7 @@ import { Timeline } from "./Timeline";
 
 export function CaseFile({ data }: { data: ClaimProvenance }) {
   const isAmbiguous = data.verdict.primary === "ambiguous";
+
   return (
     <article className="flex flex-col gap-6">
       <CaseFileHeader claim={data.claim} />

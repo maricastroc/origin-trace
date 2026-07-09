@@ -76,7 +76,10 @@ function LegendItem({
   const { Icon, className } = STATUS_META[status];
   return (
     <li className="flex items-center gap-2">
-      <Icon className={`h-3.5 w-3.5 shrink-0 ${className}`} aria-hidden="true" />
+      <Icon
+        className={`h-3.5 w-3.5 shrink-0 ${className}`}
+        aria-hidden="true"
+      />
       {children}
     </li>
   );

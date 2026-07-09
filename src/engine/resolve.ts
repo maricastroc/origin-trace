@@ -1,4 +1,8 @@
-import { WikipediaClient, type FetchJson, type SearchHit } from "./wikipedia.ts";
+import {
+  WikipediaClient,
+  type FetchJson,
+  type SearchHit,
+} from "./wikipedia.ts";
 
 export interface ArticleCandidate {
   title: string;

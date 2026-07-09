@@ -7,7 +7,9 @@ describe("parseArticleInput", () => {
   });
 
   it("keeps multi-word titles as typed", () => {
-    expect(parseArticleInput("  Animal Farm ")).toEqual({ title: "Animal Farm" });
+    expect(parseArticleInput("  Animal Farm ")).toEqual({
+      title: "Animal Farm",
+    });
   });
 
   it("extracts title and language from a full URL", () => {
@@ -18,14 +20,18 @@ describe("parseArticleInput", () => {
   });
 
   it("turns underscores into spaces", () => {
-    expect(parseArticleInput("https://en.wikipedia.org/wiki/Animal_Farm")).toEqual({
+    expect(
+      parseArticleInput("https://en.wikipedia.org/wiki/Animal_Farm"),
+    ).toEqual({
       title: "Animal Farm",
       lang: "en",
     });
   });
 
   it("decodes percent-encoded titles", () => {
-    expect(parseArticleInput("https://es.wikipedia.org/wiki/S%C3%A3o_Paulo")).toEqual({
+    expect(
+      parseArticleInput("https://es.wikipedia.org/wiki/S%C3%A3o_Paulo"),
+    ).toEqual({
       title: "São Paulo",
       lang: "es",
     });
@@ -33,7 +39,9 @@ describe("parseArticleInput", () => {
 
   it("drops section anchors and query strings", () => {
     expect(
-      parseArticleInput("https://en.wikipedia.org/wiki/Whale?action=history#Diet"),
+      parseArticleInput(
+        "https://en.wikipedia.org/wiki/Whale?action=history#Diet",
+      ),
     ).toEqual({ title: "Whale", lang: "en" });
   });
 

@@ -14,10 +14,12 @@ export function asAudit(inv: Investigation): ArticleAudit {
   return inv.data as ArticleAudit;
 }
 
-/** A permalink into the live tool — the "verify live" affordance re-runs the seed. */
 export function verifyHref(inv: Investigation): string {
   const { seed } = inv;
-  const langQ = seed.lang && seed.lang !== "en" ? `&lang=${enc(seed.lang)}` : "";
+
+  const langQ =
+    seed.lang && seed.lang !== "en" ? `&lang=${enc(seed.lang)}` : "";
+
   return seed.kind === "trace"
     ? `/?trace=${enc(seed.phrase)}&article=${enc(seed.article)}${langQ}`
     : `/?audit=${enc(seed.article)}${langQ}`;

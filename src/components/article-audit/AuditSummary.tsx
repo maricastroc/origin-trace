@@ -52,14 +52,17 @@ export function AuditSummary({
             <span className="font-display text-[34px] leading-none text-ink">
               {pct}%
             </span>
-            <span className="mb-1 max-w-[15rem] text-[12.5px] leading-snug text-ink-muted">
-              of the body&rsquo;s {body.total} sentences carry an inline citation
+            <span className="mb-1 max-w-60 text-[12.5px] leading-snug text-ink-muted">
+              of the body&rsquo;s {body.total} sentences carry an inline
+              citation
             </span>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 pt-1">
           <Chip tone="ok">{body.sourced} sourced</Chip>
-          {body.noteOnly > 0 && <Chip tone="warn">{body.noteOnly} note-only</Chip>}
+          {body.noteOnly > 0 && (
+            <Chip tone="warn">{body.noteOnly} note-only</Chip>
+          )}
           <Chip tone="danger">{body.unsourced} uncited</Chip>
         </div>
       </div>
@@ -73,7 +76,10 @@ export function AuditSummary({
       <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-3">
         <Stat label="sentences read" value={String(model.totals.sentences)} />
         <Stat label="sections mapped" value={String(model.sectionCount)} />
-        <Stat label="high-impact claims" value={String(model.highImpact.length)} />
+        <Stat
+          label="high-impact claims"
+          value={String(model.highImpact.length)}
+        />
         <Stat
           label="weakest body section"
           value={worst ? `${Math.round(worst.metrics.coverage * 100)}%` : "—"}
@@ -96,8 +102,8 @@ export function AuditSummary({
           <p>
             <span className="text-ink-muted">Lead:</span> {lead.sourced} of{" "}
             {lead.total} sentences cited inline — the rest are conventionally
-            sourced in the body (WP:LEADCITE), so they&rsquo;re counted apart and
-            kept out of the section ranking.
+            sourced in the body (WP:LEADCITE), so they&rsquo;re counted apart
+            and kept out of the section ranking.
           </p>
         )}
         <p>{data.meta.notes}</p>

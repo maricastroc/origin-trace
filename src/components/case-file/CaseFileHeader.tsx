@@ -1,8 +1,6 @@
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
 
-export function CaseFileHeader({
-  claim,
-}: Pick<ClaimProvenance, "claim">) {
+export function CaseFileHeader({ claim }: Pick<ClaimProvenance, "claim">) {
   return (
     <header>
       <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">

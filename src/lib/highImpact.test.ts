@@ -3,9 +3,9 @@ import { highImpactScore, isHighImpact } from "@/lib/highImpact";
 
 describe("isHighImpact", () => {
   it("flags English superlative / consensus framing", () => {
-    expect(isHighImpact("He is widely regarded as the greatest of all time")).toBe(
-      true,
-    );
+    expect(
+      isHighImpact("He is widely regarded as the greatest of all time"),
+    ).toBe(true);
     expect(isHighImpact("the best-selling album in history")).toBe(true);
     expect(isHighImpact("the largest stadium in the world")).toBe(true);
     expect(isHighImpact("the first person to cross the ocean solo")).toBe(true);
@@ -13,25 +13,25 @@ describe("isHighImpact", () => {
   });
 
   it("flags Portuguese superlative / consensus framing", () => {
-    expect(isHighImpact("É considerado o maior jogador de todos os tempos")).toBe(
-      true,
-    );
+    expect(
+      isHighImpact("É considerado o maior jogador de todos os tempos"),
+    ).toBe(true);
     expect(isHighImpact("uma das melhores atrizes da história")).toBe(true);
     expect(isHighImpact("o time mais vitorioso do mundo")).toBe(true);
-    expect(isHighImpact("foi a primeira pessoa a completar a prova")).toBe(true);
-    // Multi-word superlative + scope (not just "mais <one word>").
+    expect(isHighImpact("foi a primeira pessoa a completar a prova")).toBe(
+      true,
+    );
+
     expect(isHighImpact("o terceiro atleta mais bem pago do mundo")).toBe(true);
   });
 
   it("does not treat a bare 'Copa do Mundo' mention as high-impact", () => {
-    // "Copa do Mundo" contains the scope phrase "do mundo" — the single most
-    // common false positive the old boolean produced on football articles.
-    expect(
-      isHighImpact("Marcou quatro gols na Copa do Mundo de 2014."),
-    ).toBe(false);
-    expect(
-      isHighImpact("Participou das Copas do Mundo de 2018 e 2022."),
-    ).toBe(false);
+    expect(isHighImpact("Marcou quatro gols na Copa do Mundo de 2014.")).toBe(
+      false,
+    );
+    expect(isHighImpact("Participou das Copas do Mundo de 2018 e 2022.")).toBe(
+      false,
+    );
   });
 
   it("leaves plain descriptive prose alone", () => {
@@ -47,13 +47,14 @@ describe("isHighImpact", () => {
   });
 
   it("does not flag an absolute-scope phrase on its own", () => {
-    // Scope words with no superlative/reputation/record signal: descriptive,
-    // not a claim of grandeur. The old boolean `some()` flagged these.
-    expect(isHighImpact("one of the busiest airports in the world")).toBe(false);
+    expect(isHighImpact("one of the busiest airports in the world")).toBe(
+      false,
+    );
     expect(isHighImpact("Ela visitou vários países do mundo")).toBe(false);
     expect(isHighImpact("um evento marcante da história local")).toBe(false);
-    // But scope paired with a superlative stays high.
-    expect(isHighImpact("Foi um dos jogos mais assistidos do mundo")).toBe(true);
+    expect(isHighImpact("Foi um dos jogos mais assistidos do mundo")).toBe(
+      true,
+    );
   });
 });
 

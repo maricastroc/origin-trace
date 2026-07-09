@@ -16,7 +16,11 @@ export function LangPicker({
   onChange: (code: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Wikipedia language">
+    <div
+      className="flex flex-wrap gap-1.5"
+      role="group"
+      aria-label="Wikipedia language"
+    >
       {LANGS.map((l) => {
         const active = l.code === value;
         return (

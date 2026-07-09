@@ -1,12 +1,5 @@
 import type { InvestigationSeed } from "./types.ts";
 
-// The editorial spine of the Investigations section. Each entry is a seed the
-// engine can re-run live; the pinned verdict lives in snapshots.generated.ts,
-// produced by `npm run investigations:build`. Curate here; never hand-author a
-// verdict — if a case's real output isn't emblematic, cut it. (Cleopatra was
-// cut: its {{sfn}} shortened-footnote style reads as ~1% inline-cited, an
-// artifact of citation form, not genuine unsourcing.)
-
 export const REGISTRY: InvestigationSeed[] = [
   {
     slug: "quokka-happiest",
@@ -33,7 +26,11 @@ export const REGISTRY: InvestigationSeed[] = [
     phenomenon: "retrofit",
     narrative:
       "Butterbur (Petasites) carries a real toxicology warning — its pyrrolizidine alkaloids can damage the liver. On Wikipedia the warning was stated as fact first; the citation was attached only later. The claim happens to be true, but its backing is retroactive — exactly the pattern you'd want to catch when the stakes are medical.",
-    seed: { kind: "trace", article: "Petasites", phrase: "pyrrolizidine alkaloids" },
+    seed: {
+      kind: "trace",
+      article: "Petasites",
+      phrase: "pyrrolizidine alkaloids",
+    },
   },
   {
     slug: "neymar-note",

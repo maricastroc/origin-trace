@@ -10,24 +10,25 @@ export function Timeline({
   label: string;
   subtitle: string;
 }) {
-  // A node whose wording is a verbatim repeat of the last one we already showed
-  // isn't new information — it's the same sentence, still alive. Rather than
-  // reprint it (which reads as "wait, didn't I just see this?"), we hand the row
-  // the date the wording first appeared so it can collapse to "unchanged since …".
-  let lastWording: string | undefined;
-  let lastWordingDate: string | undefined;
-  const rows = events.map((event) => {
-    let unchangedSince: string | undefined;
-    if (event.wording != null) {
-      if (event.wording === lastWording) {
-        unchangedSince = lastWordingDate;
+  const { rows } = events.reduce<{
+    rows: { event: TimelineEvent; unchangedSince: string | undefined }[];
+    lastWording: string | undefined;
+    lastWordingDate: string | undefined;
+  }>(
+    (acc, event) => {
+      if (event.wording == null) {
+        acc.rows.push({ event, unchangedSince: undefined });
+      } else if (event.wording === acc.lastWording) {
+        acc.rows.push({ event, unchangedSince: acc.lastWordingDate });
       } else {
-        lastWording = event.wording;
-        lastWordingDate = event.date;
+        acc.rows.push({ event, unchangedSince: undefined });
+        acc.lastWording = event.wording;
+        acc.lastWordingDate = event.date;
       }
-    }
-    return { event, unchangedSince };
-  });
+      return acc;
+    },
+    { rows: [], lastWording: undefined, lastWordingDate: undefined },
+  );
 
   return (
     <section>
@@ -40,7 +41,7 @@ export function Timeline({
             {subtitle}
           </p>
         </div>
-        <span className="hidden shrink-0 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint sm:block">
+        <span className="hidden shrink-0 font-mono text-[11px] uppercase tracking-widest text-ink-faint sm:block">
           {events.length} nodes
         </span>
       </div>

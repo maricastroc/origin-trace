@@ -23,11 +23,14 @@ export function Hero() {
 
           <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-ink-muted sm:text-base">
             Origin Trace reconstructs the{" "}
-            <span className="text-ink">genealogy of a claim&rsquo;s credibility</span>{" "}
+            <span className="text-ink">
+              genealogy of a claim&rsquo;s credibility
+            </span>{" "}
             — when it entered, whether it was born with a source, when the
             evidence changed — down to the exact revision. When the record
-            doesn&rsquo;t back it up, it <span className="text-ink">says so</span>,
-            instead of inventing a provenance.
+            doesn&rsquo;t back it up, it{" "}
+            <span className="text-ink">says so</span>, instead of inventing a
+            provenance.
           </p>
 
           <p className="mt-6 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">

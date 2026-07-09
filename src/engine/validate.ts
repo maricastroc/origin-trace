@@ -43,8 +43,13 @@ async function run(): Promise<number> {
 
   for (const f of FIXTURES) {
     process.stdout.write(`\n▸ ${f.name} — "${f.phrase}" in ${f.article}\n`);
-    const provenance = await traceClaim({ article: f.article, phrase: f.phrase });
-    const origin = provenance.timeline.find((e) => e.kind === "claim-introduced");
+    const provenance = await traceClaim({
+      article: f.article,
+      phrase: f.phrase,
+    });
+    const origin = provenance.timeline.find(
+      (e) => e.kind === "claim-introduced",
+    );
     const originRevId = origin?.revId;
 
     if (!originRevId) {

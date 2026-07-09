@@ -14,12 +14,18 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   try {
-    const audit = await auditArticle({ article, lang, cache: getEngineCache() });
+    const audit = await auditArticle({
+      article,
+      lang,
+      cache: getEngineCache(),
+    });
     return Response.json(audit);
   } catch (err) {
     if (err instanceof ArticleNotFoundError) {
       return Response.json(
-        { error: `Couldn't read “${article}” on ${lang}.wikipedia. Check the exact title.` },
+        {
+          error: `Couldn't read “${article}” on ${lang}.wikipedia. Check the exact title.`,
+        },
         { status: 404 },
       );
     }

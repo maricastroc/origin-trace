@@ -6,11 +6,6 @@ import type { Snapshot } from "../investigations/types.ts";
 import { auditArticle } from "./audit.ts";
 import { traceClaim } from "./trace.ts";
 
-// Runs the real engine against every seed in the registry and pins the output
-// to src/investigations/snapshots.generated.ts. This is what keeps the
-// Investigations section honest: the verdicts are produced, never authored.
-// A seed that fails to trace is skipped (logged) rather than faked.
-
 const OUT = join(
   dirname(fileURLToPath(import.meta.url)),
   "..",
@@ -56,7 +51,9 @@ async function build(): Promise<number> {
           lang: inv.seed.lang,
         });
         snapshots[inv.slug] = { pinnedAt, data };
-        process.stdout.write(`ok — ${Math.round(data.summary.coverage * 100)}% cited\n`);
+        process.stdout.write(
+          `ok — ${Math.round(data.summary.coverage * 100)}% cited\n`,
+        );
       }
     } catch (err) {
       process.stdout.write(`SKIP — ${(err as Error).message}\n`);

@@ -6,7 +6,10 @@ import type { SentenceStatus } from "@/types/SentenceStatus";
 import { buildAuditModel } from "@/lib/auditModel";
 
 let seq = 0;
-function claim(status: SentenceStatus, text = "a plain descriptive sentence"): AuditClaim {
+function claim(
+  status: SentenceStatus,
+  text = "a plain descriptive sentence",
+): AuditClaim {
   return { id: `c${seq++}`, text, status };
 }
 function section(
@@ -33,8 +36,14 @@ describe("buildAuditModel", () => {
   it("totals every status across lead and body, but counts sections excluding the lead", () => {
     const model = buildAuditModel(
       audit([
-        section("Lead", [claim("sourced"), claim("unsourced")], { isLead: true }),
-        section("Body", [claim("sourced"), claim("note-only"), claim("unsourced")]),
+        section("Lead", [claim("sourced"), claim("unsourced")], {
+          isLead: true,
+        }),
+        section("Body", [
+          claim("sourced"),
+          claim("note-only"),
+          claim("unsourced"),
+        ]),
       ]),
     );
     expect(model.totals).toEqual({
@@ -59,8 +68,13 @@ describe("buildAuditModel", () => {
       ]),
     );
     expect(model.highImpact).toHaveLength(2);
-    expect(model.highImpact.map((h) => h.sectionLabel)).toEqual(["Lead", "Career"]);
-    expect(model.highImpact.every((h) => h.claim.status !== "sourced")).toBe(true);
+    expect(model.highImpact.map((h) => h.sectionLabel)).toEqual([
+      "Lead",
+      "Career",
+    ]);
+    expect(model.highImpact.every((h) => h.claim.status !== "sourced")).toBe(
+      true,
+    );
   });
 
   it("ranks only body sections with at least 3 claims by coverage", () => {
@@ -84,7 +98,13 @@ describe("buildAuditModel", () => {
 
   it("reports the longest unsourced run only when it reaches 3", () => {
     const twoRun = buildAuditModel(
-      audit([section("A", [claim("unsourced"), claim("unsourced"), claim("sourced")])]),
+      audit([
+        section("A", [
+          claim("unsourced"),
+          claim("unsourced"),
+          claim("sourced"),
+        ]),
+      ]),
     );
     expect(twoRun.longestRun).toBeNull();
 

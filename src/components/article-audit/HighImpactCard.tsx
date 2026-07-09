@@ -17,7 +17,9 @@ export function HighImpactCard({
   article: ArticleAuditData["article"];
 }) {
   const [open, setOpen] = useState(false);
+
   const meta = STATUS_META[claim.status];
+
   const StatusIcon = meta.Icon;
 
   return (

@@ -65,7 +65,7 @@ export function ClaimRow({
         />
         <span className="min-w-0 flex-1">
           {sectionLabel && (
-            <span className="mb-1 block font-mono text-[10px] uppercase tracking-[0.1em] text-ink-faint">
+            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-ink-faint">
               {sectionLabel}
             </span>
           )}

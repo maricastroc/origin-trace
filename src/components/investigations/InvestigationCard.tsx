@@ -14,6 +14,7 @@ export function InvestigationCard({
   onSelect: () => void;
 }) {
   const phenomenon = phenomenonById(inv.phenomenon);
+
   return (
     <button
       onClick={onSelect}
@@ -52,7 +53,7 @@ export function InvestigationCard({
       </p>
 
       <div className="mt-4 flex items-center justify-between">
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-faint">
+        <span className="font-mono text-[10.5px] uppercase tracking-widest text-ink-faint">
           pinned {inv.pinnedAt}
         </span>
         <span

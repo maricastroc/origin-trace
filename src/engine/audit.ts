@@ -25,6 +25,7 @@ export class ArticleNotFoundError extends Error {
 
 export async function auditArticle(input: AuditInput): Promise<ArticleAudit> {
   const lang = input.lang ?? "en";
+
   const client = new WikipediaClient({
     lang,
     fetchJson: input.fetchJson,
@@ -37,9 +38,11 @@ export async function auditArticle(input: AuditInput): Promise<ArticleAudit> {
     }
     throw err;
   });
+
   if (!current) throw new ArticleNotFoundError(input.article, lang);
 
   const sections = segmentArticle(current.content);
+
   const summary = tally(sections);
 
   return {
@@ -77,21 +80,26 @@ export function segmentArticle(wikitext: string): AuditSection[] {
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<!--[\s\S]*$/g, "");
 
-  // Reuse pointers (<ref name="x"/>) carry no inline source; index the article's
-  // named definitions once so each sentence's citation can be resolved to it.
   const refDefs = indexRefDefinitions(clean);
 
   const raw = splitSections(clean);
+
   const out: AuditSection[] = [];
+
   let counter = 0;
 
   for (const sec of raw) {
     if (!sec.isLead && APPARATUS.test(sec.heading.trim())) continue;
+
     const claims: AuditClaim[] = [];
+
     for (const sentence of sentences(sec.body)) {
       const display = cleanProse(sentence);
+
       if (!isAuditable(display)) continue;
+
       const det = classifyInline(sentence, refDefs);
+
       const status: SentenceStatus = det.sourced
         ? "sourced"
         : det.note
@@ -102,7 +110,9 @@ export function segmentArticle(wikitext: string): AuditSection[] {
         text: display,
         status,
         ...(status === "sourced" ? { source: det.source } : {}),
-        ...(status === "sourced" && det.source == null ? { refUnparsed: true } : {}),
+        ...(status === "sourced" && det.source == null
+          ? { refUnparsed: true }
+          : {}),
       });
     }
     if (claims.length > 0) {
@@ -118,13 +128,13 @@ export function segmentArticle(wikitext: string): AuditSection[] {
   return out;
 }
 
-// Raw body prose, section by section: the lead and apparatus (References / See
-// also / …) are excluded and comments stripped, but the wikitext is returned
-// *raw* (not cleaned) so it still normalize-matches against revision content.
-// Used to sample representative body claims rather than the lead's definitional
-// restatements.
-export function bodySections(wikitext: string): { heading: string; body: string }[] {
-  const clean = wikitext.replace(/<!--[\s\S]*?-->/g, "").replace(/<!--[\s\S]*$/g, "");
+export function bodySections(
+  wikitext: string,
+): { heading: string; body: string }[] {
+  const clean = wikitext
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<!--[\s\S]*$/g, "");
+
   return splitSections(clean)
     .filter((sec) => !sec.isLead && !APPARATUS.test(sec.heading.trim()))
     .map((sec) => ({ heading: sec.heading, body: sec.body }));
@@ -133,10 +143,15 @@ export function bodySections(wikitext: string): { heading: string; body: string 
 function splitSections(text: string): RawSection[] {
   const headingRe = /^(={2,6})\s*(.+?)\s*\1\s*$/gm;
   const sections: RawSection[] = [];
+
   let lastIndex = 0;
+  
   let pending: { heading: string; level: number } | null = null;
 
-  const push = (body: string, meta: { heading: string; level: number } | null) => {
+  const push = (
+    body: string,
+    meta: { heading: string; level: number } | null,
+  ) => {
     sections.push({
       heading: meta?.heading ?? "",
       level: meta?.level ?? 0,
@@ -147,17 +162,24 @@ function splitSections(text: string): RawSection[] {
 
   for (const m of text.matchAll(headingRe)) {
     const body = text.slice(lastIndex, m.index);
+
     push(body, pending);
+
     pending = { heading: m[2], level: m[1].length };
+
     lastIndex = m.index! + m[0].length;
   }
+
   push(text.slice(lastIndex), pending);
+
   return sections;
 }
 
 export function sentences(body: string): string[] {
   const prose = proseLines(body);
+
   const out: string[] = [];
+
   for (const para of prose) {
     for (const s of splitSentences(para)) {
       const trimmed = s.trim();
@@ -169,18 +191,23 @@ export function sentences(body: string): string[] {
 
 function proseLines(body: string): string[] {
   const withoutTables = stripMediaLinks(stripTables(body));
+
   const paras: string[] = [];
+
   for (const block of withoutTables.split(/\n{2,}/)) {
     const kept: string[] = [];
+
     for (const line of block.split("\n")) {
       const t = line.trim();
       if (!t) continue;
       if (/^[*#:;!|]/.test(t)) continue;
       if (/^\{\{/.test(t) && /\}\}$/.test(t)) continue;
       if (/^(={2,6})\s*.+\1$/.test(t)) continue;
-      if (/^<\/?(gallery|table|blockquote|div|ref|references)/i.test(t)) continue;
+      if (/^<\/?(gallery|table|blockquote|div|ref|references)/i.test(t))
+        continue;
       kept.push(line);
     }
+
     if (kept.length) paras.push(kept.join(" "));
   }
   return paras;
@@ -195,7 +222,9 @@ function stripMediaLinks(text: string): string {
   while (i < text.length) {
     if (text[i] === "[" && text[i + 1] === "[") {
       let depth = 1;
+
       let j = i + 2;
+
       while (j < text.length && depth > 0) {
         if (text[j] === "[" && text[j + 1] === "[") {
           depth++;
@@ -207,13 +236,21 @@ function stripMediaLinks(text: string): string {
           j++;
         }
       }
-      const ns = text.slice(i + 2, j - 2).match(/^\s*([^:|[\]]+)\s*:/)?.[1]?.trim();
+
+      const ns = text
+        .slice(i + 2, j - 2)
+        .match(/^\s*([^:|[\]]+)\s*:/)?.[1]
+        ?.trim();
+
       if (ns && MEDIA_NS.test(ns)) {
         i = j;
         continue;
       }
+
       out += text.slice(i, j);
+
       i = j;
+
       continue;
     }
     out += text[i];
@@ -224,7 +261,9 @@ function stripMediaLinks(text: string): string {
 
 function stripTables(text: string): string {
   let out = "";
+
   let depth = 0;
+
   for (let i = 0; i < text.length; i++) {
     const two = text.slice(i, i + 2);
     if (two === "{|") {
@@ -232,49 +271,92 @@ function stripTables(text: string): string {
       i++;
       continue;
     }
+
     if (two === "|}" && depth > 0) {
       depth--;
       i++;
       continue;
     }
+
     if (depth === 0) out += text[i];
   }
   return out;
 }
 
 const ABBR = new Set([
-  "mr", "mrs", "ms", "dr", "prof", "st", "mt", "no", "vs", "etc", "al",
-  "e.g", "i.e", "cf", "c", "ca", "fig", "gen", "sen", "rep", "gov", "col",
-  "jr", "sr", "inc", "ltd", "co", "corp", "u.s", "u.k", "a.d", "b.c",
+  "mr",
+  "mrs",
+  "ms",
+  "dr",
+  "prof",
+  "st",
+  "mt",
+  "no",
+  "vs",
+  "etc",
+  "al",
+  "e.g",
+  "i.e",
+  "cf",
+  "c",
+  "ca",
+  "fig",
+  "gen",
+  "sen",
+  "rep",
+  "gov",
+  "col",
+  "jr",
+  "sr",
+  "inc",
+  "ltd",
+  "co",
+  "corp",
+  "u.s",
+  "u.k",
+  "a.d",
+  "b.c",
 ]);
 
 function splitSentences(para: string): string[] {
   const masked = maskString(para);
+
   const ranges = maskedRanges(para);
+
   const out: string[] = [];
+
   let start = 0;
 
   for (let i = 0; i < masked.length; i++) {
     const ch = masked[i];
+
     if (ch !== "." && ch !== "!" && ch !== "?") continue;
 
     let j = i;
+
     while (j + 1 < masked.length && ".!?".includes(masked[j + 1])) j++;
 
     if (ch === "." && /\d/.test(masked[i + 1] ?? "")) {
       i = j;
       continue;
     }
+
+
     if (ch === "." && isAbbrevBefore(masked, i)) {
       i = j;
       continue;
     }
 
     const end = swallowTrailing(j + 1, para, ranges);
+
     const after = masked.slice(end);
+
     const gap = after.match(/^\s+/)?.[0] ?? "";
+
     const next = after[gap.length];
+
     const opensNext = next === undefined || /[A-Z0-9"'“(\[]/.test(next);
+
     if (next !== undefined && gap.length === 0) {
       i = j;
       continue;
@@ -282,8 +364,11 @@ function splitSentences(para: string): string[] {
 
     if (opensNext) {
       out.push(para.slice(start, end));
+
       start = end + gap.length;
+
       i = end + gap.length - 1;
+
     } else {
       i = j;
     }
@@ -298,11 +383,16 @@ function swallowTrailing(
   ranges: [number, number][],
 ): number {
   let end = from;
+
   for (;;) {
     let p = end;
+
     while (p < para.length && /\s/.test(para[p]) && !inRange(p, ranges)) p++;
+
     const span = ranges.find(([a]) => a === p);
+
     if (!span) break;
+
     end = span[1];
   }
   return end;
@@ -314,17 +404,25 @@ function inRange(i: number, ranges: [number, number][]): boolean {
 
 function isAbbrevBefore(text: string, i: number): boolean {
   const before = text.slice(Math.max(0, i - 12), i);
+
   const word = before.match(/([A-Za-z.]+)$/)?.[1]?.toLowerCase() ?? "";
+
   if (!word) return false;
+
   if (ABBR.has(word)) return true;
-  const rawWord = text.slice(Math.max(0, i - 12), i).match(/([A-Za-z.]+)$/)?.[1] ?? "";
+
+  const rawWord =
+    text.slice(Math.max(0, i - 12), i).match(/([A-Za-z.]+)$/)?.[1] ?? "";
   return /^[A-Z]$/.test(rawWord);
 }
 
 function maskString(text: string): string {
   const ranges = maskedRanges(text);
+
   if (ranges.length === 0) return text;
+
   const chars = text.split("");
+
   for (const [a, b] of ranges) {
     for (let i = a; i < b && i < chars.length; i++) {
       if (chars[i] !== "\n") chars[i] = " ";
@@ -354,23 +452,33 @@ export function cleanProse(sentence: string): string {
 
 function unwrapTemplate(tpl: string): string {
   const inner = tpl.slice(2, -2);
+
   const parts = inner.split("|");
+
   const name = parts[0].trim().toLowerCase();
+
   const args = parts.slice(1).filter((p) => !p.includes("="));
 
   if (name === "convert" || name === "cvt") {
     const nums: string[] = [];
+
     let unit = "";
+
     for (const a of args) {
       const t = a.trim();
+
       if (/^-?\d[\d.,]*$/.test(t)) nums.push(t);
+
       else if (/^(to|-|–|and|by|x|×|±)$/i.test(t)) nums.push("–");
+
       else {
         unit = t;
         break;
       }
     }
+
     const value = nums.length === 2 ? nums.join("–") : nums.join(" ");
+
     return `${value} ${unit}`.replace(/\s*–\s*/g, "–").trim();
   }
   if (["lang", "transl", "transliteration"].includes(name)) {
@@ -382,23 +490,32 @@ function unwrapTemplate(tpl: string): string {
 
 function isAuditable(text: string): boolean {
   if (text.length < 25) return false;
+
   const letters = text.replace(/[^a-zA-Z]/g, "").length;
+
   return letters >= 15 && /[a-z]/.test(text);
 }
 
 function tally(sections: AuditSection[]): ArticleAudit["summary"] {
   const body = emptyTally();
+
   const lead = emptyTally();
+
   for (const sec of sections) {
     const t = sec.isLead ? lead : body;
+
     for (const c of sec.claims) {
       t.total++;
+
       if (c.status === "sourced") t.sourced++;
+
       else if (c.status === "note-only") t.noteOnly++;
+
       else t.unsourced++;
     }
   }
   const coverage = body.total === 0 ? 1 : body.sourced / body.total;
+
   return { body, lead, coverage };
 }
 

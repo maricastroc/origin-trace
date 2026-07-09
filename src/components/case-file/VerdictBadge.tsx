@@ -13,11 +13,15 @@ export function VerdictBadge({
   confidenceReasons?: string[];
 }) {
   const s = verdictStyle[verdict];
+
   return (
     <span
       className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] ${s.border}/45 ${s.tint} ${s.ink}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} aria-hidden="true" />
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${s.dot}`}
+        aria-hidden="true"
+      />
       {s.label}
       {confidence && (
         <span

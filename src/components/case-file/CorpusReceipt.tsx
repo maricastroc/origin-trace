@@ -11,6 +11,7 @@ export function CorpusReceipt({
   manual: boolean;
 }) {
   const { read, total, truncated } = corpus;
+
   const engine = typeof read === "number";
 
   return (
@@ -26,7 +27,10 @@ export function CorpusReceipt({
                   className="mb-2 h-4 w-4 text-line-strong"
                   aria-hidden="true"
                 />
-                <Stat value={read.toLocaleString()} unit="read · binary search" />
+                <Stat
+                  value={read.toLocaleString()}
+                  unit="read · binary search"
+                />
               </>
             )}
           </div>
@@ -77,7 +81,7 @@ function Stat({ value, unit }: { value: string; unit: string }) {
       <span className="font-display text-[30px] leading-none text-ink">
         {value}
       </span>
-      <span className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-faint">
+      <span className="mt-1.5 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
         {unit}
       </span>
     </span>

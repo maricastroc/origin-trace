@@ -53,8 +53,6 @@ function readProgress(p: TraceProgress | null): {
         detail: "Introduction and current revision.",
       };
     case "detecting":
-      // Emitted after `reading` (content is fetched, then parsed), so its bar must
-      // sit above reading's — a lower value here rewinds the progress bar.
       return {
         label: "Detecting the attached citation…",
         fraction: 0.93,
@@ -72,7 +70,11 @@ function readProgress(p: TraceProgress | null): {
   }
 }
 
-export function LiveTraceLoading({ progress }: { progress: TraceProgress | null }) {
+export function LiveTraceLoading({
+  progress,
+}: {
+  progress: TraceProgress | null;
+}) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {

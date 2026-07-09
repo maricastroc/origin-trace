@@ -8,11 +8,22 @@ describe("WikipediaClient.listRevisions", () => {
       const p = new URL(url).searchParams;
       if (!p.get("rvcontinue")) {
         return {
-          query: { pages: [{ revisions: [{ revid: 1, timestamp: "2019" }, { revid: 2, timestamp: "2019" }] }] },
+          query: {
+            pages: [
+              {
+                revisions: [
+                  { revid: 1, timestamp: "2019" },
+                  { revid: 2, timestamp: "2019" },
+                ],
+              },
+            ],
+          },
           continue: { rvcontinue: "page2" },
         };
       }
-      return { query: { pages: [{ revisions: [{ revid: 3, timestamp: "2020" }] }] } };
+      return {
+        query: { pages: [{ revisions: [{ revid: 3, timestamp: "2020" }] }] },
+      };
     };
     const client = new WikipediaClient({ fetchJson });
     const { revisions, truncated } = await client.listRevisions("X");
@@ -31,7 +42,9 @@ describe("WikipediaClient.listRevisions", () => {
   });
 
   it("throws when the page is missing", async () => {
-    const fetchJson: FetchJson = async () => ({ query: { pages: [{ missing: true }] } });
+    const fetchJson: FetchJson = async () => ({
+      query: { pages: [{ missing: true }] },
+    });
     const client = new WikipediaClient({ fetchJson });
     await expect(client.listRevisions("Ghost")).rejects.toThrow(/not found/i);
   });
@@ -44,7 +57,11 @@ describe("WikipediaClient.getCurrentContent", () => {
         pages: [
           {
             revisions: [
-              { revid: 9, timestamp: "2021-05-01T00:00:00Z", slots: { main: { content: "hello" } } },
+              {
+                revid: 9,
+                timestamp: "2021-05-01T00:00:00Z",
+                slots: { main: { content: "hello" } },
+              },
             ],
           },
         ],
@@ -67,23 +84,33 @@ describe("WikipediaClient.getCurrentContent", () => {
   });
 
   it("throws for a missing article", async () => {
-    const fetchJson: FetchJson = async () => ({ query: { pages: [{ missing: true }] } });
+    const fetchJson: FetchJson = async () => ({
+      query: { pages: [{ missing: true }] },
+    });
     const client = new WikipediaClient({ fetchJson });
-    await expect(client.getCurrentContent("Ghost")).rejects.toThrow(/not found/i);
+    await expect(client.getCurrentContent("Ghost")).rejects.toThrow(
+      /not found/i,
+    );
   });
 });
 
 describe("WikipediaClient.getRevisionContent", () => {
   it("resolves a single revision's content, or null when absent", async () => {
     const fetchJson: FetchJson = async (url) => {
-      const ids = new URL(url).searchParams.get("revids")!.split("|").map(Number);
+      const ids = new URL(url).searchParams
+        .get("revids")!
+        .split("|")
+        .map(Number);
       return {
         query: {
           pages: [
             {
               revisions: ids
                 .filter((id) => id === 7)
-                .map((id) => ({ revid: id, slots: { main: { content: "seven" } } })),
+                .map((id) => ({
+                  revid: id,
+                  slots: { main: { content: "seven" } },
+                })),
             },
           ],
         },
@@ -98,11 +125,19 @@ describe("WikipediaClient.getRevisionContent", () => {
 describe("WikipediaClient.getContentBatch", () => {
   it("fetches all misses in one request and serves the rest from cache", async () => {
     const fetchJson = vi.fn<FetchJson>(async (url) => {
-      const ids = new URL(url).searchParams.get("revids")!.split("|").map(Number);
+      const ids = new URL(url).searchParams
+        .get("revids")!
+        .split("|")
+        .map(Number);
       return {
         query: {
           pages: [
-            { revisions: ids.map((id) => ({ revid: id, slots: { main: { content: `c${id}` } } })) },
+            {
+              revisions: ids.map((id) => ({
+                revid: id,
+                slots: { main: { content: `c${id}` } },
+              })),
+            },
           ],
         },
       };
@@ -112,12 +147,14 @@ describe("WikipediaClient.getContentBatch", () => {
 
     const first = await client.getContentBatch([1, 2, 3]);
     expect(first.get(2)).toBe("c2");
-    expect(fetchJson).toHaveBeenCalledTimes(1); // three misses, one batched round-trip
+    expect(fetchJson).toHaveBeenCalledTimes(1);
 
     const second = await client.getContentBatch([2, 3, 4]);
     expect(second.get(4)).toBe("c4");
-    expect(fetchJson).toHaveBeenCalledTimes(2); // only rev 4 was a miss
-    expect(new URL(fetchJson.mock.calls[1][0]).searchParams.get("revids")).toBe("4");
+    expect(fetchJson).toHaveBeenCalledTimes(2);
+    expect(new URL(fetchJson.mock.calls[1][0]).searchParams.get("revids")).toBe(
+      "4",
+    );
   });
 });
 
@@ -128,7 +165,8 @@ describe("WikipediaClient.search", () => {
         search: [
           {
             title: "Quokka",
-            snippet: '<span class="searchmatch">Quokka</span> is &quot;happy&quot; &amp; small',
+            snippet:
+              '<span class="searchmatch">Quokka</span> is &quot;happy&quot; &amp; small',
           },
         ],
       },
@@ -140,8 +178,6 @@ describe("WikipediaClient.search", () => {
   });
 
   it("cleans wikitext markup out of insource snippets", async () => {
-    // insource:"…" matches land inside raw wikitext, so snippets arrive full of
-    // markup — including template halves sheared off at the fragment edges.
     const cases: Record<string, string> = {
       leadingOrphanTemplate:
         'quote=Coati (also known as the Brazilian aardvark)}}&lt;/ref&gt; the "[[Daily Express]]",&lt;ref&gt;{{cite',
@@ -152,14 +188,19 @@ describe("WikipediaClient.search", () => {
     };
     const fetchJson: FetchJson = async () => ({
       query: {
-        search: Object.entries(cases).map(([title, snippet]) => ({ title, snippet })),
+        search: Object.entries(cases).map(([title, snippet]) => ({
+          title,
+          snippet,
+        })),
       },
     });
     const byTitle = Object.fromEntries(
-      (await new WikipediaClient({ fetchJson }).search("x")).map((h) => [h.title, h.snippet]),
+      (await new WikipediaClient({ fetchJson }).search("x")).map((h) => [
+        h.title,
+        h.snippet,
+      ]),
     );
 
-    // No markup, entities, or template/ref debris survives.
     for (const snippet of Object.values(byTitle)) {
       expect(snippet).not.toMatch(/[{}<>]|&lt;|&gt;|&amp;|\[\[|\]\]|==/);
     }
@@ -176,9 +217,19 @@ describe("WikipediaClient caching", () => {
     const fetchJson = vi.fn<FetchJson>(async (url) => {
       const p = new URL(url).searchParams;
       if (p.get("revids")) {
-        return { query: { pages: [{ revisions: [{ revid: 5, slots: { main: { content: "five" } } }] }] } };
+        return {
+          query: {
+            pages: [
+              {
+                revisions: [{ revid: 5, slots: { main: { content: "five" } } }],
+              },
+            ],
+          },
+        };
       }
-      return { query: { pages: [{ revisions: [{ revid: 5, timestamp: "2020" }] }] } };
+      return {
+        query: { pages: [{ revisions: [{ revid: 5, timestamp: "2020" }] }] },
+      };
     });
     const cache = createEngineCache();
     const client = new WikipediaClient({ fetchJson, cache });
@@ -191,8 +242,8 @@ describe("WikipediaClient caching", () => {
     const listCalls = fetchJson.mock.calls.filter(
       ([u]) => !new URL(u).searchParams.get("revids"),
     ).length;
-    const contentCalls = fetchJson.mock.calls.filter(
-      ([u]) => new URL(u).searchParams.get("revids"),
+    const contentCalls = fetchJson.mock.calls.filter(([u]) =>
+      new URL(u).searchParams.get("revids"),
     ).length;
     expect(listCalls).toBe(1);
     expect(contentCalls).toBe(1);

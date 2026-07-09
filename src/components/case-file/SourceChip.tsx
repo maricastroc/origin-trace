@@ -4,12 +4,14 @@ import { LinkIcon } from "./icons";
 
 export function SourceChip({ source }: { source: ClaimSource }) {
   const typeText = source.typeLabel ?? sourceTypeLabel[source.type];
+
   const label = (
     <span className="text-[13px] font-medium text-ink">
       {source.label}
       {source.year ? ` (${source.year})` : ""}
     </span>
   );
+
   return (
     <div className="inline-flex flex-wrap items-center gap-2 rounded-md border border-line bg-surface-1 px-2.5 py-1.5">
       <LinkIcon className="h-4 w-4 text-ink-faint" />

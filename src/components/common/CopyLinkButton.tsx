@@ -4,10 +4,6 @@ import { useEffect, useState } from "react";
 import { Check, Link2 } from "lucide-react";
 import { shareUrl } from "@/lib/permalink";
 
-/**
- * Copies a permalink for the current result to the clipboard. The link carries
- * everything needed to reproduce the lookup — no server, no account.
- */
 export function CopyLinkButton({
   params,
   label = "Copy link",
@@ -38,7 +34,7 @@ export function CopyLinkButton({
     <button
       type="button"
       onClick={copy}
-      className="inline-flex items-center gap-1.5 rounded-md border border-line-strong px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-muted transition-colors hover:border-ink hover:text-ink"
+      className="inline-flex items-center gap-1.5 rounded-md border border-line-strong px-2.5 py-1 font-mono text-[11px] uppercase tracking-widest text-ink-muted transition-colors hover:border-ink hover:text-ink"
     >
       {copied ? (
         <Check className="h-3.5 w-3.5 text-success" aria-hidden="true" />

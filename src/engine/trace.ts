@@ -19,7 +19,11 @@ import {
 } from "./genealogy.ts";
 import { cleanProse, sentences } from "./audit.ts";
 import { verdictConfidence } from "./confidence.ts";
-import { WikipediaClient, type FetchJson, type RevisionMeta } from "./wikipedia.ts";
+import {
+  WikipediaClient,
+  type FetchJson,
+  type RevisionMeta,
+} from "./wikipedia.ts";
 import type { EngineCache } from "./cache.ts";
 
 export type TraceProgress =
@@ -87,7 +91,8 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
 
   emit({ phase: "listing" });
   const { revisions, truncated } = await client.listRevisions(input.article);
-  if (revisions.length === 0) throw new ClaimNotFoundError(input.article, input.phrase);
+  if (revisions.length === 0)
+    throw new ClaimNotFoundError(input.article, input.phrase);
   estimate = Math.max(6, Math.ceil(Math.log2(revisions.length + 1)) * 2);
   emit({ phase: "listed", revisions: revisions.length, truncated });
 
@@ -146,13 +151,17 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     onHop: (hop) => emit({ phase: "genealogy", hop }),
   }).catch(() => null);
 
-  const chainOldToNew: GenealogyHop[] = genealogy ? [...genealogy.chain].reverse() : [];
+  const chainOldToNew: GenealogyHop[] = genealogy
+    ? [...genealogy.chain].reverse()
+    : [];
   const originHop = chainOldToNew[0] ?? null;
   const moved = (genealogy?.movedEarlier ?? false) && originHop != null;
 
   // When genealogy reaches an earlier origin, the verdict is computed there.
   const effectiveBornSourced = moved ? originHop!.sourced : bornSourced;
-  const effectiveIntroYear = moved ? Number(originHop!.date.slice(0, 4)) : introYear;
+  const effectiveIntroYear = moved
+    ? Number(originHop!.date.slice(0, 4))
+    : introYear;
   const effectiveIntroSource = moved ? originHop!.source : introRef.source;
 
   const genealogyPrimary: Verdict = effectiveBornSourced
@@ -193,7 +202,11 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     currentRef.source?.year !== undefined &&
     Number.isFinite(effectiveIntroYear) &&
     currentRef.source.year > effectiveIntroYear
-      ? citogenesisLoop(currentRef.source, effectiveIntroYear, year(latest.timestamp))
+      ? citogenesisLoop(
+          currentRef.source,
+          effectiveIntroYear,
+          year(latest.timestamp),
+        )
       : null;
 
   let timeline: TimelineEvent[];
@@ -229,7 +242,9 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       revId: intro.revision.revid,
       ...(bornNoteOnly ? { hasExplanatoryNote: true } : {}),
       ...(abstained
-        ? { note: "an earlier wording likely exists but couldn't be confirmed (low lexical overlap)" }
+        ? {
+            note: "an earlier wording likely exists but couldn't be confirmed (low lexical overlap)",
+          }
         : {}),
     });
     if (intro.removedSince) {
@@ -247,7 +262,9 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
         kind: nowSourced && !bornSourced ? "source-added" : "current",
         wording: excerpt(latestContent, input.phrase),
         source: currentRef.source,
-        ...(nowSourced && currentRef.source == null ? { refUnparsed: true } : {}),
+        ...(nowSourced && currentRef.source == null
+          ? { refUnparsed: true }
+          : {}),
         revId: latest.revid,
         ...(nowNoteOnly ? { hasExplanatoryNote: true } : {}),
         ...(evidenceChanged
@@ -268,7 +285,11 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
         {
           lens: "by current wording",
           verdict: lexicalPrimary,
-          reason: readingReason(lexicalPrimary, introYear, currentRef.source?.label ?? null),
+          reason: readingReason(
+            lexicalPrimary,
+            introYear,
+            currentRef.source?.label ?? null,
+          ),
         },
         {
           lens: "by idea genealogy",
@@ -309,7 +330,9 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     verdict: {
       primary,
       confidence: confidence.level,
-      ...(confidence.reasons.length ? { confidenceReasons: confidence.reasons } : {}),
+      ...(confidence.reasons.length
+        ? { confidenceReasons: confidence.reasons }
+        : {}),
       summary: corrected
         ? correctedSummary(lexicalPrimary, genealogyPrimary, effectiveIntroYear)
         : summarize(narrativePrimary, intro.removedSince, circularLoop != null),
@@ -356,10 +379,6 @@ function clip(s: string): string {
   return s.length > 160 ? `${s.slice(0, 157)}…` : s;
 }
 
-// Build the timeline from the reformulation chain (oldest → newest): the genealogy
-// origin as `claim-introduced`, each hop as `reworded`/`source-added`/`source-replaced`,
-// then the current state. Reuses the EventKind / Transition vocabulary the timeline
-// already renders.
 function chainTimeline(
   oldToNew: GenealogyHop[],
   revisions: RevisionMeta[],
@@ -395,18 +414,29 @@ function chainTimeline(
         ...(hop.sourced && hop.source == null ? { refUnparsed: true } : {}),
         revId: hop.revId,
         ...(abstained
-          ? { note: "an earlier wording likely exists but couldn't be confirmed (low lexical overlap)" }
+          ? {
+              note: "an earlier wording likely exists but couldn't be confirmed (low lexical overlap)",
+            }
           : {}),
       });
       return;
     }
     const prev = oldToNew[i - 1];
-    // Only call it a source change when there's an attributable citation to show —
-    // an unparseable <ref> (sourced but source === null) reads as a plain reword.
+
     const gained = !prev.sourced && hop.sourced && hop.source != null;
+
     const swapped =
-      prev.sourced && hop.sourced && hop.source != null && prev.sourceLabel !== hop.sourceLabel;
-    const kind: EventKind = gained ? "source-added" : swapped ? "source-replaced" : "reworded";
+      prev.sourced &&
+      hop.sourced &&
+      hop.source != null &&
+      prev.sourceLabel !== hop.sourceLabel;
+
+    const kind: EventKind = gained
+      ? "source-added"
+      : swapped
+        ? "source-replaced"
+        : "reworded";
+
     const changes: ChangeTag[] = gained
       ? ["reworded", "evidence-added"]
       : swapped
@@ -455,8 +485,13 @@ function chainTimeline(
   return events;
 }
 
-function readingReason(v: Verdict, introYear: number, currentLabel: string | null): string {
-  if (v === "born-sourced") return `The current wording first appears in ${introYear}, cited from the start.`;
+function readingReason(
+  v: Verdict,
+  introYear: number,
+  currentLabel: string | null,
+): string {
+  if (v === "born-sourced")
+    return `The current wording first appears in ${introYear}, cited from the start.`;
   if (v === "retrofit")
     return `The current wording first appears in ${introYear} unsourced; the citation${currentLabel ? ` (${currentLabel})` : ""} attached later.`;
   if (v === "source-lost")
@@ -470,8 +505,12 @@ function genealogyReason(
   rewordings: number,
   currentLabel: string | null,
 ): string {
-  const via = rewordings > 0 ? ` through ${rewordings} rewording${rewordings > 1 ? "s" : ""}` : "";
-  if (v === "born-sourced") return `The idea traces back to ${originYear}${via}, cited then too.`;
+  const via =
+    rewordings > 0
+      ? ` through ${rewordings} rewording${rewordings > 1 ? "s" : ""}`
+      : "";
+  if (v === "born-sourced")
+    return `The idea traces back to ${originYear}${via}, cited then too.`;
   if (v === "retrofit")
     return `The idea traces back to ${originYear}${via}, where it stood uncited — the citation${currentLabel ? ` (${currentLabel})` : ""} is retroactive.`;
   if (v === "source-lost")
@@ -479,7 +518,11 @@ function genealogyReason(
   return `The idea traces back to ${originYear}${via}, where it stood uncited.`;
 }
 
-function correctedSummary(lexical: Verdict, genealogy: Verdict, originYear: number): string {
+function correctedSummary(
+  lexical: Verdict,
+  genealogy: Verdict,
+  originYear: number,
+): string {
   return `Reads ${VERDICT_PHRASE[lexical]} by the current wording, but the idea traces back to ${originYear} — ${VERDICT_PHRASE[genealogy]}. The two readings disagree; both are shown.`;
 }
 
@@ -491,8 +534,16 @@ function citogenesisLoop(
   const citedYear = Number(currentYear);
   return {
     cycle: [
-      { actor: "Wikipedia", year: introYear, action: "asserts the claim, unsourced" },
-      { actor: source.label, year: source.year!, action: "publishes it — after Wikipedia" },
+      {
+        actor: "Wikipedia",
+        year: introYear,
+        action: "asserts the claim, unsourced",
+      },
+      {
+        actor: source.label,
+        year: source.year!,
+        action: "publishes it — after Wikipedia",
+      },
       {
         actor: "Wikipedia",
         year: Number.isFinite(citedYear) ? citedYear : source.year!,
@@ -503,8 +554,13 @@ function citogenesisLoop(
   };
 }
 
-function summarize(primary: Verdict, removed: boolean, circular: boolean): string {
-  if (removed) return "The claim existed and was later removed from the article.";
+function summarize(
+  primary: Verdict,
+  removed: boolean,
+  circular: boolean,
+): string {
+  if (removed)
+    return "The claim existed and was later removed from the article.";
   switch (primary) {
     case "born-sourced":
       return "Claim and citation entered together at introduction.";
@@ -568,7 +624,9 @@ function sourceQualityFor(
   };
 }
 
-function buildNotes(intro: { assumptionViolated: boolean }): string | undefined {
+function buildNotes(intro: {
+  assumptionViolated: boolean;
+}): string | undefined {
   if (!intro.assumptionViolated) return undefined;
   return "non-monotonic presence at the boundary — the window may not be the first occurrence; verify.";
 }
@@ -582,12 +640,6 @@ function yearMonth(timestamp: string): string {
 }
 
 function excerpt(content: string, phrase: string): string {
-  // Prefer the same sentence pipeline the genealogy uses. It is nesting-aware
-  // (brace-counting media-link stripping) and drops section headers / list
-  // scaffolding, so a `[[File:…|thumb|caption [[nested link]]]]` doesn't leak
-  // "thumb|200px|" and raw brackets into the quote the way a single-pass regex
-  // does. Falls through to the anchor slice below when the phrase has been
-  // reworded and no cleaned sentence matches it verbatim.
   const target = normalize(phrase);
   if (target) {
     for (const raw of sentences(content)) {

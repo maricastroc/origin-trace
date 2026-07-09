@@ -18,17 +18,17 @@ Reconstructed deterministically from Wikipedia's full revision history — no la
 
 ## 🔍 Features
 
-|                                       |                                                                                                                                                                                                                                                                                                                     |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **📍 Deterministic origin**           | Binary-searches an article's _entire_ revision history — WikiBlame-style — down to the exact revision that introduced a claim. Proof, not a guess. Gap-robust: it survives claims that were removed and reintroduced, converging on the earliest occurrence rather than the nearest one.                             |
-| **🧬 Evidence-history verdict**        | It doesn't judge true or false. It classifies the _life of the evidence_ — `born-sourced`, `retrofit` (sourced only later), `unsourced-stable` (never backed, never removed), and more — graded by epistemic risk, stamped on the case file like a rubber stamp.                                                    |
-| **🔄 Circular source (citogenesis)**   | The strongest tell a provenance tool can find: when a claim lived unsourced and the citation later bolted onto it was _published after_ the claim already appeared here, the source can't be its origin — it may have drawn from Wikipedia. The engine flags this loop deterministically from the two dates, and says plainly the backing may be circular. |
-| **🧾 Closed-corpus receipt**           | Wikipedia's history is finite and enumerable, so the origin is a _proof of absence_ below it — not a sample. The receipt shows how few revisions the binary search actually had to read to pin it, and warns when the history was truncated so closure can't be claimed.                                            |
-| **📑 Whole-article audit**            | One read of the current revision maps _every sentence_ to its evidence — which carry an inline citation, which assert without one. The claim boundary comes free from Wikipedia's own structure (a sentence and its `<ref>`) — **no NLP**. Then click any uncited sentence to trace its history down to its origin. |
-| **🎯 Honest scope resolution**         | Given only a phrase, it finds the article(s) that carry it — and when several match _verbatim_ (itself a propagation signal) or none do, it shows you the candidates instead of guessing at the wrong one.                                                                                                          |
-| **🔕 A note is not a source**          | An `[α]`-style explanatory footnote (`{{efn}}` / a grouped `<ref group=…>`) reads like a reference but cites nothing. The engine tells them apart — and looks _inside_ a note for a nested citation — refusing to count a note as backing.                                                                          |
-| **🤐 Honest abstention**              | When a phrase isn't in the history, it says so rather than inventing an origin. It reports "no removal recorded" — never "never challenged" — because it can't yet prove the latter. Silence, and uncertainty, are results.                                                                                        |
-| **⚡ Live, streamed, zero setup**      | The whole pipeline runs against the public Wikipedia API with **no keys, no LLM, no database required** — every verdict is reproducible from the revision history alone. Progress streams as the search runs; long histories are enumerated in parallel, the search speculatively prefetches its own descent, and repeat traces are served from a persistent cache (in-process, optionally backed by Redis/KV) that nothing the verdict depends on.                                                         |
+|                                      |                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **📍 Deterministic origin**          | Binary-searches an article's _entire_ revision history — WikiBlame-style — down to the exact revision that introduced a claim. Proof, not a guess. Gap-robust: it survives claims that were removed and reintroduced, converging on the earliest occurrence rather than the nearest one.                                                                                                                                                            |
+| **🧬 Evidence-history verdict**      | It doesn't judge true or false. It classifies the _life of the evidence_ — `born-sourced`, `retrofit` (sourced only later), `unsourced-stable` (never backed, never removed), and more — graded by epistemic risk, stamped on the case file like a rubber stamp.                                                                                                                                                                                    |
+| **🔄 Circular source (citogenesis)** | The strongest tell a provenance tool can find: when a claim lived unsourced and the citation later bolted onto it was _published after_ the claim already appeared here, the source can't be its origin — it may have drawn from Wikipedia. The engine flags this loop deterministically from the two dates, and says plainly the backing may be circular.                                                                                          |
+| **🧾 Closed-corpus receipt**         | Wikipedia's history is finite and enumerable, so the origin is a _proof of absence_ below it — not a sample. The receipt shows how few revisions the binary search actually had to read to pin it, and warns when the history was truncated so closure can't be claimed.                                                                                                                                                                            |
+| **📑 Whole-article audit**           | One read of the current revision maps _every sentence_ to its evidence — which carry an inline citation, which assert without one. The claim boundary comes free from Wikipedia's own structure (a sentence and its `<ref>`) — **no NLP**. Then click any uncited sentence to trace its history down to its origin.                                                                                                                                 |
+| **🎯 Honest scope resolution**       | Given only a phrase, it finds the article(s) that carry it — and when several match _verbatim_ (itself a propagation signal) or none do, it shows you the candidates instead of guessing at the wrong one.                                                                                                                                                                                                                                          |
+| **🔕 A note is not a source**        | An `[α]`-style explanatory footnote (`{{efn}}` / a grouped `<ref group=…>`) reads like a reference but cites nothing. The engine tells them apart — and looks _inside_ a note for a nested citation — refusing to count a note as backing.                                                                                                                                                                                                          |
+| **🤐 Honest abstention**             | When a phrase isn't in the history, it says so rather than inventing an origin. It reports "no removal recorded" — never "never challenged" — because it can't yet prove the latter. Silence, and uncertainty, are results.                                                                                                                                                                                                                         |
+| **⚡ Live, streamed, zero setup**    | The whole pipeline runs against the public Wikipedia API with **no keys, no LLM, no database required** — every verdict is reproducible from the revision history alone. Progress streams as the search runs; long histories are enumerated in parallel, the search speculatively prefetches its own descent, and repeat traces are served from a persistent cache (in-process, optionally backed by Redis/KV) that nothing the verdict depends on. |
 
 <br/>
 
@@ -43,18 +43,18 @@ Reconstructed deterministically from Wikipedia's full revision history — no la
   <img src="https://img.shields.io/badge/No_LLM-2e7d32?style=for-the-badge&logoColor=white" alt="No LLM" />
 </p>
 
-| Category        | Technologies                                                                                          |
-| --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Framework**   | Next.js 16 (App Router), React 19                                                                      |
-| **Language**    | TypeScript 5                                                                                           |
-| **Styling**     | Tailwind CSS v4                                                                                        |
-| **Engine**      | Pure TypeScript — WikiBlame gap-robust binary search over a closed revision corpus; the core is dependency-free (one optional dep, the Upstash Redis client, only for the cache layer) |
-| **Evidence**    | MediaWiki Action API — revision enumeration (fanned out across concurrent timestamp windows), wikitext content, and full-text search; nothing cloned or scraped |
-| **Determinism** | **No LLM, no database.** Every verdict is a reproducible function of the revision history              |
+| Category        | Technologies                                                                                                                                                                                                                      |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Framework**   | Next.js 16 (App Router), React 19                                                                                                                                                                                                 |
+| **Language**    | TypeScript 5                                                                                                                                                                                                                      |
+| **Styling**     | Tailwind CSS v4                                                                                                                                                                                                                   |
+| **Engine**      | Pure TypeScript — WikiBlame gap-robust binary search over a closed revision corpus; the core is dependency-free (one optional dep, the Upstash Redis client, only for the cache layer)                                            |
+| **Evidence**    | MediaWiki Action API — revision enumeration (fanned out across concurrent timestamp windows), wikitext content, and full-text search; nothing cloned or scraped                                                                   |
+| **Determinism** | **No LLM, no database.** Every verdict is a reproducible function of the revision history                                                                                                                                         |
 | **Caching**     | Two-tier — an in-process LRU in front of an optional Upstash Redis/KV layer (gzipped). Immutable revision bodies never expire, so a warm article traces in seconds; with no store configured it degrades to in-memory, zero setup |
-| **Streaming**   | Server-Sent Events — real binary-search progress, not a faked spinner                                  |
-| **Runtime**     | Node.js API routes — `/api/trace` (SSE), `/api/resolve`, `/api/audit`, `/api/prewarm`                  |
-| **Tooling**     | ESLint, `tsc`, **Vitest** (a unit suite over the engine + lib, no network), and a live validation harness (`engine:validate`) that checks the engine against hand traces |
+| **Streaming**   | Server-Sent Events — real binary-search progress, not a faked spinner                                                                                                                                                             |
+| **Runtime**     | Node.js API routes — `/api/trace` (SSE), `/api/resolve`, `/api/audit`, `/api/prewarm`                                                                                                                                             |
+| **Tooling**     | ESLint, `tsc`, **Vitest** (a unit suite over the engine + lib, no network), and a live validation harness (`engine:validate`) that checks the engine against hand traces                                                          |
 
 <br/>
 
@@ -110,13 +110,13 @@ phrase → resolve scope       — which article carries it? honest about ambigu
 
 Origin Trace doesn't return true or false. Every claim resolves to one of these patterns — a read on the _life of its evidence_, graded from soundest to most alarming:
 
-| Verdict              | Health       | What it means                                                        |
-| -------------------- | ------------ | -------------------------------------------------------------------- |
-| **born-sourced**     | sourced      | Claim and citation entered the article in the same revision.         |
-| **retrofit**         | back-filled  | Lived as unsourced fact first; a citation was attached only later.   |
-| **source-lost**      | unsourced    | Born with a citation that was later stripped — the claim now stands uncited. |
-| **unsourced-stable** | unsourced    | Has carried no citation in its entire history, yet no one removed it. |
-| **ambiguous**        | ambiguous    | The verdict flips depending on where you draw the line around "the same claim" — both readings are shown. |
+| Verdict              | Health      | What it means                                                                                             |
+| -------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
+| **born-sourced**     | sourced     | Claim and citation entered the article in the same revision.                                              |
+| **retrofit**         | back-filled | Lived as unsourced fact first; a citation was attached only later.                                        |
+| **source-lost**      | unsourced   | Born with a citation that was later stripped — the claim now stands uncited.                              |
+| **unsourced-stable** | unsourced   | Has carried no citation in its entire history, yet no one removed it.                                     |
+| **ambiguous**        | ambiguous   | The verdict flips depending on where you draw the line around "the same claim" — both readings are shown. |
 
 > The live engine classifies claims into **born-sourced**, **retrofit**, **source-lost**, **unsourced-stable** and **ambiguous**, plus a terminal **removed** state. `churn` (a citation swapped repeatedly) and `contested` (revert / edit-war analysis) are on the roadmap and are **not shown** in the UI until the engine actually emits them — until then it deliberately says "no removal recorded" rather than "never challenged".
 
@@ -215,11 +215,11 @@ npm test
 
 Three real Wikipedia claims that each tell a different story about their evidence:
 
-| Article       | Claim                       | What you'll find                                                          |
-| ------------- | --------------------------- | ------------------------------------------------------------------------- |
+| Article       | Claim                       | What you'll find                                                                                                                                              |
+| ------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Quokka**    | _"happiest animal"_         | `retrofit` + a **citogenesis loop** — the citation backing it (The West Australian, 2019) was published years _after_ the claim already lived in the article. |
-| **Coati**     | _"Brazilian aardvark"_      | `unsourced-stable` — the famous citogenesis case: a coined nickname that lived in the article unbacked. |
-| **Petasites** | _"pyrrolizidine alkaloids"_ | `retrofit` — the engine pins the origin years earlier than a manual trace did. |
+| **Coati**     | _"Brazilian aardvark"_      | `unsourced-stable` — the famous citogenesis case: a coined nickname that lived in the article unbacked.                                                       |
+| **Petasites** | _"pyrrolizidine alkaloids"_ | `retrofit` — the engine pins the origin years earlier than a manual trace did.                                                                                |
 
 <br/>
 

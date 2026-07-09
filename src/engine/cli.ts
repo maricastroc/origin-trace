@@ -12,7 +12,7 @@ async function main(argv: string[]): Promise<number> {
   const [article, phrase] = positional;
   if (!article || !phrase) {
     process.stderr.write(
-      'Usage: cli.ts <article> <phrase> [--lang en]\n' +
+      "Usage: cli.ts <article> <phrase> [--lang en]\n" +
         'Example: cli.ts Quokka "happiest animal"\n',
     );
     return 2;

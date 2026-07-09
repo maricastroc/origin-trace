@@ -26,7 +26,7 @@ describe("verdictConfidence", () => {
       origin: { reach: "semantic", bulkInsertion: false, nonMonotonic: true },
     });
     expect(two.level).toBe("low");
-    expect(two.reasons.length).toBe(3); // semantic + non-monotonic + abstained
+    expect(two.reasons.length).toBe(3);
   });
 
   it("docks one level for a bulk-insertion origin", () => {
@@ -42,15 +42,23 @@ describe("verdictConfidence", () => {
     expect(
       verdictConfidence({
         ...base,
-        origin: { reach: "semantic", bulkInsertion: false, nonMonotonic: false },
+        origin: {
+          reach: "semantic",
+          bulkInsertion: false,
+          nonMonotonic: false,
+        },
       }).level,
     ).toBe("medium");
-    // abstained implies a semantic break (low-overlap / no-anchor-reword): +1 +1
+
     expect(
       verdictConfidence({
         ...base,
         abstained: true,
-        origin: { reach: "semantic", bulkInsertion: false, nonMonotonic: false },
+        origin: {
+          reach: "semantic",
+          bulkInsertion: false,
+          nonMonotonic: false,
+        },
       }).level,
     ).toBe("low");
   });
@@ -59,14 +67,20 @@ describe("verdictConfidence", () => {
     expect(
       verdictConfidence({
         ...base,
-        origin: { reach: "unrecoverable", bulkInsertion: false, nonMonotonic: false },
+        origin: {
+          reach: "unrecoverable",
+          bulkInsertion: false,
+          nonMonotonic: false,
+        },
       }).level,
     ).toBe("low");
   });
 
   it("caps a pure lexical fallback at medium, and low when the intro is the oldest fetched revision", () => {
     expect(verdictConfidence({ ...base, origin: null }).level).toBe("medium");
-    expect(verdictConfidence({ ...base, origin: null, bornAtLatest: true }).level).toBe("low");
+    expect(
+      verdictConfidence({ ...base, origin: null, bornAtLatest: true }).level,
+    ).toBe("low");
   });
 
   it("treats a non-monotonic chain as one downgrade", () => {

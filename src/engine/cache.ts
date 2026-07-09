@@ -12,14 +12,20 @@ export interface EngineCache {
 
 class LruEngineCache implements EngineCache {
   private readonly content = new Map<string, string | null>();
-  private readonly list = new Map<string, { at: number; value: RevisionList }>();
+  private readonly list = new Map<
+    string,
+    { at: number; value: RevisionList }
+  >();
 
   constructor(
     private readonly maxContent = 4000,
     private readonly listTtlMs = 10 * 60_000,
   ) {}
 
-  async getContent(lang: string, revid: number): Promise<string | null | undefined> {
+  async getContent(
+    lang: string,
+    revid: number,
+  ): Promise<string | null | undefined> {
     const key = `${lang}:${revid}`;
     if (!this.content.has(key)) return undefined;
     const value = this.content.get(key) as string | null;
@@ -28,7 +34,11 @@ class LruEngineCache implements EngineCache {
     return value;
   }
 
-  async setContent(lang: string, revid: number, value: string | null): Promise<void> {
+  async setContent(
+    lang: string,
+    revid: number,
+    value: string | null,
+  ): Promise<void> {
     const key = `${lang}:${revid}`;
     this.content.delete(key);
     this.content.set(key, value);
@@ -38,7 +48,10 @@ class LruEngineCache implements EngineCache {
     }
   }
 
-  async getList(lang: string, title: string): Promise<RevisionList | undefined> {
+  async getList(
+    lang: string,
+    title: string,
+  ): Promise<RevisionList | undefined> {
     const key = `${lang}:${title}`;
     const hit = this.list.get(key);
     if (!hit) return undefined;
@@ -49,7 +62,11 @@ class LruEngineCache implements EngineCache {
     return hit.value;
   }
 
-  async setList(lang: string, title: string, value: RevisionList): Promise<void> {
+  async setList(
+    lang: string,
+    title: string,
+    value: RevisionList,
+  ): Promise<void> {
     this.list.set(`${lang}:${title}`, { at: Date.now(), value });
   }
 }

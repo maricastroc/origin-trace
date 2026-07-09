@@ -23,7 +23,11 @@ export function updateUrl(params: Params): void {
   if (typeof window === "undefined") return;
   const qs = new URLSearchParams(clean(params)).toString();
   const { pathname, hash } = window.location;
-  window.history.replaceState(null, "", qs ? `${pathname}?${qs}${hash}` : `${pathname}${hash}`);
+  window.history.replaceState(
+    null,
+    "",
+    qs ? `${pathname}?${qs}${hash}` : `${pathname}${hash}`,
+  );
 }
 
 export function readParams(): URLSearchParams {

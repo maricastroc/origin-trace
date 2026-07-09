@@ -1,12 +1,12 @@
 import type { Verdict } from "@/types/Verdict";
 import { verdictStyle } from "@/lib/verdictStyle";
 
-// Only the patterns the engine actually produces AND teaches here. `churn` and
-// `contested` are on the roadmap (revert / edit-war analysis) — not shown until
-// the engine emits them, so the section can't promise a verdict it never returns.
-// `source-lost` and `removed` are real outputs but terminal/edge states, surfaced
-// on the case file rather than taught as headline patterns.
-const VERDICTS: Verdict[] = ["born-sourced", "retrofit", "unsourced-stable", "ambiguous"];
+const VERDICTS: Verdict[] = [
+  "born-sourced",
+  "retrofit",
+  "unsourced-stable",
+  "ambiguous",
+];
 
 export function Taxonomy() {
   const ordered = [...VERDICTS].sort(
@@ -29,10 +29,7 @@ export function Taxonomy() {
           {ordered.map((v) => {
             const s = verdictStyle[v];
             return (
-              <li
-                key={v}
-                className="flex gap-3 border-t border-line pt-4"
-              >
+              <li key={v} className="flex gap-3 border-t border-line pt-4">
                 <span
                   className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${s.dot}`}
                   aria-hidden="true"

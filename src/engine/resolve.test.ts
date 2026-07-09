@@ -2,14 +2,18 @@ import { describe, expect, it } from "vitest";
 import { resolveArticles } from "@/engine/resolve.ts";
 import { fakeWiki } from "@/test/fakeWiki";
 
-function searcher(search: Record<string, { title: string; snippet?: string }[]>) {
+function searcher(
+  search: Record<string, { title: string; snippet?: string }[]>,
+) {
   return fakeWiki({ title: "unused", revisions: [], search }).fetchJson;
 }
 
 describe("resolveArticles", () => {
   it("resolves unambiguously when exactly one article contains the phrase verbatim", async () => {
     const fetchJson = searcher({
-      'insource:"the happiest animal"': [{ title: "Quokka", snippet: "…the happiest…" }],
+      'insource:"the happiest animal"': [
+        { title: "Quokka", snippet: "…the happiest…" },
+      ],
       "the happiest animal": [
         { title: "Quokka", snippet: "…" },
         { title: "Setonix", snippet: "…" },

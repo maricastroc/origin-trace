@@ -24,7 +24,9 @@ export async function GET(request: Request): Promise<Response> {
       const send = (obj: unknown) => {
         if (closed) return;
         try {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(obj)}\n\n`),
+          );
         } catch {
           closed = true;
         }

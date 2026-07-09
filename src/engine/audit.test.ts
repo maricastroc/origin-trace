@@ -76,21 +76,24 @@ describe("segmentArticle", () => {
 
 describe("sentences", () => {
   it("does not split on abbreviations or decimals", () => {
-    expect(sentences("Dr. Smith measured 3.5 km before dusk. The team left camp.")).toEqual([
+    expect(
+      sentences("Dr. Smith measured 3.5 km before dusk. The team left camp."),
+    ).toEqual([
       "Dr. Smith measured 3.5 km before dusk.",
       "The team left camp.",
     ]);
   });
 
   it("splits standard sentence boundaries", () => {
-    expect(sentences("First claim stands alone. Second claim follows it.")).toEqual([
-      "First claim stands alone.",
-      "Second claim follows it.",
-    ]);
+    expect(
+      sentences("First claim stands alone. Second claim follows it."),
+    ).toEqual(["First claim stands alone.", "Second claim follows it."]);
   });
 
   it("skips list items and table markup, keeping only prose", () => {
-    const out = sentences("Real prose sentence here.\n* a bullet item\n{| table |}");
+    const out = sentences(
+      "Real prose sentence here.\n* a bullet item\n{| table |}",
+    );
     expect(out).toEqual(["Real prose sentence here."]);
   });
 });
@@ -99,7 +102,9 @@ describe("auditArticle", () => {
   it("audits the current revision and tallies coverage", async () => {
     const { fetchJson } = fakeWiki({
       title: "Quokka",
-      revisions: [{ revid: 555, timestamp: "2020-01-01T00:00:00Z", content: ARTICLE }],
+      revisions: [
+        { revid: 555, timestamp: "2020-01-01T00:00:00Z", content: ARTICLE },
+      ],
     });
 
     const audit = await auditArticle({ article: "Quokka", fetchJson });
@@ -115,7 +120,9 @@ describe("auditArticle", () => {
   it("throws ArticleNotFoundError for a missing article", async () => {
     const { fetchJson } = fakeWiki({
       title: "Quokka",
-      revisions: [{ revid: 1, timestamp: "2020-01-01T00:00:00Z", content: ARTICLE }],
+      revisions: [
+        { revid: 1, timestamp: "2020-01-01T00:00:00Z", content: ARTICLE },
+      ],
     });
     await expect(
       auditArticle({ article: "Nonexistent Title", fetchJson }),

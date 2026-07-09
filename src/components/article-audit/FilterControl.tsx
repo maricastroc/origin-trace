@@ -5,11 +5,9 @@ export interface ControlOption<T extends string> {
   label: string;
   count?: number;
   Icon?: LucideIcon;
-  /** text-color class for the icon */
   iconClass?: string;
 }
 
-/** Back-compat alias for the filter call site. */
 export type FilterOption = ControlOption<string>;
 
 function Marker<T extends string>({ option }: { option: ControlOption<T> }) {
@@ -49,7 +47,7 @@ export function FilterControl<T extends string>({
               aria-pressed={active}
               className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] transition-colors ${
                 active
-                  ? "border-ink bg-ink text-[color:var(--paper-raised)]"
+                  ? "border-ink bg-ink text-surface-2"
                   : "border-line-strong text-ink-muted hover:border-ink hover:text-ink"
               }`}
             >

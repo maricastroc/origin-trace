@@ -26,11 +26,8 @@ export function deriveSignals(
   if (removed) {
     sourcedNow = "removed";
   } else if (present) {
-    // A cited-but-unparsed <ref> (refUnparsed) is NOT "no source": the claim IS
-    // cited, we just have nothing structured to render. Keep it a distinct third
-    // state so the panel never stamps a red "unsourced now" over a sourced verdict
-    // — matching how the timeline row and the audit row already render it.
-    if (present.source === null) sourcedNow = present.refUnparsed ? "unreadable" : "no";
+    if (present.source === null)
+      sourcedNow = present.refUnparsed ? "unreadable" : "no";
     else if (present.source) {
       sourcedNow = "yes";
       currentSourceLabel = present.source.label;

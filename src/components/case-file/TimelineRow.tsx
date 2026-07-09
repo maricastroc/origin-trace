@@ -25,15 +25,13 @@ export function TimelineRow({
 }: {
   event: TimelineEvent;
   isLast: boolean;
-  /** When set, this node's wording is a verbatim repeat first seen on this date —
-   *  render a compact "unchanged since …" line instead of reprinting the quote. */
   unchangedSince?: string;
 }) {
   return (
     <li className="relative pb-9 pl-9 last:pb-0">
       {!isLast && (
         <span
-          className="absolute left-[7px] top-3 h-full w-[2px] bg-line-strong"
+          className="absolute left-1.75 top-3 h-full w-0.5 bg-line-strong"
           aria-hidden="true"
         />
       )}

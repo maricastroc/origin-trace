@@ -16,7 +16,9 @@ export function HighImpactBand({
   article: ArticleAuditData["article"];
 }) {
   const [showAll, setShowAll] = useState(false);
+
   const shown = showAll ? items : items.slice(0, PREVIEW);
+
   const rest = items.length - shown.length;
 
   return (

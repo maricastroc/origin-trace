@@ -7,7 +7,6 @@ export interface SectionMetrics {
   sourced: number;
   noteOnly: number;
   unsourced: number;
-  /** sourced / total — how much of the section carries an inline citation */
   coverage: number;
 }
 
@@ -33,11 +32,7 @@ export function sectionMetrics(section: AuditSection): SectionMetrics {
 export type AuditFilter = "all" | "attention" | "note" | "sourced" | "high";
 
 export type AuditSort =
-  | "article"
-  | "coverage-asc"
-  | "coverage-desc"
-  | "uncited"
-  | "high";
+  "article" | "coverage-asc" | "coverage-desc" | "uncited" | "high";
 
 export function matchesQuery(text: string, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -59,13 +54,20 @@ export function matchesFilter(claim: AuditClaim, filter: AuditFilter): boolean {
   }
 }
 
-export function countMatching(claims: AuditClaim[], filter: AuditFilter): number {
+export function countMatching(
+  claims: AuditClaim[],
+  filter: AuditFilter,
+): number {
   let n = 0;
   for (const c of claims) if (matchesFilter(c, filter)) n++;
   return n;
 }
 
-export function sectionSlug(heading: string, index: number, isLead: boolean): string {
+export function sectionSlug(
+  heading: string,
+  index: number,
+  isLead: boolean,
+): string {
   const base = isLead
     ? "lead"
     : heading

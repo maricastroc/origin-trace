@@ -10,9 +10,10 @@ const GENERATOR: Record<
 
 export function ProvenanceFooter({ meta }: { meta: ClaimProvenance["meta"] }) {
   const gen = GENERATOR[meta.generatedBy];
+
   return (
     <div className="rounded-lg border border-line bg-surface-1/50 px-4 py-3">
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-faint">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10.5px] uppercase tracking-widest text-ink-faint">
         {gen.live && (
           <span
             className="h-1.5 w-1.5 shrink-0 rounded-full bg-success"

@@ -28,7 +28,13 @@ type State =
   | { status: "unresolved"; note: string }
   | { status: "tracing"; scope: string; progress: TraceProgress | null }
   | { status: "error"; message: string; lang: string }
-  | { status: "done"; data: ClaimProvenance; scope: string; phrase: string; lang?: string };
+  | {
+      status: "done";
+      data: ClaimProvenance;
+      scope: string;
+      phrase: string;
+      lang?: string;
+    };
 
 const EXAMPLES: { phrase: string; label: string }[] = [
   { phrase: "happiest animal", label: "happiest animal" },
@@ -96,10 +102,16 @@ export function LiveTrace() {
 
     setState({ status: "resolving" });
     try {
-      const res = await fetch(`/api/resolve?phrase=${enc(p)}&lang=${enc(lang)}`);
+      const res = await fetch(
+        `/api/resolve?phrase=${enc(p)}&lang=${enc(lang)}`,
+      );
       const body = await res.json();
       if (!res.ok) {
-        setState({ status: "error", message: body.error ?? `Error ${res.status}`, lang });
+        setState({
+          status: "error",
+          message: body.error ?? `Error ${res.status}`,
+          lang,
+        });
         return;
       }
       const r = body as Resolution;
@@ -137,8 +149,12 @@ export function LiveTrace() {
     const lang = params.get("lang") ?? "en";
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPhrase(p); setArticle(a); setLang(lang);
-    document.getElementById("live")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setPhrase(p);
+    setArticle(a);
+    setLang(lang);
+    document
+      .getElementById("live")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
     void resolveAndTrace(p, a, lang);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -271,14 +287,17 @@ export function LiveTrace() {
         <div className="rounded-xl border border-danger/30 bg-danger-bg px-5 py-4">
           <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-danger">
             couldn&rsquo;t trace
-            <span className="ml-2 text-ink-faint">· searched {state.lang}.wikipedia</span>
+            <span className="ml-2 text-ink-faint">
+              · searched {state.lang}.wikipedia
+            </span>
           </p>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-muted">
             {state.message}
           </p>
           {state.lang !== "en" ? null : (
             <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-faint">
-              Not in English? Pick a different Wikipedia language above and trace again.
+              Not in English? Pick a different Wikipedia language above and
+              trace again.
             </p>
           )}
         </div>
@@ -289,7 +308,11 @@ export function LiveTrace() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <ScopeBanner scope={state.scope} />
             <CopyLinkButton
-              params={{ trace: state.phrase, article: state.scope, lang: state.lang }}
+              params={{
+                trace: state.phrase,
+                article: state.scope,
+                lang: state.lang,
+              }}
             />
           </div>
           <div className="rounded-2xl border border-line-strong bg-surface-2 p-5 shadow-[0_30px_60px_-40px_rgba(90,60,30,0.4)] sm:p-8">

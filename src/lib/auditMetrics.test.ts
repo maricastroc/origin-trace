@@ -14,7 +14,10 @@ let seq = 0;
 function claim(status: SentenceStatus, text = "some plain claim"): AuditClaim {
   return { id: `c${seq++}`, text, status };
 }
-function section(claims: AuditClaim[], over: Partial<AuditSection> = {}): AuditSection {
+function section(
+  claims: AuditClaim[],
+  over: Partial<AuditSection> = {},
+): AuditSection {
   return { heading: "Body", level: 2, isLead: false, claims, ...over };
 }
 
@@ -28,7 +31,12 @@ describe("sectionMetrics", () => {
         claim("unsourced"),
       ]),
     );
-    expect(m).toMatchObject({ total: 4, sourced: 2, noteOnly: 1, unsourced: 1 });
+    expect(m).toMatchObject({
+      total: 4,
+      sourced: 2,
+      noteOnly: 1,
+      unsourced: 1,
+    });
     expect(m.coverage).toBeCloseTo(0.5);
   });
 

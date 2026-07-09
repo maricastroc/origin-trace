@@ -3,10 +3,6 @@
 import { Clock, X } from "lucide-react";
 import type { HistoryEntry } from "@/lib/history";
 
-/**
- * Recent lookups for one kind (trace or audit), stored on this device only.
- * Click one to re-run it; each entry rebuilds the exact same query.
- */
 export function HistoryStrip({
   items,
   onPick,
@@ -30,7 +26,7 @@ export function HistoryStrip({
         <button
           type="button"
           onClick={onClear}
-          className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint transition-colors hover:text-ink"
+          className="font-mono text-[11px] uppercase tracking-widest text-ink-faint transition-colors hover:text-ink"
         >
           clear
         </button>
@@ -43,7 +39,11 @@ export function HistoryStrip({
                 type="button"
                 onClick={() => onPick(entry)}
                 className="inline-flex max-w-[16rem] items-center gap-1.5 py-0.5 pl-2.5 pr-1.5 transition-colors hover:text-ink"
-                title={entry.subtitle ? `${entry.title} — ${entry.subtitle}` : entry.title}
+                title={
+                  entry.subtitle
+                    ? `${entry.title} — ${entry.subtitle}`
+                    : entry.title
+                }
               >
                 <span className="truncate">{entry.title}</span>
                 {entry.badge && (

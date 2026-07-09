@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createEngineCache, tieredCache, type EngineCache } from "@/engine/cache.ts";
+import {
+  createEngineCache,
+  tieredCache,
+  type EngineCache,
+} from "@/engine/cache.ts";
 import type { RevisionList } from "@/engine/wikipedia.ts";
 
 const list: RevisionList = {
@@ -31,8 +35,8 @@ describe("engine content cache", () => {
     const cache = createEngineCache(2);
     await cache.setContent("en", 1, "a");
     await cache.setContent("en", 2, "b");
-    await cache.getContent("en", 1); // touch 1 so 2 becomes the LRU
-    await cache.setContent("en", 3, "c"); // over capacity → evict 2
+    await cache.getContent("en", 1);
+    await cache.setContent("en", 3, "c");
 
     expect(await cache.getContent("en", 1)).toBe("a");
     expect(await cache.getContent("en", 3)).toBe("c");
@@ -59,8 +63,6 @@ describe("engine list cache (TTL)", () => {
 });
 
 describe("tieredCache", () => {
-  // A counting spy over a plain in-memory cache, to assert L2 is only consulted on
-  // an L1 miss and that hits backfill L1.
   function counting(): EngineCache & { reads: number } {
     const inner = createEngineCache();
     const wrap = {
@@ -82,11 +84,11 @@ describe("tieredCache", () => {
     const cache = tieredCache(l1, l2);
 
     await cache.setContent("en", 1, "x");
-    expect(await l2.getContent("en", 1)).toBe("x"); // reached L2 (reads = 1)
+    expect(await l2.getContent("en", 1)).toBe("x");
 
     l2.reads = 0;
     expect(await cache.getContent("en", 1)).toBe("x");
-    expect(l2.reads).toBe(0); // served from L1, L2 untouched
+    expect(l2.reads).toBe(0);
   });
 
   it("backfills L1 on an L2 hit", async () => {
@@ -94,9 +96,9 @@ describe("tieredCache", () => {
     const l2 = createEngineCache();
     const cache = tieredCache(l1, l2);
 
-    await l2.setContent("en", 7, "only-in-l2"); // L1 cold, L2 warm
+    await l2.setContent("en", 7, "only-in-l2");
     expect(await cache.getContent("en", 7)).toBe("only-in-l2");
-    expect(await l1.getContent("en", 7)).toBe("only-in-l2"); // now backfilled
+    expect(await l1.getContent("en", 7)).toBe("only-in-l2");
   });
 
   it("propagates a cached null through both layers", async () => {

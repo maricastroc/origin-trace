@@ -70,7 +70,7 @@ export function AuditMap({
 
   return (
     <div
-      className="flex min-w-0 flex-col lg:h-[var(--map-h,74vh)]"
+      className="flex min-w-0 flex-col lg:h-(--map-h,74vh)"
       style={
         mapHeight
           ? ({ "--map-h": `${mapHeight}px` } as React.CSSProperties)
@@ -78,7 +78,10 @@ export function AuditMap({
       }
     >
       <label className="mb-3 flex shrink-0 items-center gap-2.5 rounded-lg border border-line-strong bg-surface-2/50 px-3 py-2 transition-colors focus-within:border-accent">
-        <Search className="h-3.5 w-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
+        <Search
+          className="h-3.5 w-3.5 shrink-0 text-ink-faint"
+          aria-hidden="true"
+        />
         <input
           value={query}
           onChange={(e) => onQuery(e.target.value)}
@@ -99,7 +102,7 @@ export function AuditMap({
 
       <div className="flex shrink-0 items-center justify-between px-2.5 pb-2">
         <p className="kicker">{"the map · by section"}</p>
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-faint">
+        <span className="font-mono text-[10.5px] uppercase tracking-widest text-ink-faint">
           {rows.length} {rows.length === 1 ? "section" : "sections"}
         </span>
       </div>

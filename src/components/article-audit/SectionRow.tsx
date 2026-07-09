@@ -37,11 +37,15 @@ export function SectionRow({
   onToggle: () => void;
 }) {
   const m = sectionMetrics(section);
+
   const slug = sectionSlug(section.heading, index, section.isLead);
+
   const isOpen = open || active;
+
   const claims = active
     ? section.claims.filter((c) => predicate(c))
     : section.claims;
+
   const pct = Math.round(m.coverage * 100);
 
   return (
@@ -83,7 +87,7 @@ export function SectionRow({
       </button>
 
       {isOpen && claims.length > 0 && (
-        <ul className="animate-rise ml-[15px] mt-0.5 mb-1 flex flex-col gap-1 border-l border-line pl-3.5">
+        <ul className="animate-rise ml-3.75 mt-0.5 mb-1 flex flex-col gap-1 border-l border-line pl-3.5">
           {claims.map((claim) => (
             <ClaimRow
               key={claim.id}

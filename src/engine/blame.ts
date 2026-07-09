@@ -21,10 +21,6 @@ export function containsPhrase(content: string, phrase: string): boolean {
 }
 
 export type ContentReader = ((revid: number) => Promise<string | null>) & {
-  /** Optional: warm the reader's cache for several revisions in one batched
-   *  round-trip, so a subsequent sweep of single reads resolves without a
-   *  per-revision fetch. Absent on plain readers (tests) — batching is then a
-   *  no-op and the sequential path is used unchanged. */
   prefetch?: (revids: number[]) => Promise<void>;
 };
 
@@ -47,18 +43,21 @@ export async function findIntroduction(
 
   const seen = new Map<number, boolean>();
   let fetches = 0;
+
   const contains = async (i: number): Promise<boolean> => {
     if (seen.has(i)) return seen.get(i)!;
+
     const content = await getContent(revisions[i].revid);
+
     fetches += 1;
+
     const hit = content != null && normalize(content).includes(norm);
+
     seen.set(i, hit);
+
     return hit;
   };
 
-  // Batch-warm the content cache for a set of probe indices in one round-trip;
-  // the sequential scan that follows then resolves from cache. Undefined (and so
-  // inert) when the reader can't prefetch.
   const prefetch = getContent.prefetch
     ? async (indices: number[]): Promise<void> => {
         const revids: number[] = [];
@@ -70,11 +69,15 @@ export async function findIntroduction(
     : undefined;
 
   const n = revisions.length;
+  
   const first = await earliestContaining(n, contains, prefetch);
+
   if (first < 0) return null;
 
   const presentNow = await contains(n - 1);
+
   const priorContains = first > 0 ? await contains(first - 1) : false;
+
   const foundContains = await contains(first);
 
   return {
@@ -93,7 +96,9 @@ async function earliestContaining(
   prefetch?: (indices: number[]) => Promise<void>,
 ): Promise<number> {
   let earliest = -1;
+
   let bound = n;
+
   while (bound > 0) {
     const hit = await sampleTrue(0, bound, contains, prefetch);
     if (hit < 0) break;
@@ -105,26 +110,22 @@ async function earliestContaining(
   return earliest;
 }
 
-// How many binary-search levels to warm per batched round-trip, and the range
-// below which a batch isn't worth it. Depth 4 enumerates ≤15 candidate indices —
-// one getContent batch — and collapses 4 would-be-sequential fetches into it.
 const PREFETCH_DEPTH = 4;
 const PREFETCH_MIN_SPAN = 4;
 
-/** Every index the next `depth` comparisons of a lower-bound bisection over
- *  `[lo, hi)` could touch — the decision tree's node midpoints. Prefetching this
- *  set guarantees those comparisons hit the content cache. Ranges are disjoint per
- *  node, so the indices are distinct; at most `2^depth − 1` of them. */
 function bisectionProbes(lo: number, hi: number, depth: number): number[] {
   const probes: number[] = [];
+
   const walk = (l: number, h: number, d: number): void => {
     if (l >= h || d <= 0) return;
     const mid = (l + h) >> 1;
     probes.push(mid);
-    walk(l, mid, d - 1); // pred(mid) true  → hi = mid
-    walk(mid + 1, h, d - 1); // pred(mid) false → lo = mid + 1
+    walk(l, mid, d - 1);
+    walk(mid + 1, h, d - 1);
   };
+
   walk(lo, hi, depth);
+
   return probes;
 }
 
@@ -135,14 +136,12 @@ async function lowerBoundTrue(
   prefetch?: (indices: number[]) => Promise<void>,
 ): Promise<number> {
   while (lo < hi) {
-    // Warm the cache for the whole slab of indices the next PREFETCH_DEPTH
-    // comparisons can reach, in one round-trip, then descend from cache. The
-    // bisection itself is byte-for-byte the same walk — only the fetch timing
-    // changes — so the located revision is identical to the sequential version.
     if (prefetch && hi - lo > PREFETCH_MIN_SPAN) {
       await prefetch(bisectionProbes(lo, hi, PREFETCH_DEPTH));
     }
+
     let steps = prefetch ? PREFETCH_DEPTH : Number.POSITIVE_INFINITY;
+
     while (lo < hi && steps-- > 0) {
       const mid = (lo + hi) >> 1;
       if (await pred(mid)) hi = mid;
@@ -159,19 +158,28 @@ async function sampleTrue(
   prefetch?: (indices: number[]) => Promise<void>,
 ): Promise<number> {
   const span = hi - lo;
+
   if (span <= 0) return -1;
+
   if (await pred(hi - 1)) return hi - 1;
-  const probes = Math.min(span, Math.max(8, Math.ceil(Math.log2(span + 1)) * 2));
+
+  const probes = Math.min(
+    span,
+    Math.max(8, Math.ceil(Math.log2(span + 1)) * 2),
+  );
+
   const indices: number[] = [];
+
   for (let k = 0; k < probes; k++) {
     indices.push(lo + Math.floor((k * span) / probes));
   }
-  // Collapse the probe sweep into a single batched fetch instead of `probes`
-  // sequential round-trips; the scan below then reads from the warmed cache.
+
   if (prefetch) await prefetch(indices);
+
   for (const i of indices) {
     if (await pred(i)) return i;
   }
+
   return -1;
 }
 
@@ -194,20 +202,23 @@ export function detectRefNear(
     note: false,
   };
   const paragraph = findParagraph(content, phrase);
+
   if (paragraph == null) return nothing;
 
-  // The claim's <ref> may be a reuse pointer (<ref name="x"/>) whose actual
-  // definition lives elsewhere in the same revision. Index the full content so
-  // collectMarkers can follow the pointer instead of reporting it unparsable.
   const defs = refDefs ?? indexRefDefinitions(content);
 
   const masked = maskedRanges(paragraph);
+
   const at = anchorInProse(paragraph, phrase, masked);
+
   const from = at >= 0 ? at : 0;
+  
   const tail = scopeToSentence(paragraph, from);
 
   const markers = collectMarkers(tail, tail.length, defs);
+
   const citation = markers.find((m) => m.kind === "citation");
+
   if (citation) {
     return {
       sourced: true,
@@ -217,54 +228,101 @@ export function detectRefNear(
     };
   }
   const explanatory = markers.find((m) => m.kind === "note");
+
   if (explanatory) {
-    return { sourced: false, source: null, refText: explanatory.text, note: true };
+    return {
+      sourced: false,
+      source: null,
+      refText: explanatory.text,
+      note: true,
+    };
   }
+
   return nothing;
 }
 
 const SCOPE_ABBR = new Set([
-  "mr", "mrs", "ms", "dr", "prof", "st", "mt", "no", "vs", "etc", "al",
-  "e.g", "i.e", "cf", "ca", "fig", "jr", "sr", "inc", "ltd", "co", "corp",
-  "u.s", "u.k", "a.d", "b.c",
+  "mr",
+  "mrs",
+  "ms",
+  "dr",
+  "prof",
+  "st",
+  "mt",
+  "no",
+  "vs",
+  "etc",
+  "al",
+  "e.g",
+  "i.e",
+  "cf",
+  "ca",
+  "fig",
+  "jr",
+  "sr",
+  "inc",
+  "ltd",
+  "co",
+  "corp",
+  "u.s",
+  "u.k",
+  "a.d",
+  "b.c",
 ]);
 
 function scopeToSentence(paragraph: string, from: number): string {
   const ranges = maskedRanges(paragraph);
+
   const chars = paragraph.split("");
+
   for (const [a, b] of ranges) {
     for (let i = a; i < b && i < chars.length; i++) {
       if (chars[i] !== "\n") chars[i] = " ";
     }
   }
+
   const masked = chars.join("");
 
   for (let i = from; i < masked.length; i++) {
     const ch = masked[i];
+
     if (ch !== "." && ch !== "!" && ch !== "?") continue;
+
     let j = i;
+
     while (j + 1 < masked.length && ".!?".includes(masked[j + 1])) j++;
 
     if (ch === "." && /\d/.test(masked[i + 1] ?? "")) {
       i = j;
       continue;
     }
+
     if (ch === "." && isScopeAbbrev(masked, i)) {
       i = j;
       continue;
     }
 
     let end = j + 1;
+
     for (;;) {
       let p = end;
-      while (p < paragraph.length && /\s/.test(paragraph[p]) && !inRanges(p, ranges)) p++;
+      while (
+        p < paragraph.length &&
+        /\s/.test(paragraph[p]) &&
+        !inRanges(p, ranges)
+      )
+        p++;
       const span = ranges.find(([a]) => a === p);
       if (!span) break;
       end = span[1];
     }
+
     const after = masked.slice(end);
+
     const gap = after.match(/^\s+/)?.[0] ?? "";
+
     const next = after[gap.length];
+
     if (next === undefined || /[A-Z0-9"'“(\[]/.test(next)) {
       return paragraph.slice(from, end);
     }
@@ -274,9 +332,13 @@ function scopeToSentence(paragraph: string, from: number): string {
 }
 
 function isScopeAbbrev(text: string, i: number): boolean {
-  const word = text.slice(Math.max(0, i - 12), i).match(/([A-Za-z.]+)$/)?.[1] ?? "";
+  const word =
+    text.slice(Math.max(0, i - 12), i).match(/([A-Za-z.]+)$/)?.[1] ?? "";
+
   if (!word) return false;
+
   if (SCOPE_ABBR.has(word.toLowerCase())) return true;
+
   return /^[A-Z]$/.test(word);
 }
 
@@ -294,11 +356,21 @@ export function classifyInline(
   const markers = collectMarkers(sentence, sentence.length, refDefs);
   const citation = markers.find((m) => m.kind === "citation");
   if (citation) {
-    return { sourced: true, source: citation.source, refText: citation.text, note: false };
+    return {
+      sourced: true,
+      source: citation.source,
+      refText: citation.text,
+      note: false,
+    };
   }
   const explanatory = markers.find((m) => m.kind === "note");
   if (explanatory) {
-    return { sourced: false, source: null, refText: explanatory.text, note: true };
+    return {
+      sourced: false,
+      source: null,
+      refText: explanatory.text,
+      note: true,
+    };
   }
   return { sourced: false, source: null, refText: null, note: false };
 }
@@ -311,15 +383,16 @@ export function collectMarkers(
   const markers: Marker[] = [];
 
   const refRe = /<ref\b([^>]*)\/>|<ref\b([^>]*)>([\s\S]*?)<\/ref>/gi;
+
   for (const m of text.matchAll(refRe)) {
     if (m.index === undefined || m.index > maxGap) continue;
+    
     const attrs = `${m[1] ?? ""}${m[2] ?? ""}`;
+
     if (/\bgroup\s*=/.test(attrs)) {
       markers.push({ index: m.index, kind: "note", text: m[0], source: null });
     } else {
       let source = parseCitation(m[0]);
-      // Reuse pointer (<ref name="x"/>): nothing to parse inline, but the named
-      // definition elsewhere in the article carries the real source.
       if (source == null && refDefs) {
         const name = refName(attrs);
         const def = name ? refDefs.get(name) : undefined;
@@ -331,24 +404,32 @@ export function collectMarkers(
 
   for (const m of text.matchAll(/\{\{\s*(?:efn|refn|notetag)\b/gi)) {
     if (m.index === undefined || m.index > maxGap) continue;
+
     const block = balancedTemplate(text, m.index);
+
     if (!block) continue;
+
     const carriesSource =
       /<ref\b[^>]*>[\s\S]*?<\/ref>|\{\{\s*(?:cite|citation)\b/i.test(block);
     markers.push(
       carriesSource
-        ? { index: m.index, kind: "citation", text: block, source: parseCitation(block) }
+        ? {
+            index: m.index,
+            kind: "citation",
+            text: block,
+            source: parseCitation(block),
+          }
         : { index: m.index, kind: "note", text: block, source: null },
     );
   }
 
-  // Shortened footnotes ({{sfn}}, Harvard {{harvnb}} et al.) render a real
-  // inline citation link into a full reference — they count as sourcing, not
-  // notes. Common in Featured/academic articles that eschew inline <ref>.
   for (const m of text.matchAll(SHORT_CITE_RE)) {
     if (m.index === undefined || m.index > maxGap) continue;
+
     const block = balancedTemplate(text, m.index);
+
     if (!block) continue;
+
     markers.push({
       index: m.index,
       kind: "citation",
@@ -360,16 +441,16 @@ export function collectMarkers(
   return markers.sort((a, b) => a.index - b.index);
 }
 
-/** Map a normalized `name="…"` ref key to its full <ref …>body</ref> definition
- *  text, scanning the whole revision/article. Self-closing pointers and empty
- *  <ref></ref> tags are not definitions; the first body-bearing tag per name
- *  wins (matching MediaWiki, which also warns on redefinition). */
 export function indexRefDefinitions(content: string): Map<string, string> {
   const defs = new Map<string, string>();
+
   const refRe = /<ref\b([^>]*)\/>|<ref\b([^>]*)>([\s\S]*?)<\/ref>/gi;
+
   for (const m of content.matchAll(refRe)) {
-    if (m[3] === undefined) continue; // self-closing pointer, not a definition
+    if (m[3] === undefined) continue;
+
     const name = refName(m[2] ?? "");
+
     if (!name || defs.has(name) || !m[3].trim()) continue;
     defs.set(name, m[0]);
   }
@@ -378,28 +459,33 @@ export function indexRefDefinitions(content: string): Map<string, string> {
 
 function refName(attrs: string): string | null {
   const m = attrs.match(/\bname\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s/>]+))/i);
+
   const raw = m ? (m[1] ?? m[2] ?? m[3]) : null;
+
   return raw ? raw.trim().toLowerCase() : null;
 }
 
-// Longer names first so the alternation doesn't settle on a prefix (e.g. "sfn"
-// inside "sfnp") before the word boundary check.
 const SHORT_CITE_RE =
   /\{\{\s*(?:sfnp|sfnm|sfn|harvnb|harvtxt|harvcolnb|harvcoltxt|harvcol|harvp|harv)\b/gi;
 
 export function parseShortFootnote(block: string): ClaimSource {
-  // {{sfn|Author|Author2|Year|p=…}} — authors and year are positional. Named
-  // params (p=, loc=) and the multi-source {{sfnm}} form (1a1=, 1y=) are skipped.
+
   const inner = block.replace(/^\{\{\s*/, "").replace(/\}\}\s*$/, "");
+
   const parts = inner.split("|").map((p) => p.trim());
-  parts.shift(); // template name
+
+  parts.shift();
 
   let year: number | undefined;
   const authors: string[] = [];
+
   for (const part of parts) {
     if (!part || part.includes("=")) continue;
+
     const y = part.match(/^(1[89]\d{2}|20\d{2})[a-z]?$/);
+
     if (y && year === undefined) year = Number(y[1]);
+
     else authors.push(part);
   }
 
@@ -454,7 +540,9 @@ function anchorInProse(
   masked: [number, number][],
 ): number {
   const hay = text.toLowerCase();
+
   const full = phrase.toLowerCase().replace(/\s+/g, " ").trim();
+
   const longest = phrase
     .toLowerCase()
     .split(/\s+/)
@@ -481,8 +569,11 @@ function findParagraph(content: string, phrase: string): string | null {
 
 export function anchorIndex(text: string, phrase: string): number {
   const hay = text.toLowerCase();
+
   const full = phrase.toLowerCase().replace(/\s+/g, " ").trim();
+
   const direct = hay.indexOf(full);
+
   if (direct >= 0) return direct;
 
   const longest = phrase
@@ -496,14 +587,15 @@ export function anchorIndex(text: string, phrase: string): number {
 export function parseCitation(refText: string): ClaimSource | null {
   const tpl = refText.match(/\{\{\s*(cite|citation)\s+([\s\S]*?)\}\}/i);
   if (!tpl) {
-    // Stop the URL at wiki-syntax delimiters so a bare {{citar web|url=…|title=…}}
-    // doesn't drag the trailing "|title=…}}" into the href.
     const url = refText.match(/https?:\/\/[^\s|}\]<]+/)?.[0];
+
     return url ? { label: hostname(url), type: "other", url } : null;
   }
 
   const fields = parseTemplateFields(tpl[2]);
+
   const citeType = fields["__citetype"] ?? "";
+
   const label =
     fields["work"] ||
     fields["newspaper"] ||
@@ -517,23 +609,37 @@ export function parseCitation(refText: string): ClaimSource | null {
     "untitled source";
 
   const year = extractYear(fields["date"] ?? fields["year"] ?? "");
+
   const source: ClaimSource = { label, type: sourceTypeFor(citeType, fields) };
+
   if (year) source.year = year;
+
   const url = fields["url"];
+
   if (url) source.url = url;
+
   return source;
 }
 
 function parseTemplateFields(body: string): Record<string, string> {
   const fields: Record<string, string> = {};
+
   const head = body.split("|")[0]?.trim().toLowerCase() ?? "";
+
   fields["__citetype"] = head.replace(/^cite\s+/, "");
+
   for (const part of body.split("|").slice(1)) {
+
     const eq = part.indexOf("=");
+
     if (eq < 0) continue;
+
     const key = part.slice(0, eq).trim().toLowerCase();
+
     const value = part.slice(eq + 1).trim();
+
     if (key) fields[key] = value;
+
   }
   return fields;
 }
@@ -543,9 +649,13 @@ function sourceTypeFor(
   fields: Record<string, string>,
 ): SourceType {
   if (citeType.includes("journal")) return "peer-reviewed";
+
   if (citeType.includes("news")) return "newspaper";
+
   if (fields["newspaper"]) return "newspaper";
+
   if (fields["journal"]) return "peer-reviewed";
+
   return "other";
 }
 

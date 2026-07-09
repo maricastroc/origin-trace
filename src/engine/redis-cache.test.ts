@@ -3,15 +3,12 @@ import type { Redis } from "@upstash/redis";
 import { RedisEngineCache } from "@/engine/redis-cache.ts";
 import type { RevisionList } from "@/engine/wikipedia.ts";
 
-// Minimal stand-in for Upstash Redis: RedisEngineCache stores a gzip+base64 string
-// via `set` and reads it back with `get<string>`, so the fake just needs a string
-// keystore. `ex` is recorded so we can assert the TTL split (content vs list).
 function fakeRedis() {
   const store = new Map<string, string>();
   const ttl = new Map<string, number | undefined>();
   const redis = {
     async get<T>(key: string): Promise<T | null> {
-      return (store.has(key) ? (store.get(key) as unknown as T) : null);
+      return store.has(key) ? (store.get(key) as unknown as T) : null;
     },
     async set(key: string, value: string, opts?: { ex?: number }) {
       store.set(key, value);
@@ -49,9 +46,9 @@ describe("RedisEngineCache", () => {
   it("distinguishes a miss from a cached null", async () => {
     const { redis } = fakeRedis();
     const cache = new RedisEngineCache(redis);
-    expect(await cache.getContent("en", 99)).toBeUndefined(); // miss
+    expect(await cache.getContent("en", 99)).toBeUndefined();
     await cache.setContent("en", 99, null);
-    expect(await cache.getContent("en", 99)).toBeNull(); // deliberately empty
+    expect(await cache.getContent("en", 99)).toBeNull(); 
   });
 
   it("round-trips a revision list", async () => {

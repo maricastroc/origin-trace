@@ -7,11 +7,12 @@ export function SegBar({
   sourced: number;
   noteOnly: number;
   unsourced: number;
-  /** height + any layout classes for the track */
   className?: string;
 }) {
   const total = Math.max(1, sourced + noteOnly + unsourced);
+
   const seg = (n: number) => `${(n / total) * 100}%`;
+
   return (
     <div
       className={`flex shrink-0 overflow-hidden rounded-full bg-line ${className}`}

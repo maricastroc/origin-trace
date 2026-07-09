@@ -27,21 +27,50 @@ import { HighImpactBand } from "./HighImpactBand";
 
 export function AuditReport({ data }: { data: ArticleAuditData }) {
   const [filter, setFilter] = useState<AuditFilter>("all");
+
   const [sort, setSort] = useState<AuditSort>("article");
+
   const [query, setQuery] = useState("");
+
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   const model = useMemo(() => buildAuditModel(data), [data]);
 
   const filterOptions = useMemo<ControlOption<AuditFilter>[]>(() => {
     const { sourced, noteOnly, unsourced, sentences } = model.totals;
+
     const opts: ControlOption<AuditFilter>[] = [
       { key: "all", label: "Everything", count: sentences, Icon: List },
-      { key: "sourced", label: "Inline citation", count: sourced, Icon: STATUS_META.sourced.Icon, iconClass: STATUS_META.sourced.className },
-      { key: "note", label: "Note only", count: noteOnly, Icon: STATUS_META["note-only"].Icon, iconClass: STATUS_META["note-only"].className },
-      { key: "attention", label: "No inline citation", count: unsourced, Icon: STATUS_META.unsourced.Icon, iconClass: STATUS_META.unsourced.className },
-      { key: "high", label: "High-impact", count: model.highImpact.length, Icon: Star, iconClass: "text-accent" },
+      {
+        key: "sourced",
+        label: "Inline citation",
+        count: sourced,
+        Icon: STATUS_META.sourced.Icon,
+        iconClass: STATUS_META.sourced.className,
+      },
+      {
+        key: "note",
+        label: "Note only",
+        count: noteOnly,
+        Icon: STATUS_META["note-only"].Icon,
+        iconClass: STATUS_META["note-only"].className,
+      },
+      {
+        key: "attention",
+        label: "No inline citation",
+        count: unsourced,
+        Icon: STATUS_META.unsourced.Icon,
+        iconClass: STATUS_META.unsourced.className,
+      },
+      {
+        key: "high",
+        label: "High-impact",
+        count: model.highImpact.length,
+        Icon: Star,
+        iconClass: "text-accent",
+      },
     ];
+
     return opts.filter((o) => o.key === "all" || (o.count ?? 0) > 0);
   }, [model]);
 
@@ -53,15 +82,21 @@ export function AuditReport({ data }: { data: ArticleAuditData }) {
       { key: "uncited", label: "Most uncited", Icon: CircleX },
       { key: "high", label: "Most high-impact", Icon: Star },
     ];
-    return model.highImpact.length > 0 ? opts : opts.filter((o) => o.key !== "high");
+
+    return model.highImpact.length > 0
+      ? opts
+      : opts.filter((o) => o.key !== "high");
   }, [model]);
 
   const active = filter !== "all" || query.trim() !== "";
+
   const predicate = (claim: AuditClaim) =>
     matchesFilter(claim, filter) && matchesQuery(claim.text, query);
 
   const railRef = useRef<HTMLDivElement>(null);
+
   const [railH, setRailH] = useState<number | null>(null);
+
   useEffect(() => {
     const el = railRef.current;
     if (!el) return;

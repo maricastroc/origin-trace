@@ -6,13 +6,17 @@ import { VerdictStamp } from "./VerdictStamp";
 
 export function EvidenceStatus({ data }: { data: ClaimProvenance }) {
   const s = verdictStyle[data.verdict.primary];
+
   const signals = deriveSignals(data.timeline, new Date());
+
   const alert = s.severity === "alert";
 
   return (
     <section
       className={`rounded-xl border p-5 ${
-        alert ? "border-danger/35 bg-danger-bg" : "border-line-strong bg-surface-1/50"
+        alert
+          ? "border-danger/35 bg-danger-bg"
+          : "border-line-strong bg-surface-1/50"
       }`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -32,7 +36,7 @@ export function EvidenceStatus({ data }: { data: ClaimProvenance }) {
             >
               {s.health}
             </span>
-            <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint">
+            <span className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">
               {s.label}
             </span>
           </div>
@@ -65,7 +69,9 @@ export function EvidenceStatus({ data }: { data: ClaimProvenance }) {
         {signals.sourcedNow === "yes" && (
           <Signal tone="ok">
             sourced now
-            {signals.currentSourceLabel ? ` · ${signals.currentSourceLabel}` : ""}
+            {signals.currentSourceLabel
+              ? ` · ${signals.currentSourceLabel}`
+              : ""}
           </Signal>
         )}
         {signals.sourcedNow === "unreadable" && (
@@ -75,7 +81,9 @@ export function EvidenceStatus({ data }: { data: ClaimProvenance }) {
           <Signal>removed from article</Signal>
         )}
         {signals.evidenceChanges >= 2 && (
-          <Signal tone="warn">evidence changed {signals.evidenceChanges}×</Signal>
+          <Signal tone="warn">
+            evidence changed {signals.evidenceChanges}×
+          </Signal>
         )}
       </div>
     </section>
@@ -105,11 +113,16 @@ function ConfidenceNote({
   return (
     <div className="mt-4 border-t border-line pt-3">
       <div className="flex items-center gap-2">
-        <span className={`h-1.5 w-1.5 rounded-full ${dot}`} aria-hidden="true" />
-        <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint">
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${dot}`}
+          aria-hidden="true"
+        />
+        <span className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">
           confidence
         </span>
-        <span className={`font-mono text-[11px] uppercase tracking-[0.1em] ${tone}`}>
+        <span
+          className={`font-mono text-[11px] uppercase tracking-widest ${tone}`}
+        >
           {confidence}
         </span>
       </div>

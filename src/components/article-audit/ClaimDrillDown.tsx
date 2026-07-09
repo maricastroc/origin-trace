@@ -19,10 +19,16 @@ function traceStatus(p: TraceProgress | null): { label: string; pct: number } {
     case "listing":
       return { label: "Listing the revision history…", pct: 9 };
     case "listed":
-      return { label: `${p.revisions.toLocaleString()} revisions in scope`, pct: 18 };
+      return {
+        label: `${p.revisions.toLocaleString()} revisions in scope`,
+        pct: 18,
+      };
     case "searching": {
       const ratio = Math.min(1, p.read / Math.max(1, p.estimate));
-      return { label: "Binary-searching for the introduction…", pct: Math.round((0.2 + 0.6 * ratio) * 100) };
+      return {
+        label: "Binary-searching for the introduction…",
+        pct: Math.round((0.2 + 0.6 * ratio) * 100),
+      };
     }
     case "located":
       return { label: `Introduction located · ${p.year}`, pct: 86 };
@@ -66,7 +72,10 @@ export function ClaimDrillDown({
   lang: string;
   phrase: string;
 }) {
-  const [state, setState] = useState<TraceState>({ status: "tracing", progress: null });
+  const [state, setState] = useState<TraceState>({
+    status: "tracing",
+    progress: null,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -76,7 +85,8 @@ export function ClaimDrillDown({
       lang,
       phrase,
       signal: controller.signal,
-      onProgress: (progress) => live && setState({ status: "tracing", progress }),
+      onProgress: (progress) =>
+        live && setState({ status: "tracing", progress }),
     })
       .then((data) => live && setState({ status: "done", data }))
       .catch((err) => {
@@ -92,7 +102,9 @@ export function ClaimDrillDown({
 
   return (
     <div className="rounded-xl border border-line bg-surface-1/40 p-4 sm:p-5">
-      {state.status === "tracing" && <TraceProgressLine progress={state.progress} />}
+      {state.status === "tracing" && (
+        <TraceProgressLine progress={state.progress} />
+      )}
 
       {state.status === "error" && (
         <div>

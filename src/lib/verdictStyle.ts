@@ -15,12 +15,40 @@ interface VerdictStyle {
   dot: string;
 }
 
-const PALETTE: Record<Severity, Pick<VerdictStyle, "tint" | "ink" | "border" | "dot">> = {
-  good: { tint: "bg-success-bg", ink: "text-success", border: "border-success", dot: "bg-success" },
-  caution: { tint: "bg-warn-bg", ink: "text-warn", border: "border-warn", dot: "bg-warn" },
-  warn: { tint: "bg-warn-bg", ink: "text-warn", border: "border-warn", dot: "bg-warn" },
-  alert: { tint: "bg-danger-bg", ink: "text-danger", border: "border-danger", dot: "bg-danger" },
-  neutral: { tint: "bg-neutral-bg", ink: "text-neutral", border: "border-neutral", dot: "bg-neutral" },
+const PALETTE: Record<
+  Severity,
+  Pick<VerdictStyle, "tint" | "ink" | "border" | "dot">
+> = {
+  good: {
+    tint: "bg-success-bg",
+    ink: "text-success",
+    border: "border-success",
+    dot: "bg-success",
+  },
+  caution: {
+    tint: "bg-warn-bg",
+    ink: "text-warn",
+    border: "border-warn",
+    dot: "bg-warn",
+  },
+  warn: {
+    tint: "bg-warn-bg",
+    ink: "text-warn",
+    border: "border-warn",
+    dot: "bg-warn",
+  },
+  alert: {
+    tint: "bg-danger-bg",
+    ink: "text-danger",
+    border: "border-danger",
+    dot: "bg-danger",
+  },
+  neutral: {
+    tint: "bg-neutral-bg",
+    ink: "text-neutral",
+    border: "border-neutral",
+    dot: "bg-neutral",
+  },
 };
 
 export const verdictStyle: Record<Verdict, VerdictStyle> = {
@@ -50,7 +78,6 @@ export const verdictStyle: Record<Verdict, VerdictStyle> = {
     gloss: "born cited, since stripped of its source",
     meaning:
       "Entered the article with a citation, but that citation was later removed — the claim now stands unsourced. Its evidence was there and is gone.",
-    // Not the single critical red (that stays unsourced-stable): it once had backing.
     severity: "warn",
     rank: 4,
     ...PALETTE.warn,
@@ -69,8 +96,7 @@ export const verdictStyle: Record<Verdict, VerdictStyle> = {
     label: "contested",
     health: "contested",
     gloss: "reverted / edit war",
-    meaning:
-      "Reverted or fought over — its place in the article is disputed.",
+    meaning: "Reverted or fought over — its place in the article is disputed.",
     severity: "warn",
     rank: 5,
     ...PALETTE.warn,

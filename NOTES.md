@@ -79,7 +79,7 @@ src/
 **Princípios embutidos no código:**
 
 1. **O JSON carrega semântica, NUNCA estilo.** `verdict: "churn"`, `source.type:
-   "popular-media"`. A cor mora em `src/lib/verdictStyle.ts` (lado da UI). Dá pra
+"popular-media"`. A cor mora em `src/lib/verdictStyle.ts` (lado da UI). Dá pra
    redesenhar a interface inteira sem tocar no contrato nem no motor.
 2. **Timeline é protagonista, badge é legenda** (inclui a linha "é só o resumo da
    história acima, não o produto").
@@ -105,8 +105,8 @@ funcionou: mesmo objeto do contrato, só muda `meta.generatedBy` → `"wikiblame
 - **`blame.ts`** — puro. `normalize` (dropa `<ref>`, desembrulha links, colapsa markup);
   busca da introdução **robusta a gaps** (histórias não são monotônicas — a frase entra,
   some numa reformulação, volta; a busca acha a borda de uma banda e re-busca o prefixo
-  abaixo até convergir na origem real); `detectRefNear` (ancora na frase *em prosa*, não
-  dentro do título de uma citação; casa o `<ref>` inteiro limitando só a *distância*);
+  abaixo até convergir na origem real); `detectRefNear` (ancora na frase _em prosa_, não
+  dentro do título de uma citação; casa o `<ref>` inteiro limitando só a _distância_);
   `parseCitation` (extrai label/ano/tipo de `{{cite …}}`).
 - **`trace.ts`** — orquestra tudo → `ClaimProvenance`. Conservador de propósito:
   `confidence: "low"` e premissas explícitas em `meta.notes`.
@@ -119,17 +119,17 @@ Eficiente: 37–75 revisões lidas de 1000–1700 (busca binária, não varredur
 
 Nos **3 fixtures**, o motor encontrou uma origem **mais antiga** que a pinada à mão:
 
-| caso | origem no mock | origem do motor | efeito |
-|---|---|---|---|
-| quokka | 2016-07 (HuffPost) | **2014-05, sem fonte** | churn → **retrofit** |
-| coati | 2008-08 | **2008-07, sem fonte** | ainda presente hoje (não removida) |
-| petasites | 2009 | **2007-02, sem fonte** | **retrofit** |
+| caso      | origem no mock     | origem do motor        | efeito                             |
+| --------- | ------------------ | ---------------------- | ---------------------------------- |
+| quokka    | 2016-07 (HuffPost) | **2014-05, sem fonte** | churn → **retrofit**               |
+| coati     | 2008-08            | **2008-07, sem fonte** | ainda presente hoje (não removida) |
+| petasites | 2009               | **2007-02, sem fonte** | **retrofit**                       |
 
 Não é bug — é a tese se confirmando. O trace manual do quokka começou na citação de 2016 e
-perdeu que a frase já existia *sem fonte* desde 2014. Rastreamento determinístico revela a
+perdeu que a frase já existia _sem fonte_ desde 2014. Rastreamento determinístico revela a
 proveniência que o resumo humano perde. **Consequência:** a validação NÃO pode exigir
 "motor == mock". A invariante certa (imutável, em `validate.ts`) é
-`origem_do_motor ≤ origem_manual` — só quebra se o motor *perder* a origem.
+`origem_do_motor ≤ origem_manual` — só quebra se o motor _perder_ a origem.
 
 ## Design — "dossiê arquival" (light)
 
@@ -184,7 +184,7 @@ silêncio**:
 ## Reframe epistemológico — feito
 
 O produto respondia "quando surgiu"; o valor real é "qual o **estado epistemológico** da
-afirmação". O veredito sempre foi uma *classificação da vida da afirmação* — agora ele
+afirmação". O veredito sempre foi uma _classificação da vida da afirmação_ — agora ele
 lidera, em vez de ser legenda de canto.
 
 - **`EvidenceStatus`** (novo, topo do `CaseFile`): a resposta. Palavra de saúde grande em
@@ -197,7 +197,7 @@ lidera, em vez de ser legenda de canto.
   oxblood → ocre (foi fonteado, só que tarde); unsourced-stable é o único vermelho crítico.
 - **`Taxonomy`** (novo, landing, entre Method e Cases): "It doesn't say true or false. It
   **classifies** the evidence history." — os 6 padrões como vocabulário visível. Vende o
-  reframe: *classify the evidence history of any claim*.
+  reframe: _classify the evidence history of any claim_.
 - Removido `VerdictSummary` (a resposta agora mora no topo). Timeline re-legendada como "the
   evidence for the verdict".
 
@@ -215,13 +215,13 @@ lidera, em vez de ser legenda de canto.
    - um `verdict` "não-encontrada"/abstenção explícito (hoje `traceClaim` lança
      `ClaimNotFoundError`);
    - eventos intermediários reais (hoje o motor só emite intro + estado atual; falta o
-     *quando* exato da troca de fonte e das reformulações — mais buscas binárias por evento);
+     _quando_ exato da troca de fonte e das reformulações — mais buscas binárias por evento);
    - `SourceType` mais rico: `cite web` cai em `"other"` mesmo quando é jornal (ex.: The
      West Australian). Normalizar fontes num registro à parte ajudaria a deduplicar e tipar.
    - `contested`/edit-war ainda não detectado (precisa ler `comment`/reverts das revisões).
-2. **Casar motor × UI:** apontar a galeria para a saída do motor (um caso ao vivo ao lado
+3. **Casar motor × UI:** apontar a galeria para a saída do motor (um caso ao vivo ao lado
    dos mocks), ou um input de "cole um artigo + frase". Hoje a UI só lê `src/mocks`.
-3. **Polir a UI** com base no uso real.
+4. **Polir a UI** com base no uso real.
 
 ## Como rodar
 

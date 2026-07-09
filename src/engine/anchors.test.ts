@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { extractAnchors, hasAnchors, sharedAnchors } from "@/engine/anchors.ts";
 
-const values = (s: string) => extractAnchors(s).map((a) => `${a.kind}:${a.value}`).sort();
+const values = (s: string) =>
+  extractAnchors(s)
+    .map((a) => `${a.kind}:${a.value}`)
+    .sort();
 
 describe("extractAnchors", () => {
   it("pulls multi-digit numbers and mid-sentence proper nouns, folds case", () => {
@@ -26,7 +29,10 @@ describe("extractAnchors", () => {
   });
 
   it("treats a genuine leading subject as an anchor", () => {
-    expect(values("Gustave Eiffel designed it.")).toEqual(["name:eiffel", "name:gustave"]);
+    expect(values("Gustave Eiffel designed it.")).toEqual([
+      "name:eiffel",
+      "name:gustave",
+    ]);
   });
 
   it("drops single-digit numbers as too weak to guard on", () => {
@@ -39,7 +45,9 @@ describe("extractAnchors", () => {
   });
 
   it("strips thousands separators", () => {
-    expect(values("The population reached 1,998 residents.")).toEqual(["number:1998"]);
+    expect(values("The population reached 1,998 residents.")).toEqual([
+      "number:1998",
+    ]);
   });
 });
 
@@ -54,7 +62,10 @@ describe("sharedAnchors", () => {
 
   it("finds nothing across a reword that changed the facts", () => {
     expect(
-      sharedAnchors("The squad triumphed in 2004.", "The team won the 1990 title."),
+      sharedAnchors(
+        "The squad triumphed in 2004.",
+        "The team won the 1990 title.",
+      ),
     ).toEqual([]);
   });
 });

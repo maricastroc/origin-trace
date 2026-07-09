@@ -1,4 +1,9 @@
-import { createEngineCache, sharedEngineCache, tieredCache, type EngineCache } from "./cache.ts";
+import {
+  createEngineCache,
+  sharedEngineCache,
+  tieredCache,
+  type EngineCache,
+} from "./cache.ts";
 import { redisCacheFromEnv } from "./redis-cache.ts";
 
 let resolved: EngineCache | undefined;
@@ -11,6 +16,8 @@ let resolved: EngineCache | undefined;
 export function getEngineCache(): EngineCache {
   if (resolved) return resolved;
   const redis = redisCacheFromEnv();
-  resolved = redis ? tieredCache(createEngineCache(), redis) : sharedEngineCache;
+  resolved = redis
+    ? tieredCache(createEngineCache(), redis)
+    : sharedEngineCache;
   return resolved;
 }

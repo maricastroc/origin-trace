@@ -6,10 +6,12 @@ import { verdictStyle } from "@/lib/verdictStyle";
 export function VerdictStamp({
   verdict,
   confidence,
+  confidenceReasons,
   size = "md",
 }: {
   verdict: Verdict;
   confidence?: Confidence;
+  confidenceReasons?: string[];
   size?: "sm" | "md";
 }) {
   const s = verdictStyle[verdict];
@@ -27,6 +29,11 @@ export function VerdictStamp({
       {confidence && (
         <span
           className={`mt-1 font-mono text-[9px] uppercase tracking-[0.12em] ${s.ink} opacity-70`}
+          title={
+            confidenceReasons?.length
+              ? `Confidence ${confidence} — ${confidenceReasons.join("; ")}`
+              : `Confidence ${confidence} — traced to a clean origin with no caveats`
+          }
         >
           conf. {confidenceLabel[confidence]}
         </span>

@@ -4,7 +4,7 @@ import type { Snapshot } from "./types";
 
 export const SNAPSHOTS: Record<string, Snapshot> = {
   "quokka-happiest": {
-    "pinnedAt": "2026-07-08",
+    "pinnedAt": "2026-07-09",
     "data": {
       "claim": {
         "text": "happiest animal",
@@ -15,6 +15,10 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       "verdict": {
         "primary": "retrofit",
         "confidence": "low",
+        "confidenceReasons": [
+          "the lineage broke on a reword that couldn't be confirmed without judgment",
+          "a probable earlier wording exists but couldn't be verified"
+        ],
         "summary": "Born unsourced; the citation attached later was published after the claim — the backing may be circular."
       },
       "timeline": [
@@ -47,7 +51,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
           "revId": 1358996262,
           "transition": {
             "changes": [
-              "evidence-changed"
+              "evidence-added"
             ],
             "magnitude": "major",
             "note": "citation attached after introduction"
@@ -85,7 +89,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       },
       "meta": {
         "generatedBy": "wikiblame-pipeline",
-        "fetchedAt": "2026-07-08T17:36:52.511Z",
+        "fetchedAt": "2026-07-09T13:07:16.126Z",
         "corpus": {
           "read": 150,
           "total": 1690,
@@ -95,7 +99,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
     }
   },
   "coati-aardvark": {
-    "pinnedAt": "2026-07-08",
+    "pinnedAt": "2026-07-09",
     "data": {
       "claim": {
         "text": "Brazilian aardvark",
@@ -105,7 +109,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       },
       "verdict": {
         "primary": "unsourced-stable",
-        "confidence": "low",
+        "confidence": "high",
         "summary": "Never sourced, but never removed."
       },
       "timeline": [
@@ -149,7 +153,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       "credibilityRead": "Introduced unsourced and still unsourced in the current revision — never backed, never removed.",
       "meta": {
         "generatedBy": "wikiblame-pipeline",
-        "fetchedAt": "2026-07-08T17:37:25.024Z",
+        "fetchedAt": "2026-07-09T13:07:47.808Z",
         "corpus": {
           "read": 84,
           "total": 1159,
@@ -159,7 +163,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
     }
   },
   "petasites-alkaloids": {
-    "pinnedAt": "2026-07-08",
+    "pinnedAt": "2026-07-09",
     "data": {
       "claim": {
         "text": "pyrrolizidine alkaloids",
@@ -170,7 +174,10 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       "verdict": {
         "primary": "retrofit",
         "confidence": "low",
-        "summary": "Born unsourced; the citation was attached later."
+        "confidenceReasons": [
+          "the claim carries no stable anchor to trace its history on"
+        ],
+        "summary": "Born unsourced; the citation attached later was published after the claim — the backing may be circular."
       },
       "timeline": [
         {
@@ -192,21 +199,47 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
           "date": "2026-02",
           "kind": "source-added",
           "wording": "==Risks== Butterbur extracts may contain harmful components called pyrrolizidine alkaloids if the preparations are not carefully and fully purified",
-          "source": null,
+          "source": {
+            "label": "Headache",
+            "type": "peer-reviewed",
+            "year": 2011
+          },
           "revId": 1336071521,
           "transition": {
             "changes": [
-              "evidence-changed"
+              "evidence-added"
             ],
             "magnitude": "major",
             "note": "citation attached after introduction"
           }
         }
       ],
-      "credibilityRead": "Presented as fact with no source at introduction; the citation (current) only stuck on later. The backing is retroactive.",
+      "annotations": {
+        "circularLoop": {
+          "cycle": [
+            {
+              "actor": "Wikipedia",
+              "year": 2007,
+              "action": "asserts the claim, unsourced"
+            },
+            {
+              "actor": "Headache",
+              "year": 2011,
+              "action": "publishes it — after Wikipedia"
+            },
+            {
+              "actor": "Wikipedia",
+              "year": 2026,
+              "action": "cites Headache as backing"
+            }
+          ],
+          "note": "The cited source (Headache, 2011) postdates the claim's unsourced appearance on Wikipedia (2007). A source published after the claim was already here cannot be its origin — the backing may be circular. The exact revision that attached the citation isn't pinned in this pass."
+        }
+      },
+      "credibilityRead": "Presented as fact with no source at introduction; the citation that later stuck (Headache) was published after the claim already lived here, so it cannot be the origin — the backing may trace back to this article itself.",
       "meta": {
         "generatedBy": "wikiblame-pipeline",
-        "fetchedAt": "2026-07-08T17:37:39.737Z",
+        "fetchedAt": "2026-07-09T13:08:02.106Z",
         "corpus": {
           "read": 44,
           "total": 291,
@@ -216,7 +249,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
     }
   },
   "neymar-note": {
-    "pinnedAt": "2026-07-08",
+    "pinnedAt": "2026-07-09",
     "data": {
       "claim": {
         "text": "scored 100 goals for three different clubs",
@@ -226,7 +259,10 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       },
       "verdict": {
         "primary": "unsourced-stable",
-        "confidence": "low",
+        "confidence": "medium",
+        "confidenceReasons": [
+          "the lineage broke on a reword that couldn't be confirmed without judgment"
+        ],
         "summary": "Never sourced, but never removed."
       },
       "timeline": [
@@ -250,24 +286,24 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
           "kind": "current",
           "wording": "Neymar is one of only five players to have scored 100 goals with three different clubs, both the all-time Brazilian top goalscorer (43) and assist provider (…",
           "source": null,
-          "revId": 1363155915,
+          "revId": 1363212635,
           "hasExplanatoryNote": true
         }
       ],
       "credibilityRead": "Introduced unsourced and still unsourced. It carries an explanatory footnote — the “[α]”-style marker that reads like a reference — but that note only adds context; it cites no source.",
       "meta": {
         "generatedBy": "wikiblame-pipeline",
-        "fetchedAt": "2026-07-08T17:39:19.388Z",
+        "fetchedAt": "2026-07-09T13:09:31.304Z",
         "corpus": {
           "read": 118,
-          "total": 9132,
+          "total": 9133,
           "truncated": false
         }
       }
     }
   },
   "quokka-audit": {
-    "pinnedAt": "2026-07-08",
+    "pinnedAt": "2026-07-09",
     "data": {
       "article": {
         "title": "Quokka",
@@ -285,7 +321,8 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
               "id": "c0",
               "text": "The quokka (Setonix brachyurus) is a small macropod about the size of a domestic cat.",
               "status": "sourced",
-              "source": null
+              "source": null,
+              "refUnparsed": true
             },
             {
               "id": "c1",
@@ -401,7 +438,12 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
               "id": "c15",
               "text": "Females can give birth twice a year and produce 17 joeys on average during their lifespan. The joey lives in its mother's pouch for six months. Once it leaves the pouch, the joey relies on its mother for milk for two more months and is fully weaned around eight months after birth. Females sexually mature after roughly 18 months.",
               "status": "sourced",
-              "source": null
+              "source": {
+                "label": "australian.museum",
+                "type": "other",
+                "year": 2015,
+                "url": "https://australian.museum/learn/animals/mammals/quokka/"
+              }
             },
             {
               "id": "c16",
@@ -514,13 +556,22 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
               "id": "c27",
               "text": "Prickly Acanthocarpus plants, which are unaccommodating for humans and other relatively large animals to walk through, provide their favourite daytime shelter for sleeping.",
               "status": "sourced",
-              "source": null
+              "source": {
+                "label": "Wildlife Research",
+                "type": "peer-reviewed",
+                "year": 2015
+              }
             },
             {
               "id": "c28",
               "text": "Additionally, they are known for their ability to climb trees.",
               "status": "sourced",
-              "source": null
+              "source": {
+                "label": "australian.museum",
+                "type": "other",
+                "year": 2015,
+                "url": "https://australian.museum/learn/animals/mammals/quokka/"
+              }
             }
           ]
         },
@@ -574,7 +625,12 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
               "id": "c34",
               "text": "The quokkas chew their cud, similar to cows.",
               "status": "sourced",
-              "source": null
+              "source": {
+                "label": "The New York Times",
+                "type": "newspaper",
+                "year": 2020,
+                "url": "https://www.nytimes.com/interactive/2020/10/23/science/quokka.html"
+              }
             }
           ]
         },
@@ -592,7 +648,12 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
               "id": "c36",
               "text": "By 1992, following extensive population declines in the 20th century, the quokka's distribution on the mainland had been reduced by more than 50% to an area of about 17800 sqkm.",
               "status": "sourced",
-              "source": null
+              "source": {
+                "label": "Department of Environment and Conservation, Government of Western Australia",
+                "type": "other",
+                "year": 2013,
+                "url": "http://www.environment.gov.au/system/files/resources/4581df81-0041-4fc9-ba1b-aca7cb22246d/files/quokka-recovery-plan.pdf"
+              }
             },
             {
               "id": "c37",
@@ -711,7 +772,12 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
               "id": "c54",
               "text": "The quokka is now listed as vulnerable in accordance with the IUCN criteria.",
               "status": "sourced",
-              "source": null
+              "source": {
+                "label": "Department of Environment and Conservation, Government of Western Australia",
+                "type": "other",
+                "year": 2013,
+                "url": "http://www.environment.gov.au/system/files/resources/4581df81-0041-4fc9-ba1b-aca7cb22246d/files/quokka-recovery-plan.pdf"
+              }
             }
           ]
         },
@@ -766,7 +832,12 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
               "id": "c61",
               "text": "Increasing temperatures have also been found to play an important role in the distribution of the quokka as the mean annual temperatures have increased rapidly since the 1970s in the southwest of Western Australia. With climate change limiting the optimal living conditions of the quokka and changing the abundance of their diet, the quokka are listed as vulnerable on the IUCN Red List of threatened species.",
               "status": "sourced",
-              "source": null
+              "source": {
+                "label": "Biological Conservation",
+                "type": "peer-reviewed",
+                "year": 2010,
+                "url": "https://www.sciencedirect.com/science/article/pii/S0006320710002776"
+              }
             },
             {
               "id": "c62",
@@ -815,7 +886,8 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
               "id": "c67",
               "text": "An infringement notice carrying a $300 fine can be issued by the Rottnest Island Authority for such an offence, and arrests and detention can be made by Rottnest Island Police.",
               "status": "sourced",
-              "source": null
+              "source": null,
+              "refUnparsed": true
             },
             {
               "id": "c68",
@@ -911,7 +983,12 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
               "id": "c78",
               "text": "Tourist numbers to Rottnest Island have subsequently increased.",
               "status": "sourced",
-              "source": null
+              "source": {
+                "label": "ABC",
+                "type": "other",
+                "year": 2016,
+                "url": "https://www.abc.net.au/news/2016-10-17/quokkas-rottnest-island-smile-but-island-life-no-paradise/7930208"
+              }
             }
           ]
         }
@@ -933,13 +1010,13 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       },
       "meta": {
         "generatedBy": "wikiblame-audit",
-        "fetchedAt": "2026-07-08T17:39:20.572Z",
+        "fetchedAt": "2026-07-09T13:09:31.757Z",
         "notes": "Sentence boundaries are inferred structurally (heuristic). “Unsourced” means no inline citation sits on the sentence — descriptive, not a verdict: some sentences legitimately need none, and lead-section claims are conventionally cited in the body."
       }
     }
   },
   "cleopatra-audit": {
-    "pinnedAt": "2026-07-08",
+    "pinnedAt": "2026-07-09",
     "data": {
       "article": {
         "title": "Cleopatra",
@@ -3833,13 +3910,15 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
               "id": "c295",
               "text": "Horace corroborates the common belief that it was a venomous snake, but instead states that it was several (serpentēs, 'serpents').",
               "status": "sourced",
-              "source": null
+              "source": null,
+              "refUnparsed": true
             },
             {
               "id": "c296",
               "text": "Vergil agrees that it was several serpents.",
               "status": "sourced",
-              "source": null
+              "source": null,
+              "refUnparsed": true
             },
             {
               "id": "c297",
@@ -5677,7 +5756,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
       },
       "meta": {
         "generatedBy": "wikiblame-audit",
-        "fetchedAt": "2026-07-08T17:39:21.772Z",
+        "fetchedAt": "2026-07-09T13:09:32.773Z",
         "notes": "Sentence boundaries are inferred structurally (heuristic). “Unsourced” means no inline citation sits on the sentence — descriptive, not a verdict: some sentences legitimately need none, and lead-section claims are conventionally cited in the body."
       }
     }

@@ -95,6 +95,32 @@ describe("WikipediaClient.getRevisionContent", () => {
   });
 });
 
+describe("WikipediaClient.getContentBatch", () => {
+  it("fetches all misses in one request and serves the rest from cache", async () => {
+    const fetchJson = vi.fn<FetchJson>(async (url) => {
+      const ids = new URL(url).searchParams.get("revids")!.split("|").map(Number);
+      return {
+        query: {
+          pages: [
+            { revisions: ids.map((id) => ({ revid: id, slots: { main: { content: `c${id}` } } })) },
+          ],
+        },
+      };
+    });
+    const cache = createEngineCache();
+    const client = new WikipediaClient({ fetchJson, cache });
+
+    const first = await client.getContentBatch([1, 2, 3]);
+    expect(first.get(2)).toBe("c2");
+    expect(fetchJson).toHaveBeenCalledTimes(1); // three misses, one batched round-trip
+
+    const second = await client.getContentBatch([2, 3, 4]);
+    expect(second.get(4)).toBe("c4");
+    expect(fetchJson).toHaveBeenCalledTimes(2); // only rev 4 was a miss
+    expect(new URL(fetchJson.mock.calls[1][0]).searchParams.get("revids")).toBe("4");
+  });
+});
+
 describe("WikipediaClient.search", () => {
   it("strips HTML and decodes entities from snippets", async () => {
     const fetchJson: FetchJson = async () => ({

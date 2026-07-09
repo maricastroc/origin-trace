@@ -64,7 +64,7 @@ describe("deriveSignals — sourced state now", () => {
 });
 
 describe("deriveSignals — evidence change counting", () => {
-  it("counts source-added, source-replaced and evidence-changed transitions", () => {
+  it("counts source-added, source-replaced and evidence-change transitions", () => {
     const events: TimelineEvent[] = [
       { id: "e1", date: "2015", kind: "claim-introduced", source: null },
       { id: "e2", date: "2016", kind: "source-added" },
@@ -73,7 +73,7 @@ describe("deriveSignals — evidence change counting", () => {
         id: "e4",
         date: "2018",
         kind: "current",
-        transition: { changes: ["evidence-changed"], magnitude: "major" },
+        transition: { changes: ["evidence-swapped"], magnitude: "major" },
       },
     ];
     expect(deriveSignals(events, NOW).evidenceChanges).toBe(3);

@@ -1,6 +1,7 @@
 export type ChangeTag =
   | "reworded"
   | "reframed"
-  | "evidence-changed"
+  | "evidence-added"
+  | "evidence-swapped"
   | "number-changed"
   | "expanded";

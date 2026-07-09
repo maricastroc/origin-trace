@@ -125,6 +125,13 @@ export async function reconstructGenealogy(input: GenealogyInput): Promise<Genea
     fetches += 1;
     return content;
   };
+  read.prefetch = async (revids) => {
+    const missing = revids.filter((r) => !contentCache.has(r));
+    if (missing.length === 0) return;
+    const batch = await client.getContentBatch(missing);
+    for (const r of missing) contentCache.set(r, batch.get(r) ?? null);
+    fetches += missing.length; // batched reads still count as revisions pulled
+  };
 
   const { revisions } = await client.listRevisions(input.article);
   if (revisions.length === 0) throw new ClaimNotFoundError(input.article, input.phrase);

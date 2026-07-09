@@ -1,4 +1,5 @@
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
+import type { Confidence } from "@/types/Confidence";
 import { deriveSignals } from "@/lib/evidenceSignals";
 import { verdictStyle } from "@/lib/verdictStyle";
 import { VerdictStamp } from "./VerdictStamp";
@@ -43,9 +44,15 @@ export function EvidenceStatus({ data }: { data: ClaimProvenance }) {
           <VerdictStamp
             verdict={data.verdict.primary}
             confidence={data.verdict.confidence}
+            confidenceReasons={data.verdict.confidenceReasons}
           />
         </div>
       </div>
+
+      <ConfidenceNote
+        confidence={data.verdict.confidence}
+        reasons={data.verdict.confidenceReasons}
+      />
 
       <div className="mt-4 flex flex-wrap gap-2">
         {signals.ageLabel && <Signal>age · {signals.ageLabel}</Signal>}
@@ -69,6 +76,61 @@ export function EvidenceStatus({ data }: { data: ClaimProvenance }) {
         )}
       </div>
     </section>
+  );
+}
+
+function ConfidenceNote({
+  confidence,
+  reasons,
+}: {
+  confidence: Confidence;
+  reasons?: string[];
+}) {
+  const tone =
+    confidence === "high"
+      ? "text-success"
+      : confidence === "medium"
+        ? "text-warn"
+        : "text-danger";
+  const dot =
+    confidence === "high"
+      ? "bg-success"
+      : confidence === "medium"
+        ? "bg-warn"
+        : "bg-danger";
+  const items = reasons ?? [];
+  return (
+    <div className="mt-4 border-t border-line pt-3">
+      <div className="flex items-center gap-2">
+        <span className={`h-1.5 w-1.5 rounded-full ${dot}`} aria-hidden="true" />
+        <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint">
+          confidence
+        </span>
+        <span className={`font-mono text-[11px] uppercase tracking-[0.1em] ${tone}`}>
+          {confidence}
+        </span>
+      </div>
+      {items.length ? (
+        <ul className="mt-2 space-y-1">
+          {items.map((reason, i) => (
+            <li
+              key={i}
+              className="flex gap-2 text-[13px] leading-relaxed text-ink-muted"
+            >
+              <span className="select-none text-ink-faint" aria-hidden="true">
+                –
+              </span>
+              <span>{reason}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
+          Traced to a clean origin with both readings in agreement — nothing
+          undermines this verdict.
+        </p>
+      )}
+    </div>
   );
 }
 

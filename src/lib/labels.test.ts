@@ -21,7 +21,8 @@ describe("label maps", () => {
   });
 
   it("rename the machine keys to human phrasing", () => {
-    expect(changeTagLabel["evidence-changed"]).toBe("source swapped");
+    expect(changeTagLabel["evidence-added"]).toBe("source added");
+    expect(changeTagLabel["evidence-swapped"]).toBe("source swapped");
     expect(sourceTypeLabel["peer-reviewed"]).toBe("peer-reviewed");
     expect(sourceTypeLabel["popular-media"]).toBe("popular media");
     expect(eventKindLabel["claim-introduced"]).toBe("· claim introduced");

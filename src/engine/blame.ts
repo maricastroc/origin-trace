@@ -20,7 +20,13 @@ export function containsPhrase(content: string, phrase: string): boolean {
   return normalize(content).includes(normalize(phrase));
 }
 
-export type ContentReader = (revid: number) => Promise<string | null>;
+export type ContentReader = ((revid: number) => Promise<string | null>) & {
+  /** Optional: warm the reader's cache for several revisions in one batched
+   *  round-trip, so a subsequent sweep of single reads resolves without a
+   *  per-revision fetch. Absent on plain readers (tests) — batching is then a
+   *  no-op and the sequential path is used unchanged. */
+  prefetch?: (revids: number[]) => Promise<void>;
+};
 
 export interface IntroductionResult {
   index: number;
@@ -50,8 +56,21 @@ export async function findIntroduction(
     return hit;
   };
 
+  // Batch-warm the content cache for a set of probe indices in one round-trip;
+  // the sequential scan that follows then resolves from cache. Undefined (and so
+  // inert) when the reader can't prefetch.
+  const prefetch = getContent.prefetch
+    ? async (indices: number[]): Promise<void> => {
+        const revids: number[] = [];
+        for (const i of indices) {
+          if (!seen.has(i)) revids.push(revisions[i].revid);
+        }
+        if (revids.length > 0) await getContent.prefetch!(revids);
+      }
+    : undefined;
+
   const n = revisions.length;
-  const first = await earliestContaining(n, contains);
+  const first = await earliestContaining(n, contains, prefetch);
   if (first < 0) return null;
 
   const presentNow = await contains(n - 1);
@@ -71,11 +90,12 @@ export async function findIntroduction(
 async function earliestContaining(
   n: number,
   contains: (i: number) => Promise<boolean>,
+  prefetch?: (indices: number[]) => Promise<void>,
 ): Promise<number> {
   let earliest = -1;
   let bound = n;
   while (bound > 0) {
-    const hit = await sampleTrue(0, bound, contains);
+    const hit = await sampleTrue(0, bound, contains, prefetch);
     if (hit < 0) break;
     const edge = await lowerBoundTrue(0, hit, contains);
     earliest = edge;
@@ -102,13 +122,20 @@ async function sampleTrue(
   lo: number,
   hi: number,
   pred: (i: number) => Promise<boolean>,
+  prefetch?: (indices: number[]) => Promise<void>,
 ): Promise<number> {
   const span = hi - lo;
   if (span <= 0) return -1;
   if (await pred(hi - 1)) return hi - 1;
   const probes = Math.min(span, Math.max(8, Math.ceil(Math.log2(span + 1)) * 2));
+  const indices: number[] = [];
   for (let k = 0; k < probes; k++) {
-    const i = lo + Math.floor((k * span) / probes);
+    indices.push(lo + Math.floor((k * span) / probes));
+  }
+  // Collapse the probe sweep into a single batched fetch instead of `probes`
+  // sequential round-trips; the scan below then reads from the warmed cache.
+  if (prefetch) await prefetch(indices);
+  for (const i of indices) {
     if (await pred(i)) return i;
   }
   return -1;

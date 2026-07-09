@@ -38,7 +38,10 @@ export function deriveSignals(
     (e) =>
       e.kind === "source-replaced" ||
       e.kind === "source-added" ||
-      (e.transition?.changes.includes("evidence-changed") ?? false),
+      (e.transition?.changes.some(
+        (c) => c === "evidence-added" || c === "evidence-swapped",
+      ) ??
+        false),
   ).length;
 
   return {

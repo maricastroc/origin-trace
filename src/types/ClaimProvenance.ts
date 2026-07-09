@@ -13,6 +13,9 @@ export interface ClaimProvenance {
   verdict: {
     primary: Verdict;
     confidence: Confidence;
+    /** The uncertainties that lowered `confidence`, most concerning first.
+     *  Empty/absent when nothing undermined the trace (a `high` verdict). */
+    confidenceReasons?: string[];
     summary: string;
     readings?: VerdictReading[];
   };

@@ -38,6 +38,33 @@ function corpus(has: boolean[], phrase = "the target phrase") {
   return { revisions, getContent, reads, phrase };
 }
 
+/** Like `corpus`, but the reader can prefetch a batch — modelling trace/genealogy
+ *  readers. Counts round-trips: a single cache-miss read is one, and a whole
+ *  prefetch batch is also just one. */
+function batchedCorpus(has: boolean[], phrase = "the target phrase") {
+  const revisions = has.map((_, i) => rev(i));
+  const byId = new Map<number, string>();
+  has.forEach((hit, i) => {
+    byId.set(revisions[i].revid, hit ? `intro text. ${phrase}. tail.` : "unrelated prose only.");
+  });
+  const warm = new Map<number, string | null>();
+  let roundTrips = 0;
+  const getContent: ContentReader = async (revid) => {
+    if (warm.has(revid)) return warm.get(revid)!;
+    roundTrips += 1;
+    const c = byId.get(revid) ?? null;
+    warm.set(revid, c);
+    return c;
+  };
+  getContent.prefetch = async (revids) => {
+    const missing = revids.filter((r) => !warm.has(r));
+    if (missing.length === 0) return;
+    roundTrips += 1; // the entire batch is a single round-trip
+    for (const r of missing) warm.set(r, byId.get(r) ?? null);
+  };
+  return { revisions, getContent, phrase, roundTrips: () => roundTrips };
+}
+
 describe("normalize / containsPhrase", () => {
   it("lowercases, strips markup, and collapses whitespace", () => {
     expect(normalize("The  <b>Quokka</b> is\n[[Australia|here]]!")).toBe(
@@ -105,6 +132,23 @@ describe("findIntroduction", () => {
     const res = await findIntroduction(revisions, phrase, getContent);
     expect(res!.index).toBe(100);
     expect(new Set(reads).size).toBeLessThan(64);
+  });
+
+  it("collapses probe sweeps into batched round-trips without changing the result", async () => {
+    const has = Array.from({ length: 256 }, (_, i) => i >= 100);
+
+    const plain = corpus(has);
+    const plainRes = await findIntroduction(plain.revisions, plain.phrase, plain.getContent);
+    const plainRoundTrips = new Set(plain.reads).size;
+
+    const batched = batchedCorpus(has);
+    const batchedRes = await findIntroduction(batched.revisions, batched.phrase, batched.getContent);
+
+    // Same origin located...
+    expect(batchedRes!.index).toBe(100);
+    expect(batchedRes!.index).toBe(plainRes!.index);
+    // ...but the prefetching reader pays for far fewer round-trips.
+    expect(batched.roundTrips()).toBeLessThan(plainRoundTrips);
   });
 });
 

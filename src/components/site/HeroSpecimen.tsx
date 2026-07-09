@@ -26,7 +26,7 @@ export function HeroSpecimen() {
           <SpecimenNode
             tone="muted"
             date="2019"
-            label="reworded · source swapped"
+            label="reworded · source added"
           />
           <SpecimenNode
             tone="ink"

@@ -11,7 +11,12 @@ import {
   findIntroduction,
   type ContentReader,
 } from "./blame.ts";
-import { reconstructGenealogy, type GenealogyHop } from "./genealogy.ts";
+import {
+  reconstructGenealogy,
+  residualShape,
+  type GenealogyHop,
+} from "./genealogy.ts";
+import { verdictConfidence } from "./confidence.ts";
 import { WikipediaClient, type FetchJson, type RevisionMeta } from "./wikipedia.ts";
 import type { EngineCache } from "./cache.ts";
 
@@ -70,6 +75,12 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       emit({ phase: "searching", read: reads, estimate });
     }
     return content;
+  };
+  read.prefetch = async (revids) => {
+    const missing = revids.filter((r) => !cache.has(r));
+    if (missing.length === 0) return;
+    const batch = await client.getContentBatch(missing);
+    for (const r of missing) cache.set(r, batch.get(r) ?? null);
   };
 
   emit({ phase: "listing" });
@@ -220,7 +231,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
         ...(evidenceChanged
           ? {
               transition: {
-                changes: ["evidence-changed"],
+                changes: ["evidence-added"],
                 magnitude: "major",
                 note: "citation attached after introduction",
               } as const,
@@ -250,6 +261,20 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       ]
     : undefined;
 
+  const confidence = verdictConfidence({
+    corrected,
+    abstained,
+    bornAtLatest,
+    removedSince: intro.removedSince,
+    origin: genealogy
+      ? {
+          reach: residualShape(genealogy.terminus),
+          bulkInsertion: genealogy.terminus === "origin:bulk-insertion",
+          nonMonotonic: genealogy.nonMonotonic,
+        }
+      : null,
+  });
+
   return {
     claim: {
       text: input.claimText ?? input.phrase,
@@ -261,7 +286,8 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     },
     verdict: {
       primary,
-      confidence: "low",
+      confidence: confidence.level,
+      ...(confidence.reasons.length ? { confidenceReasons: confidence.reasons } : {}),
       summary: corrected
         ? correctedSummary(lexicalPrimary, genealogyPrimary, effectiveIntroYear)
         : summarize(narrativePrimary, intro.removedSince, circularLoop != null),
@@ -357,7 +383,11 @@ function chainTimeline(
     const swapped =
       prev.sourced && hop.sourced && hop.source != null && prev.sourceLabel !== hop.sourceLabel;
     const kind: EventKind = gained ? "source-added" : swapped ? "source-replaced" : "reworded";
-    const changes: ChangeTag[] = kind === "reworded" ? ["reworded"] : ["reworded", "evidence-changed"];
+    const changes: ChangeTag[] = gained
+      ? ["reworded", "evidence-added"]
+      : swapped
+        ? ["reworded", "evidence-swapped"]
+        : ["reworded"];
     events.push({
       id: `g${i}`,
       date: hop.date,

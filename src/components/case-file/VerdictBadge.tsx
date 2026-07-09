@@ -6,9 +6,11 @@ import { verdictStyle } from "@/lib/verdictStyle";
 export function VerdictBadge({
   verdict,
   confidence,
+  confidenceReasons,
 }: {
   verdict: Verdict;
   confidence?: Confidence;
+  confidenceReasons?: string[];
 }) {
   const s = verdictStyle[verdict];
   return (
@@ -18,7 +20,16 @@ export function VerdictBadge({
       <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} aria-hidden="true" />
       {s.label}
       {confidence && (
-        <span className="opacity-70">· {confidenceLabel[confidence]}</span>
+        <span
+          className="opacity-70"
+          title={
+            confidenceReasons?.length
+              ? `Confidence ${confidence} — ${confidenceReasons.join("; ")}`
+              : `Confidence ${confidence} — traced to a clean origin with no caveats`
+          }
+        >
+          · {confidenceLabel[confidence]}
+        </span>
       )}
     </span>
   );

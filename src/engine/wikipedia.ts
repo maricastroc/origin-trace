@@ -122,6 +122,32 @@ export class WikipediaClient {
     return out;
   }
 
+  /** Resolve content for many revids in as few round-trips as possible. Revisions
+   *  are immutable, so a cached body is authoritative; only the misses hit the
+   *  network (batched 50/request by getContent). Both the cache reads and writes
+   *  go through the shared EngineCache, so a warmed revision is never refetched
+   *  across traces. Used to prime the cache ahead of a binary-search probe sweep,
+   *  collapsing what would be N sequential single-revision fetches into one call. */
+  async getContentBatch(revids: number[]): Promise<Map<number, string | null>> {
+    const out = new Map<number, string | null>();
+    const misses = new Set<number>();
+    for (const revid of revids) {
+      if (out.has(revid) || misses.has(revid)) continue;
+      const cached = this.cache?.getContent(this.lang, revid);
+      if (cached !== undefined) out.set(revid, cached);
+      else misses.add(revid);
+    }
+    if (misses.size > 0) {
+      const fetched = await this.getContent([...misses]);
+      for (const revid of misses) {
+        const content = fetched.get(revid) ?? null;
+        out.set(revid, content);
+        this.cache?.setContent(this.lang, revid, content);
+      }
+    }
+    return out;
+  }
+
   async getRevisionContent(revid: number): Promise<string | null> {
     const cached = this.cache?.getContent(this.lang, revid);
     if (cached !== undefined) return cached;

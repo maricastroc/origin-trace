@@ -97,7 +97,7 @@ async function earliestContaining(
   while (bound > 0) {
     const hit = await sampleTrue(0, bound, contains, prefetch);
     if (hit < 0) break;
-    const edge = await lowerBoundTrue(0, hit, contains);
+    const edge = await lowerBoundTrue(0, hit, contains, prefetch);
     earliest = edge;
     if (edge === 0) break;
     bound = edge;
@@ -105,15 +105,49 @@ async function earliestContaining(
   return earliest;
 }
 
+// How many binary-search levels to warm per batched round-trip, and the range
+// below which a batch isn't worth it. Depth 4 enumerates ≤15 candidate indices —
+// one getContent batch — and collapses 4 would-be-sequential fetches into it.
+const PREFETCH_DEPTH = 4;
+const PREFETCH_MIN_SPAN = 4;
+
+/** Every index the next `depth` comparisons of a lower-bound bisection over
+ *  `[lo, hi)` could touch — the decision tree's node midpoints. Prefetching this
+ *  set guarantees those comparisons hit the content cache. Ranges are disjoint per
+ *  node, so the indices are distinct; at most `2^depth − 1` of them. */
+function bisectionProbes(lo: number, hi: number, depth: number): number[] {
+  const probes: number[] = [];
+  const walk = (l: number, h: number, d: number): void => {
+    if (l >= h || d <= 0) return;
+    const mid = (l + h) >> 1;
+    probes.push(mid);
+    walk(l, mid, d - 1); // pred(mid) true  → hi = mid
+    walk(mid + 1, h, d - 1); // pred(mid) false → lo = mid + 1
+  };
+  walk(lo, hi, depth);
+  return probes;
+}
+
 async function lowerBoundTrue(
   lo: number,
   hi: number,
   pred: (i: number) => Promise<boolean>,
+  prefetch?: (indices: number[]) => Promise<void>,
 ): Promise<number> {
   while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (await pred(mid)) hi = mid;
-    else lo = mid + 1;
+    // Warm the cache for the whole slab of indices the next PREFETCH_DEPTH
+    // comparisons can reach, in one round-trip, then descend from cache. The
+    // bisection itself is byte-for-byte the same walk — only the fetch timing
+    // changes — so the located revision is identical to the sequential version.
+    if (prefetch && hi - lo > PREFETCH_MIN_SPAN) {
+      await prefetch(bisectionProbes(lo, hi, PREFETCH_DEPTH));
+    }
+    let steps = prefetch ? PREFETCH_DEPTH : Number.POSITIVE_INFINITY;
+    while (lo < hi && steps-- > 0) {
+      const mid = (lo + hi) >> 1;
+      if (await pred(mid)) hi = mid;
+      else lo = mid + 1;
+    }
   }
   return lo;
 }

@@ -150,6 +150,29 @@ describe("findIntroduction", () => {
     // ...but the prefetching reader pays for far fewer round-trips.
     expect(batched.roundTrips()).toBeLessThan(plainRoundTrips);
   });
+
+  it("batches the lower-bound descent instead of fetching each level serially", async () => {
+    // 4096 revisions: a sequential lower-bound refinement would pay ~log2(n) ≈ 12
+    // round-trips just narrowing to the edge. Speculative prefetch warms each
+    // decision-tree slab in one batch, so the descent reads from cache.
+    const n = 4096;
+    const edge = 2500;
+    const has = Array.from({ length: n }, (_, i) => i >= edge);
+
+    const plain = corpus(has);
+    const plainRes = await findIntroduction(plain.revisions, plain.phrase, plain.getContent);
+    const plainRoundTrips = new Set(plain.reads).size;
+
+    const batched = batchedCorpus(has);
+    const batchedRes = await findIntroduction(batched.revisions, batched.phrase, batched.getContent);
+
+    // Identical result — prefetching changes fetch timing, never the located edge.
+    expect(batchedRes!.index).toBe(edge);
+    expect(batchedRes!.index).toBe(plainRes!.index);
+    // A decisive reduction, not a marginal one: the descent no longer pays a
+    // round-trip per level.
+    expect(batched.roundTrips()).toBeLessThan(plainRoundTrips / 2);
+  });
 });
 
 describe("classifyInline", () => {

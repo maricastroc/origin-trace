@@ -122,6 +122,7 @@ export class WikipediaClient {
         action: "query",
         prop: "revisions",
         titles: title,
+        redirects: "1",
         rvprop: "ids|timestamp|comment",
         rvlimit: "max",
         rvdir: "newer",
@@ -161,6 +162,7 @@ export class WikipediaClient {
       action: "query",
       prop: "revisions",
       titles: title,
+      redirects: "1",
       rvprop: "timestamp",
       rvlimit: "1",
       rvdir: "older",
@@ -177,20 +179,28 @@ export class WikipediaClient {
     const out = new Map<number, string>();
     for (let i = 0; i < revids.length; i += 50) {
       const batch = revids.slice(i, i + 50);
-      const params: Record<string, string> = {
-        action: "query",
-        prop: "revisions",
-        revids: batch.join("|"),
-        rvprop: "ids|content",
-        rvslots: "main",
-      };
-      const data = (await this.fetchJson(this.endpoint(params))) as ApiResponse;
-      for (const page of data.query?.pages ?? []) {
-        for (const r of page.revisions ?? []) {
-          const content = r.slots?.main?.content;
-          if (typeof content === "string") out.set(r.revid, content);
+
+      let rvcontinue: string | undefined;
+      do {
+        const params: Record<string, string> = {
+          action: "query",
+          prop: "revisions",
+          revids: batch.join("|"),
+          rvprop: "ids|content",
+          rvslots: "main",
+        };
+        if (rvcontinue) params.rvcontinue = rvcontinue;
+        const data = (await this.fetchJson(
+          this.endpoint(params),
+        )) as ApiResponse;
+        for (const page of data.query?.pages ?? []) {
+          for (const r of page.revisions ?? []) {
+            const content = r.slots?.main?.content;
+            if (typeof content === "string") out.set(r.revid, content);
+          }
         }
-      }
+        rvcontinue = data.continue?.rvcontinue;
+      } while (rvcontinue);
     }
     return out;
   }
@@ -234,6 +244,7 @@ export class WikipediaClient {
       action: "query",
       prop: "revisions",
       titles: title,
+      redirects: "1",
       rvprop: "ids|timestamp|content",
       rvslots: "main",
       rvlimit: "1",

@@ -96,6 +96,28 @@ describe("sentences", () => {
     );
     expect(out).toEqual(["Real prose sentence here."]);
   });
+
+  it("recovers prose after an unclosed table instead of swallowing it", () => {
+    const out = sentences(
+      'First prose sentence stands here fine.\n{| class="wikitable"\n| a || b\nSecond prose sentence after the broken table must survive.\n',
+    );
+    expect(out.some((s) => s.includes("First prose sentence stands"))).toBe(
+      true,
+    );
+    expect(
+      out.some((s) => s.includes("Second prose sentence after the broken")),
+    ).toBe(true);
+  });
+
+  it("recovers prose after an unclosed media link instead of skipping it", () => {
+    const out = sentences(
+      "Intro prose sentence sits before the image here.\n[[File:example.jpg|thumb|a caption\nTrailing prose sentence after the unclosed file link should survive.\n",
+    );
+    expect(out.some((s) => s.includes("Intro prose sentence sits"))).toBe(true);
+    expect(
+      out.some((s) => s.includes("Trailing prose sentence after the unclosed")),
+    ).toBe(true);
+  });
 });
 
 describe("auditArticle", () => {

@@ -1,5 +1,6 @@
 import { WikipediaClient } from "@/engine/wikipedia.ts";
 import { getEngineCache } from "@/engine/persistent-cache.ts";
+import { safeLang } from "@/lib/lang";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -12,7 +13,7 @@ export const maxDuration = 60;
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const article = searchParams.get("article")?.trim();
-  const lang = searchParams.get("lang")?.trim() || "en";
+  const lang = safeLang(searchParams.get("lang"));
 
   if (!article) {
     return Response.json({ ok: false }, { status: 400 });
@@ -20,7 +21,6 @@ export async function GET(request: Request): Promise<Response> {
 
   const client = new WikipediaClient({ lang, cache: getEngineCache() });
   try {
-    // The list is the win; the current revision is a cheap bonus the trace needs.
     await client.listRevisions(article);
     await client.getCurrentContent(article).catch(() => null);
     return Response.json({ ok: true });

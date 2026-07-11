@@ -4,7 +4,7 @@ import { verdictConfidence, type ConfidenceSignals } from "./confidence.ts";
 const base: ConfidenceSignals = {
   corrected: false,
   abstained: false,
-  bornAtLatest: false,
+  bornAtOldest: false,
   removedSince: false,
   origin: { reach: "resolved", bulkInsertion: false, nonMonotonic: false },
 };
@@ -79,8 +79,14 @@ describe("verdictConfidence", () => {
   it("caps a pure lexical fallback at medium, and low when the intro is the oldest fetched revision", () => {
     expect(verdictConfidence({ ...base, origin: null }).level).toBe("medium");
     expect(
-      verdictConfidence({ ...base, origin: null, bornAtLatest: true }).level,
+      verdictConfidence({ ...base, origin: null, bornAtOldest: true }).level,
     ).toBe("low");
+  });
+
+  it("does not dock for bornAtOldest once a lineage origin was reconstructed", () => {
+    expect(verdictConfidence({ ...base, bornAtOldest: true }).level).toBe(
+      "high",
+    );
   });
 
   it("treats a non-monotonic chain as one downgrade", () => {

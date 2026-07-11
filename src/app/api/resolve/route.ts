@@ -1,11 +1,12 @@
 import { resolveArticles } from "@/engine/resolve.ts";
+import { safeLang } from "@/lib/lang";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const phrase = searchParams.get("phrase")?.trim();
-  const lang = searchParams.get("lang")?.trim() || "en";
+  const lang = safeLang(searchParams.get("lang"));
 
   if (!phrase) {
     return Response.json({ error: "Provide 'phrase'." }, { status: 400 });
@@ -15,7 +16,13 @@ export async function GET(request: Request): Promise<Response> {
     const resolution = await resolveArticles(phrase, { lang });
     return Response.json(resolution);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return Response.json({ error: message }, { status: 500 });
+    console.error("resolve failed", err);
+    return Response.json(
+      {
+        error:
+          "Couldn't reach Wikipedia to resolve that phrase. Please try again.",
+      },
+      { status: 500 },
+    );
   }
 }

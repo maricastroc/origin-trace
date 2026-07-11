@@ -14,10 +14,6 @@ type Filter = PhenomenonId | "all";
 export function Investigations() {
   const [filter, setFilter] = useState<Filter>("all");
 
-  // Collapsed by default: the section reads as a scannable index of cards, and
-  // the full case file (a heavy artifact that also appears under Live and Audit)
-  // opens only when a card is picked — so the page doesn't lead with the same
-  // dossier three times over. Re-clicking the open card collapses it.
   const [activeSlug, setActiveSlug] = useState<string | undefined>(undefined);
 
   const filters = useMemo(() => {
@@ -43,7 +39,7 @@ export function Investigations() {
       next === "all"
         ? investigations
         : investigations.filter((i) => i.phenomenon === next);
-    // Collapse if the open card falls outside the new filter.
+
     if (activeSlug && !list.some((i) => i.slug === activeSlug)) {
       setActiveSlug(undefined);
     }

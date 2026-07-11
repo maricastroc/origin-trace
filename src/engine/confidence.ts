@@ -6,7 +6,9 @@ export type OriginReach =
 export interface ConfidenceSignals {
   corrected: boolean;
   abstained: boolean;
-  bornAtLatest: boolean;
+  /** The lexical introduction sits at the oldest revision we fetched, so the
+   *  claim's true birth may predate the trace window. */
+  bornAtOldest: boolean;
   removedSince: boolean;
   origin: {
     reach: OriginReach;
@@ -25,7 +27,7 @@ const REASONS = {
   corrected: "the two readings disagree — no single verdict is asserted",
   lexicalOnly:
     "no lineage was reconstructed — this rests on the lexical trace alone",
-  bornAtLatest:
+  bornAtOldest:
     "the claim already exists in the oldest revision fetched, so its birth may predate the trace",
   bulkInsertion:
     "the origin is a large batch edit — the idea may have been pasted in from elsewhere",
@@ -54,7 +56,7 @@ export function verdictConfidence(s: ConfidenceSignals): ConfidenceResult {
   if (s.origin == null) {
     dock(1, REASONS.lexicalOnly);
 
-    if (s.bornAtLatest) dock(1, REASONS.bornAtLatest);
+    if (s.bornAtOldest) dock(1, REASONS.bornAtOldest);
   } else {
     switch (s.origin.reach) {
       case "resolved":

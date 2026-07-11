@@ -122,6 +122,44 @@ describe("WikipediaClient.getRevisionContent", () => {
   });
 });
 
+describe("WikipediaClient.getContent", () => {
+  it("follows a size-capped continue token so no revid is dropped as empty", async () => {
+    const fetchJson = vi.fn<FetchJson>(async (url) => {
+      const p = new URL(url).searchParams;
+      if (!p.get("rvcontinue")) {
+        return {
+          query: {
+            pages: [
+              {
+                revisions: [{ revid: 1, slots: { main: { content: "one" } } }],
+              },
+            ],
+          },
+          continue: { rvcontinue: "1|2" },
+        };
+      }
+      return {
+        query: {
+          pages: [
+            {
+              revisions: [
+                { revid: 2, slots: { main: { content: "two" } } },
+                { revid: 3, slots: { main: { content: "three" } } },
+              ],
+            },
+          ],
+        },
+      };
+    });
+    const client = new WikipediaClient({ fetchJson });
+    const map = await client.getContent([1, 2, 3]);
+    expect(map.get(1)).toBe("one");
+    expect(map.get(2)).toBe("two");
+    expect(map.get(3)).toBe("three");
+    expect(fetchJson).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("WikipediaClient.getContentBatch", () => {
   it("fetches all misses in one request and serves the rest from cache", async () => {
     const fetchJson = vi.fn<FetchJson>(async (url) => {

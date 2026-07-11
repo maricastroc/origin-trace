@@ -8,7 +8,6 @@ const values = (s: string) =>
 
 describe("extractAnchors", () => {
   it("pulls multi-digit numbers and mid-sentence proper nouns, folds case", () => {
-    // "Neymar" leads the sentence, so it's demoted as ambiguous; "Barcelona" and 100 stay.
     expect(values("Neymar scored 100 goals for Barcelona.")).toEqual([
       "name:barcelona",
       "number:100",
@@ -16,7 +15,6 @@ describe("extractAnchors", () => {
   });
 
   it("demotes an isolated sentence-initial capital but keeps mid-sentence names", () => {
-    // "Near" is a capitalized common word only because it starts the sentence.
     expect(values("Near perihelion Pluto passes inside Neptune.")).toEqual([
       "name:neptune",
       "name:pluto",
@@ -24,7 +22,6 @@ describe("extractAnchors", () => {
   });
 
   it("keeps a year but ignores the sentence-initial capital and function words", () => {
-    // "During" is a stopword; the only anchor is the year.
     expect(values("During 2004 the event happened.")).toEqual(["number:2004"]);
   });
 
@@ -49,6 +46,10 @@ describe("extractAnchors", () => {
       "number:1998",
     ]);
   });
+
+  it("keeps a decimal distinct from the integer it would collapse into", () => {
+    expect(values("The ticket cost 19.98 dollars.")).toEqual(["number:19.98"]);
+  });
 });
 
 describe("sharedAnchors", () => {
@@ -65,6 +66,15 @@ describe("sharedAnchors", () => {
       sharedAnchors(
         "The squad triumphed in 2004.",
         "The team won the 1990 title.",
+      ),
+    ).toEqual([]);
+  });
+
+  it("does not bridge a decimal onto a coincidental integer", () => {
+    expect(
+      sharedAnchors(
+        "The item cost 19.98 at launch.",
+        "Founded in 1998 nearby.",
       ),
     ).toEqual([]);
   });

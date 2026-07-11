@@ -237,6 +237,12 @@ function stripMediaLinks(text: string): string {
         }
       }
 
+      if (depth > 0) {
+        out += text[i];
+        i++;
+        continue;
+      }
+
       const ns = text
         .slice(i + 2, j - 2)
         .match(/^\s*([^:|[\]]+)\s*:/)?.[1]
@@ -264,9 +270,12 @@ function stripTables(text: string): string {
 
   let depth = 0;
 
+  let openAt = -1;
+
   for (let i = 0; i < text.length; i++) {
     const two = text.slice(i, i + 2);
     if (two === "{|") {
+      if (depth === 0) openAt = i;
       depth++;
       i++;
       continue;
@@ -280,6 +289,9 @@ function stripTables(text: string): string {
 
     if (depth === 0) out += text[i];
   }
+  
+  if (depth > 0 && openAt >= 0) out += text.slice(openAt);
+
   return out;
 }
 

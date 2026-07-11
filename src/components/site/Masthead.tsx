@@ -47,9 +47,6 @@ function NavLink({
   icon: React.ReactNode;
   children: React.ReactNode;
 }) {
-  // On mobile the label collapses to icon-only (kept in the a11y tree via
-  // sr-only) so Method / Cases / Audit stay reachable from the sticky header —
-  // instead of vanishing entirely below the sm breakpoint. Labels return at sm.
   return (
     <a
       href={href}

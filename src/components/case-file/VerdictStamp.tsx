@@ -1,10 +1,6 @@
 import type { Verdict } from "@/types/Verdict";
 import { verdictStyle } from "@/lib/verdictStyle";
 
-// A pure rubber stamp of the verdict. Confidence is deliberately NOT shown here:
-// it lives once, in the labelled ConfidenceNote beside it, where its reasons can
-// be read — a cryptic "conf. low" on the stamp read as if the whole verdict were
-// low-confidence, when it only qualifies the heuristic citation detection.
 export function VerdictStamp({
   verdict,
   size = "md",

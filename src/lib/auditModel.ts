@@ -91,7 +91,8 @@ export function buildAuditModel(data: ArticleAudit): AuditModel {
     sectionCount: data.sections.filter((s) => !s.isLead).length,
     highImpact,
     worstSections: byCoverage.slice(0, 5),
-    bestSection: byCoverage.length ? byCoverage[byCoverage.length - 1] : null,
+    bestSection:
+      byCoverage.length >= 2 ? byCoverage[byCoverage.length - 1] : null,
     longestRun: longestRun.count >= 3 ? longestRun : null,
   };
 }

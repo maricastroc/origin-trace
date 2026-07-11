@@ -36,11 +36,6 @@ type State =
       lang?: string;
     };
 
-// Each example carries its own article scope so the marquee case resolves
-// straight to the case file the hero promises — rather than falling into the
-// ambiguity picker when the phrase isn't a verbatim match anymore (e.g. the
-// current Quokka article says "happiest animals", plural). Scope resolution is
-// still demonstrated the moment a user clears the scope field or types their own.
 const EXAMPLES: { phrase: string; article: string; label: string }[] = [
   { phrase: "happiest animal", article: "Quokka", label: "happiest animal" },
   { phrase: "Brazilian aardvark", article: "Coati", label: "Brazilian aardvark" },
@@ -51,9 +46,6 @@ const enc = encodeURIComponent;
 
 export function LiveTrace() {
   const [phrase, setPhrase] = useState("happiest animal");
-  // Pre-scope the default claim to the article the hero showcases, so the very
-  // first Trace click lands on the promised case file instead of the ambiguity
-  // picker. Cleared by the X button for anyone who wants to see scope resolution.
   const [article, setArticle] = useState("Quokka");
   const [lang, setLang] = useState("en");
   const [state, setState] = useState<State>({ status: "idle" });
@@ -84,9 +76,6 @@ export function LiveTrace() {
     }
   }
 
-  // Warm the cache for an explicitly-scoped article while the user is still typing
-  // the phrase, so the revision list is resident by the time they hit Trace. Deduped
-  // per (lang, title) so re-blurring the field doesn't refire. Fire-and-forget.
   const prewarmed = useRef("");
   function prewarm(rawArticle: string, lang: string) {
     const parsed = parseArticleInput(rawArticle);
@@ -137,8 +126,6 @@ export function LiveTrace() {
 
   async function submit(event?: React.FormEvent) {
     event?.preventDefault();
-    // A pasted Wikipedia URL carries both the title and its language — normalize
-    // the field and let the URL's language win over the picker.
     const parsed = parseArticleInput(article);
     const effLang = parsed.lang ?? lang;
     if (parsed.title !== article) setArticle(parsed.title);
@@ -199,7 +186,7 @@ export function LiveTrace() {
 
         <div className="divide-y divide-line px-5 sm:px-6">
           <label className="grid gap-1 py-3 sm:grid-cols-[7rem_1fr] sm:items-baseline sm:gap-5">
-            <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-muted">
+            <span className="font-mono text-[11px] uppercase tracking-widest text-ink-muted">
               Claim
             </span>
             <ClearableInput
@@ -210,7 +197,7 @@ export function LiveTrace() {
             />
           </label>
           <label className="grid gap-1 py-3 sm:grid-cols-[7rem_1fr] sm:items-baseline sm:gap-5">
-            <span className="font-mono text-[11px] uppercase leading-tight tracking-[0.1em] text-ink-muted">
+            <span className="font-mono text-[11px] uppercase leading-tight tracking-widest text-ink-muted">
               Article
               <span className="mt-0.5 block text-[10px] text-ink-faint">
                 scope · optional
@@ -225,7 +212,7 @@ export function LiveTrace() {
             />
           </label>
           <div className="grid gap-1.5 py-3 sm:grid-cols-[7rem_1fr] sm:items-center sm:gap-5">
-            <span className="font-mono text-[11px] uppercase leading-tight tracking-[0.1em] text-ink-muted">
+            <span className="font-mono text-[11px] uppercase leading-tight tracking-widest text-ink-muted">
               Language
               <span className="mt-0.5 block text-[10px] text-ink-faint">
                 wikipedia

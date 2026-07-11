@@ -120,15 +120,14 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
 
   const bornSourced = introRef.sourced;
   const nowSourced = currentRef.sourced;
+
   const bornAtLatest = intro.index === revisions.length - 1;
+  const bornAtOldest = intro.index === 0;
 
   const bornNoteOnly = !bornSourced && introRef.note;
   const nowNoteOnly = !nowSourced && currentRef.note;
 
   const introYear = Number(year(intro.revision.timestamp));
-  // `bornSourced` no longer short-circuits: a claim born with a citation that is
-  // gone now (text intact, so not a removal) is `source-lost`, not `born-sourced`
-  // — otherwise a "sourced" health word sits over a currently-uncited claim.
   const lexicalPrimary: Verdict = bornSourced
     ? nowSourced
       ? "born-sourced"
@@ -137,9 +136,6 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       ? "retrofit"
       : "unsourced-stable";
 
-  // Reconstruct the reformulation chain (Camada 1). The same cache is reused, so
-  // the revision list and contents aren't re-fetched. A genealogy failure must
-  // never break the base lexical trace.
   emit({ phase: "genealogy", hop: 0 });
   const genealogy = await reconstructGenealogy({
     article: input.article,
@@ -157,7 +153,6 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   const originHop = chainOldToNew[0] ?? null;
   const moved = (genealogy?.movedEarlier ?? false) && originHop != null;
 
-  // When genealogy reaches an earlier origin, the verdict is computed there.
   const effectiveBornSourced = moved ? originHop!.sourced : bornSourced;
   const effectiveIntroYear = moved
     ? Number(originHop!.date.slice(0, 4))
@@ -172,15 +167,8 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       ? "retrofit"
       : "unsourced-stable";
 
-  // Removal dominates the badge. A claim that's gone from the current revision is
-  // "removed" — not a sourcing pattern. Without this the Verdict taxonomy had no
-  // slot for it, so a removed-and-never-cited claim leaked an `unsourced-stable`
-  // badge whose own gloss reads "never removed": a claim that both was and wasn't
-  // removed. narrativePrimary stays the sourcing reading for the timeline prose.
   const removed = intro.removedSince;
 
-  // Dual readings when genealogy corrects the lexical reading — never silently
-  // override; show both and let the reader judge (the `ambiguous` identity).
   const corrected = !removed && moved && genealogyPrimary !== lexicalPrimary;
   const primary: Verdict = removed
     ? "removed"
@@ -191,7 +179,6 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
         : lexicalPrimary;
   const narrativePrimary: Verdict = moved ? genealogyPrimary : lexicalPrimary;
 
-  // A reword existed just before the origin but couldn't be safely followed.
   const abstained =
     genealogy?.terminus === "broke:low-overlap" ||
     genealogy?.terminus === "broke:no-anchor-reword";
@@ -307,7 +294,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   const confidence = verdictConfidence({
     corrected,
     abstained,
-    bornAtLatest,
+    bornAtOldest,
     removedSince: intro.removedSince,
     origin: genealogy
       ? {

@@ -98,8 +98,8 @@ export function extractAnchors(sentence: string): Anchor[] {
   };
 
   for (const m of sentence.matchAll(NUMBER_RE)) {
-    const digits = m[0].replace(/[^\d]/g, "");
-    if (digits.length >= 2) add("number", digits);
+    const value = m[0].replace(/,/g, "");
+    if (value.replace(/\D/g, "").length >= 2) add("number", value);
   }
 
   const words = [...sentence.matchAll(WORD_RE)].map((m) => m[0]);

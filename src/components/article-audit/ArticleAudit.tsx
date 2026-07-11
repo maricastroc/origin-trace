@@ -126,7 +126,7 @@ export function ArticleAudit() {
 
         <div className="px-5 py-3 sm:px-6">
           <label className="grid gap-1 sm:grid-cols-[7rem_1fr] sm:items-baseline sm:gap-5">
-            <span className="font-mono text-[11px] uppercase leading-tight tracking-[0.1em] text-ink-muted">
+            <span className="font-mono text-[11px] uppercase leading-tight tracking-widest text-ink-muted">
               Article
               <span className="mt-0.5 block text-[10px] text-ink-faint">
                 title or url

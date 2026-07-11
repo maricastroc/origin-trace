@@ -130,4 +130,18 @@ describe("buildAuditModel", () => {
     expect(model.worstSections).toEqual([]);
     expect(model.longestRun).toBeNull();
   });
+
+  it("does not report a best section when only one body section is rankable", () => {
+    const model = buildAuditModel(
+      audit([
+        section("Only", [
+          claim("unsourced"),
+          claim("unsourced"),
+          claim("sourced"),
+        ]),
+      ]),
+    );
+    expect(model.worstSections.map((s) => s.label)).toEqual(["Only"]);
+    expect(model.bestSection).toBeNull();
+  });
 });

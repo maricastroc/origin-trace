@@ -1,5 +1,6 @@
 import { ClaimNotFoundError, traceClaim } from "@/engine/trace.ts";
 import { getEngineCache } from "@/engine/persistent-cache.ts";
+import { safeLang } from "@/lib/lang";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -8,7 +9,7 @@ export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const article = searchParams.get("article")?.trim();
   const phrase = searchParams.get("phrase")?.trim();
-  const lang = searchParams.get("lang")?.trim() || "en";
+  const lang = safeLang(searchParams.get("lang"));
 
   if (!article || !phrase) {
     return Response.json(
@@ -42,12 +43,12 @@ export async function GET(request: Request): Promise<Response> {
         });
         send({ type: "result", data: provenance });
       } catch (err) {
+        if (!(err instanceof ClaimNotFoundError))
+          console.error("trace failed", err);
         const message =
           err instanceof ClaimNotFoundError
             ? `The phrase wasn't found in the history of "${article}". Try a shorter, more literal excerpt.`
-            : err instanceof Error
-              ? err.message
-              : String(err);
+            : "Couldn't finish the trace — Wikipedia may be unreachable or rate-limiting. Please try again.";
         send({ type: "error", message });
       } finally {
         if (!closed) controller.close();

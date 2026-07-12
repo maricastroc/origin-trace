@@ -114,7 +114,7 @@ export function AuditSummary({
         {lead.total > 0 && (
           <p>
             <span className="text-ink-muted">Lead:</span> {lead.sourced} of{" "}
-            {lead.total} sentences cited inline — the rest are conventionally
+            {lead.total} {" "}sentences cited inline — the rest are conventionally
             sourced in the body (WP:LEADCITE), so they&rsquo;re counted apart
             and kept out of the section ranking.
           </p>

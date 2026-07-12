@@ -33,7 +33,7 @@ function readProgress(p: TraceProgress | null): {
     case "searching": {
       const ratio = Math.min(1, p.read / Math.max(1, p.estimate));
       return {
-        label: "Binary-searching for the introduction…",
+        label: "Sampling and bisecting for the introduction…",
         fraction: 0.2 + 0.6 * ratio,
         detail: `Read ${p.read} revision${p.read === 1 ? "" : "s"} so far.`,
       };

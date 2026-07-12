@@ -37,27 +37,29 @@ export function Hero() {
             <span className="text-accent" aria-hidden="true">
               ▪
             </span>
-            <span>reads every revision</span>
+            <span>reads the revision history</span>
             <span className="text-line-strong" aria-hidden="true">
               /
             </span>
-            <span>binary-searches the origin</span>
+            <span>bisects to the origin</span>
             <span className="text-line-strong" aria-hidden="true">
               /
             </span>
             <span className="text-ink-muted">never an LLM</span>
           </p>
 
-          {/* One solid-accent primary that means the same thing as the nav's
-              "Trace live" — so the two red buttons reinforce a single entry
-              point instead of competing. Browsing cases is the outline
-              secondary; the method is a tertiary text link. */}
+          {/* Primary CTA runs a real trace on the flagship citogenesis case the
+              instant it's clicked — the product's "aha" before any of the theory
+              below. It deep-links into the live tool (?trace=…&article=…), which
+              bootstraps from the URL, scrolls to #live, and auto-runs the trace.
+              Browsing cases is the outline secondary; the method is a tertiary
+              text link. */}
           <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3">
             <a
-              href="#live"
+              href={"/?trace=Brazilian%20aardvark&article=Coati"}
               className="group inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-surface-2 transition-colors hover:bg-accent-strong"
             >
-              Trace a claim
+              Trace the &ldquo;Brazilian aardvark&rdquo;
               <ArrowRight
                 className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
                 aria-hidden="true"

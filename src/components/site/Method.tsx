@@ -19,16 +19,16 @@ const PIPELINE: {
   },
   {
     n: "03",
-    title: "Read the whole history",
+    title: "Enumerate the history",
     detail:
-      "Every revision, oldest to newest. Finite and enumerable — a closed corpus.",
-    stat: { value: "1,690", unit: "revisions · Quokka, in full" },
+      "List every revision, oldest to newest — finite and enumerable, a closed corpus. That closure is what makes silence provable.",
+    stat: { value: "1,690", unit: "revisions · Quokka, enumerated" },
   },
   {
     n: "04",
     title: "Locate the origin",
     detail:
-      "Binary-search the history down to the exact revision the claim first appeared.",
+      "Sample, then bisect — reading only what it needs — down to the exact revision the claim first appeared.",
   },
   {
     n: "05",
@@ -49,7 +49,7 @@ const PILLARS = [
     n: "02",
     kicker: "closed corpus",
     title: "Silence is provable",
-    body: "An article's revision history is finite and enumerable. “I read everything” is provable — so “unsourced until 2019” is a proven fact, not an “I didn't find it.” Abstention becomes trustworthy.",
+    body: "An article's revision history is finite and enumerable — a closed corpus. That's what lets the search prove a negative: “unsourced until 2019” is a fact about the whole history, not an “I didn't find it.” Abstention becomes trustworthy.",
   },
   {
     n: "03",
@@ -85,8 +85,9 @@ export function Method() {
         <div className="mt-14">
           <p className="max-w-2xl text-[15px] leading-relaxed text-ink-muted">
             Every verdict is reconstructed from the article&rsquo;s{" "}
-            <span className="text-ink">entire revision history</span> — read in
-            full, never inferred by an LLM.
+            <span className="text-ink">revision history</span> — read as
+            wikitext and diffed revision to revision. Deterministic string work,
+            not a model&rsquo;s guess.
           </p>
 
           <ol className="mt-8 grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-5">
@@ -141,6 +142,21 @@ export function Method() {
               );
             })}
           </ol>
+        </div>
+
+        <div className="mt-12 max-w-2xl border-l-2 border-accent pl-4 sm:pl-5">
+          <p className="font-voice text-[18px] italic leading-snug text-ink sm:text-[20px]">
+            The hard case: a claim&rsquo;s presence isn&rsquo;t monotonic. It
+            can be added, removed, and re-added across an article&rsquo;s life.
+          </p>
+          <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">
+            A plain binary search would cave here — landing on whichever
+            add-or-remove edge it happened to hit. So the search never trusts
+            the first occurrence it finds: it re-scans everything earlier for an
+            older origin, and when a re-addition means the true birth may
+            predate what it can prove, it lowers its own confidence and says so
+            — instead of pinning a false date.
+          </p>
         </div>
 
         <div className="mt-16">

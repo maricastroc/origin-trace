@@ -38,9 +38,9 @@ export function HeroSpecimen() {
 
         <div className="mt-6 flex items-end justify-between border-t border-line pt-4">
           <span className="kicker leading-relaxed">
-            75 / 1690 revisions read
+            150 / 1690 revisions read
             <br />
-            binary search · closed corpus
+            sample-and-bisect · closed corpus
           </span>
           <div className="-mb-1">
             <VerdictStamp verdict="retrofit" size="sm" />

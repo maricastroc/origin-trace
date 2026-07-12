@@ -29,7 +29,7 @@ export function CorpusReceipt({
                 />
                 <Stat
                   value={read.toLocaleString()}
-                  unit="read · binary search"
+                  unit="read · sample-and-bisect"
                 />
               </>
             )}
@@ -57,14 +57,14 @@ export function CorpusReceipt({
         ) : truncated ? (
           <>
             The history ran past the page cap, so closure isn&rsquo;t proven for
-            this trace — binary search pinned the origin from the{" "}
+            this trace — the search pinned the origin from the{" "}
             {read!.toLocaleString()} revisions it read, but earlier occurrences
             can&rsquo;t be ruled out.
           </>
         ) : (
           <>
-            The full history is finite and enumerable. Binary search pinned the
-            origin by reading {read!.toLocaleString()} of{" "}
+            The full history is finite and enumerable. Sampling and bisection
+            pinned the origin by reading {read!.toLocaleString()} of{" "}
             {total.toLocaleString()} revisions — and because the corpus is
             closed, everything below the origin is provably absent, not
             unsampled.

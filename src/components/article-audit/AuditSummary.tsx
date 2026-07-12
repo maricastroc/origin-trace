@@ -102,6 +102,15 @@ export function AuditSummary({
       </dl>
 
       <div className="mt-4 flex flex-col gap-2 text-[12.5px] leading-relaxed text-ink-faint">
+        <p>
+          <span className="text-ink-muted">
+            Coverage counts whether a sentence carries an inline citation — not
+            whether that citation supports it.
+          </span>{" "}
+          The gap between &ldquo;has a source&rdquo; and &ldquo;the source
+          checks out&rdquo; is where citogenesis hides, and it&rsquo;s the one
+          thing this map can&rsquo;t see. That&rsquo;s what the trace is for.
+        </p>
         {lead.total > 0 && (
           <p>
             <span className="text-ink-muted">Lead:</span> {lead.sourced} of{" "}

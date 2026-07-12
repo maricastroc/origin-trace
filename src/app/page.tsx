@@ -50,7 +50,7 @@ export default function Home() {
             <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-muted">
               Paste a claim. Origin Trace tries to resolve which article it
               belongs to — and when the scope is ambiguous, it shows you the
-              candidates instead of guessing. Then it binary-searches that
+              candidates instead of guessing. Then it samples and bisects that
               article&rsquo;s real history down to the revision that introduced
               the claim.
             </p>

@@ -586,6 +586,26 @@ describe("detectRefNear", () => {
     expect(det.source).toMatchObject({ label: "Roller", year: 2010 });
   });
 
+  it("detects a citation hanging after a closing quote", () => {
+    const content =
+      'Parkes recalled, "From Edinburgh we would drive up to the family croft at [[Durness]], which was from about the time Lennon was nine years old until he was about 16."{{sfn|Harry|2000b|p=702}} His uncle George died of a liver haemorrhage.{{sfn|Harry|2000b|p=819}}';
+
+    const det = detectRefNear(content, "the family croft at Durness");
+
+    expect(det.sourced).toBe(true);
+
+    expect(det.source).toMatchObject({ label: "Harry", year: 2000 });
+  });
+
+  it("does not invent a source when a quote ends the sentence uncited", () => {
+    const det = detectRefNear(
+      'Parkes recalled, "we drove to the croft at [[Durness]]." His uncle George died.{{sfn|Harry|2000b|p=819}}',
+      "the croft at Durness",
+    );
+
+    expect(det).toMatchObject({ sourced: false, note: false, source: null });
+  });
+
   it("returns nothing when the phrase is absent from the content", () => {
     const det = detectRefNear(
       "Completely unrelated prose here.",

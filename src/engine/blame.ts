@@ -342,7 +342,7 @@ function scopeToSentence(paragraph: string, from: number): string {
       let p = end;
       while (
         p < paragraph.length &&
-        /\s/.test(paragraph[p]) &&
+        /[\s"'”’»]/.test(paragraph[p]) &&
         !inRanges(p, ranges)
       )
         p++;

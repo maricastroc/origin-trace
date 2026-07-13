@@ -9,6 +9,7 @@
   --ink: #221e18;
   --ink-muted: #5b5246;
   --ink-faint: #6d6354;
+  --ink-ghost: #a89c86;
   --line: #e2d9c7;
   --line-strong: #cabda3;
 
@@ -34,6 +35,7 @@
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
   --color-ink-faint: var(--ink-faint);
+  --color-ink-ghost: var(--ink-ghost);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
 

@@ -86,7 +86,7 @@ export function AuditMap({
           value={query}
           onChange={(e) => onQuery(e.target.value)}
           placeholder="Find in article…"
-          className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-faint"
+          className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-ghost"
         />
         {query && (
           <button

@@ -2,6 +2,13 @@ import type { ClaimSource } from "@/types/ClaimSource";
 import type { SourceType } from "@/types/SourceType";
 import type { RevisionMeta } from "./wikipedia.ts";
 
+/** Inline formatting templates that render as their text, not their name — so a
+ *  pasted phrase (rendered form) matches wikitext that wraps a word in one. */
+const INLINE_TEMPLATE =
+  /\{\{\s*(?:em|strong|nowrap|nobr|nowraplinks|lang|lang-\w+|transl|transliteration|sic|typo)\b([^{}]*)\}\}/gi;
+/** Micro-templates that render as whitespace. */
+const SPACE_TEMPLATE = /\{\{\s*(?:nbsp|spaces?|thinsp|hairsp)\s*(?:\|[^{}]*)?\}\}/gi;
+
 export function normalize(text: string): string {
   return text
     .toLowerCase()
@@ -9,6 +16,15 @@ export function normalize(text: string): string {
     .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\[\[(?:[^\]]*\|)?([^\]|]*)\]\]/g, "$1")
+    // Unwrap inline formatting templates to their rendered text: {{em|strong}} →
+    // strong, {{lang|fr|bonjour}} → bonjour. Keep the last positional argument;
+    // drop the template name and any named params. Otherwise the template name
+    // ("em") leaks into the text and breaks the phrase match.
+    .replace(INLINE_TEMPLATE, (_m, body: string) => {
+      const positional = body.split("|").filter((p) => p && !p.includes("="));
+      return ` ${positional[positional.length - 1] ?? ""} `;
+    })
+    .replace(SPACE_TEMPLATE, " ")
     .replace(/[’‘`]/g, "'")
     .replace(/'{2,}/g, "")
     .replace(/[^a-z0-9']+/g, " ")

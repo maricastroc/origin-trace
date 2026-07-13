@@ -500,7 +500,13 @@ function unwrapTemplate(tpl: string): string {
   if (["lang", "transl", "transliteration"].includes(name)) {
     return args[args.length - 1] ?? "";
   }
-  if (["nowrap", "nobr", "sic", "'"].includes(name)) return args.join(" ");
+  // Inline emphasis/formatting wrappers render as their text.
+  if (
+    ["nowrap", "nobr", "nowraplinks", "sic", "typo", "em", "strong", "'"].includes(
+      name,
+    )
+  )
+    return args.join(" ");
   return "";
 }
 

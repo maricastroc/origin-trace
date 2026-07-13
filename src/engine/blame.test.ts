@@ -98,6 +98,20 @@ describe("normalize / containsPhrase", () => {
     ).toBe(true);
     expect(containsPhrase("A different sentence.", "quokka")).toBe(false);
   });
+
+  it("unwraps inline formatting templates so a rendered phrase still matches", () => {
+    // Real John Lennon bug: the article wraps words in {{em|…}}, which rendered
+    // as plain text but whose template name ("em") leaked into the match and
+    // made the engine wrongly report the still-present claim as removed.
+    expect(
+      containsPhrase(
+        "Five {{em|strong}}, {{em|intelligent}}, {{em|beautiful}} women, five sisters.",
+        "Five strong, intelligent, beautiful women, five sisters",
+      ),
+    ).toBe(true);
+    expect(normalize("a {{lang|fr|bonjour}} b")).toBe("a bonjour b");
+    expect(normalize("held{{nbsp}}together")).toBe("held together");
+  });
 });
 
 describe("findIntroduction", () => {

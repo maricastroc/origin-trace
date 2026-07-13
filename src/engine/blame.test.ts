@@ -606,6 +606,37 @@ describe("detectRefNear", () => {
     expect(det).toMatchObject({ sourced: false, note: false, source: null });
   });
 
+  it("attributes a blockquote's tail citation to a sentence in its middle", () => {
+    const content =
+      '{{blockquote|There were five women that were my family. Now those women were fantastic. I would infiltrate the other boys\' minds. I could say, "Parents are not gods."{{sfn|Sheff|2000|pp=158–59}}}}';
+
+    const det = detectRefNear(content, "infiltrate the other boys' minds");
+
+    expect(det.sourced).toBe(true);
+
+    expect(det.source).toMatchObject({ label: "Sheff", year: 2000 });
+  });
+
+  it("leaves an uncited blockquote unsourced", () => {
+    const det = detectRefNear(
+      "{{blockquote|There were five women that were my family. I would infiltrate the other boys' minds.}}",
+      "infiltrate the other boys' minds",
+    );
+
+    expect(det).toMatchObject({ sourced: false, note: false, source: null });
+  });
+
+  it("detects a citation whose quote parameter nests a template", () => {
+    const content =
+      'He took him on trips to local cinemas.{{sfn|Spitz|2005|p=32: "Parkes recalled{{nbsp}}[...] to the cinema three times a day"}} During the holidays they travelled.';
+
+    const det = detectRefNear(content, "took him on trips to local cinemas");
+
+    expect(det.sourced).toBe(true);
+
+    expect(det.source).toMatchObject({ label: "Spitz", year: 2005 });
+  });
+
   it("returns nothing when the phrase is absent from the content", () => {
     const det = detectRefNear(
       "Completely unrelated prose here.",

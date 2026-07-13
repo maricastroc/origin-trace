@@ -246,8 +246,13 @@ export function detectRefNear(
   const at = anchorInProse(paragraph, phrase, masked);
 
   const from = at >= 0 ? at : 0;
-  
-  const tail = scopeToSentence(paragraph, from);
+
+  // A blockquote is one quotation from one source: a citation at its end backs
+  // every sentence inside it. Scope to the block's tail rather than stopping at
+  // the phrase's own sentence, which would miss that shared citation.
+  const tail = isQuotationBlock(paragraph)
+    ? paragraph.slice(from)
+    : scopeToSentence(paragraph, from);
 
   const markers = collectMarkers(tail, tail.length, defs);
 
@@ -303,6 +308,12 @@ const SCOPE_ABBR = new Set([
   "a.d",
   "b.c",
 ]);
+
+function isQuotationBlock(paragraph: string): boolean {
+  return /^\s*(?:\{\{\s*(?:blockquote|block quote|quotation|cquote|rquote|quote box|quotebox|quote)\b|<blockquote\b)/i.test(
+    paragraph,
+  );
+}
 
 function scopeToSentence(paragraph: string, from: number): string {
   const ranges = maskedRanges(paragraph);
@@ -552,13 +563,21 @@ function balancedTemplate(text: string, start: number): string | null {
 
 export function maskedRanges(text: string): [number, number][] {
   const ranges: [number, number][] = [];
-  for (const re of [
-    /<ref[^>]*>[\s\S]*?<\/ref>/g,
-    /<ref[^>]*\/>/g,
-    /\{\{[\s\S]*?\}\}/g,
-  ]) {
+  for (const re of [/<ref[^>]*>[\s\S]*?<\/ref>/g, /<ref[^>]*\/>/g]) {
     for (const m of text.matchAll(re)) {
       ranges.push([m.index, m.index + m[0].length]);
+    }
+  }
+  // Balanced scan for {{...}} so a template with a nested one — e.g. an {{sfn}}
+  // whose quote parameter contains {{nbsp}} — masks as a single range instead of
+  // being truncated at the first inner "}}", which would strand the citation.
+  for (let i = 0; i < text.length - 1; i++) {
+    if (text[i] === "{" && text[i + 1] === "{") {
+      const block = balancedTemplate(text, i);
+      if (block) {
+        ranges.push([i, i + block.length]);
+        i += block.length - 1;
+      }
     }
   }
   return ranges;

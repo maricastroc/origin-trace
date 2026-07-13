@@ -30,6 +30,11 @@ export interface IntroductionResult {
   priorRevision: RevisionMeta | null;
   removedSince: boolean;
   assumptionViolated: boolean;
+  /** True only if every revision below the located origin was actually read and
+   *  found absent — so the origin is the *proven* first occurrence. False when
+   *  the sub-origin range was sampled, not exhaustively read: a valid occurrence
+   *  was found, but a sparse earlier one there cannot be ruled out. */
+  earliestProven: boolean;
   contentFetches: number;
 }
 
@@ -80,12 +85,25 @@ export async function findIntroduction(
 
   const foundContains = await contains(first);
 
+  // The origin is the *proven* earliest occurrence only if every revision below
+  // it was actually evaluated (via `seen`) and found absent. The sample-then-
+  // bisect skips revisions on large spans, so an unread gap below the origin
+  // could still hide a sparse earlier occurrence — say so rather than claim proof.
+  let earliestProven = true;
+  for (let i = 0; i < first; i++) {
+    if (!seen.has(i)) {
+      earliestProven = false;
+      break;
+    }
+  }
+
   return {
     index: first,
     revision: revisions[first],
     priorRevision: first > 0 ? revisions[first - 1] : null,
     removedSince: !presentNow,
     assumptionViolated: !foundContains || priorContains,
+    earliestProven,
     contentFetches: fetches,
   };
 }

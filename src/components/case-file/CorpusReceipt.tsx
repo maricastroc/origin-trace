@@ -10,9 +10,15 @@ export function CorpusReceipt({
   corpus: Corpus;
   manual: boolean;
 }) {
-  const { read, total, truncated } = corpus;
+  const { read, total, truncated, originProven } = corpus;
 
   const engine = typeof read === "number";
+
+  // Closure (we listed every revision) is proven when the history wasn't
+  // truncated. Origin-earliest (this is the *first* occurrence) is a separate,
+  // stronger claim — proven only when the search read every revision below the
+  // origin. Sampling leaves that unproven, and the copy must not conflate them.
+  const proven = originProven === true;
 
   return (
     <section className="rounded-xl border border-line-strong bg-surface-1/40 p-5">
@@ -41,8 +47,10 @@ export function CorpusReceipt({
             <Tag>traced by hand</Tag>
           ) : truncated ? (
             <Tag tone="warn">history truncated</Tag>
+          ) : proven ? (
+            <Tag tone="ok">origin proven</Tag>
           ) : (
-            <Tag tone="ok">closure proven</Tag>
+            <Tag tone="warn">earliest not proven</Tag>
           )}
         </div>
       </div>
@@ -61,13 +69,22 @@ export function CorpusReceipt({
             {read!.toLocaleString()} revisions it read, but earlier occurrences
             can&rsquo;t be ruled out.
           </>
+        ) : proven ? (
+          <>
+            The full history is finite and enumerable, and the search read every
+            revision below the origin ({read!.toLocaleString()} of{" "}
+            {total.toLocaleString()} in all) — so this is the proven first
+            occurrence: everything earlier is confirmed absent, not merely
+            unsampled.
+          </>
         ) : (
           <>
-            The full history is finite and enumerable. Sampling and bisection
-            pinned the origin by reading {read!.toLocaleString()} of{" "}
-            {total.toLocaleString()} revisions — and because the corpus is
-            closed, everything below the origin is provably absent, not
-            unsampled.
+            All {total.toLocaleString()} revisions were enumerated, but the
+            search read only {read!.toLocaleString()} of them — sampling the
+            range below the origin rather than reading it exhaustively. So the
+            origin shown is a confirmed occurrence, with its immediate
+            predecessor absent, yet a sparse earlier occurrence in an unread gap
+            can&rsquo;t be ruled out.
           </>
         )}
       </p>

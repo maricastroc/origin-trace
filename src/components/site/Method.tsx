@@ -28,7 +28,7 @@ const PIPELINE: {
     n: "04",
     title: "Locate the origin",
     detail:
-      "Sample, then bisect — reading only what it needs — down to the exact revision the claim first appeared.",
+      "Sample, then bisect — reading only what it needs — to the earliest occurrence it can confirm, and it flags when a sparse earlier one can't be ruled out.",
   },
   {
     n: "05",
@@ -49,7 +49,7 @@ const PILLARS = [
     n: "02",
     kicker: "closed corpus",
     title: "Silence is provable",
-    body: "An article's revision history is finite and enumerable — a closed corpus. That's what lets the search prove a negative: “unsourced until 2019” is a fact about the whole history, not an “I didn't find it.” Abstention becomes trustworthy.",
+    body: "An article's revision history is finite and enumerable — a closed corpus. When the search reads every revision below an origin, “unsourced until 2019” is a proof about the whole history, not an “I didn't find it” — and when it only samples that range, it says so rather than overclaiming. Abstention becomes trustworthy.",
   },
   {
     n: "03",
@@ -152,10 +152,11 @@ export function Method() {
           <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">
             A plain binary search would cave here — landing on whichever
             add-or-remove edge it happened to hit. So the search never trusts
-            the first occurrence it finds: it re-scans everything earlier for an
-            older origin, and when a re-addition means the true birth may
-            predate what it can prove, it lowers its own confidence and says so
-            — instead of pinning a false date.
+            the first occurrence it finds: it re-scans earlier revisions for an
+            older origin, and when the true birth may predate what it actually
+            read — a re-addition, or a sparse island below the sampled range —
+            it lowers its own confidence and says so, instead of pinning a false
+            date.
           </p>
         </div>
 

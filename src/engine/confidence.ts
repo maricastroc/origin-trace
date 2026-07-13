@@ -10,6 +10,10 @@ export interface ConfidenceSignals {
    *  claim's true birth may predate the trace window. */
   bornAtOldest: boolean;
   removedSince: boolean;
+  /** The search sampled the revisions below the origin rather than reading them
+   *  all, so a sparse earlier occurrence can't be ruled out — the exact first
+   *  appearance isn't proven. Optional; absent means proven/not-applicable. */
+  earliestUnproven?: boolean;
   origin: {
     reach: OriginReach;
     bulkInsertion: boolean;
@@ -41,6 +45,8 @@ const REASONS = {
   abstained: "a probable earlier wording exists but couldn't be verified",
   removedSince:
     "the removal revision wasn't located, so the timeline is incomplete",
+  earliestUnproven:
+    "the revisions below the origin were sampled, not all read — a sparse earlier occurrence can't be ruled out, so the exact first appearance isn't proven",
 } as const;
 
 export function verdictConfidence(s: ConfidenceSignals): ConfidenceResult {
@@ -77,6 +83,7 @@ export function verdictConfidence(s: ConfidenceSignals): ConfidenceResult {
 
   if (s.abstained) dock(1, REASONS.abstained);
   if (s.removedSince) dock(1, REASONS.removedSince);
+  if (s.earliestUnproven) dock(1, REASONS.earliestUnproven);
 
   const level: Confidence =
     penalty <= 0 ? "high" : penalty === 1 ? "medium" : "low";

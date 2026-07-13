@@ -42,6 +42,11 @@ export interface ClaimProvenance {
       read?: number;
       total: number;
       truncated: boolean;
+      /** True only if the search read every revision below the origin and found
+       *  it absent — the origin is the proven first occurrence. False/absent
+       *  when the sub-origin range was sampled: a valid occurrence was found,
+       *  but a sparse earlier one cannot be ruled out. */
+      originProven?: boolean;
     };
   };
 }

@@ -105,6 +105,12 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   const intro = await findIntroduction(revisions, input.phrase, read);
   if (intro === null) throw new ClaimNotFoundError(input.article, input.phrase);
   stage("search");
+  // Was the origin *proven* the first occurrence (every earlier revision read
+  // and absent), or only sampled? `earliestProven` covers everything below the
+  // lexical origin — which also covers any earlier genealogy origin, since that
+  // sits inside the same verified prefix. Truncation means we never even had the
+  // full corpus, so it can't be proven either way.
+  const originProven = intro.earliestProven && !truncated;
   emit({
     phase: "located",
     year: year(intro.revision.timestamp),
@@ -209,6 +215,14 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
         )
       : null;
 
+  // A "claim-absent" event asserts the claim was not there before the origin.
+  // Only say it *doesn't exist yet* (a proof) when absence below was exhaustively
+  // verified; when sampled, state only the verified fact — the immediate prior is
+  // absent — without implying nothing earlier ever existed.
+  const absentNote = originProven
+    ? "the claim does not exist in the article yet"
+    : "not present in the revision just before this one — an earlier sparse occurrence below the searched range isn't ruled out";
+
   let timeline: TimelineEvent[];
   if (moved) {
     timeline = chainTimeline(
@@ -221,6 +235,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       intro.removedSince,
       input.phrase,
       abstained,
+      absentNote,
     );
   } else {
     timeline = [];
@@ -229,7 +244,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
         id: "e0",
         date: year(intro.priorRevision.timestamp),
         kind: "claim-absent",
-        note: "the claim does not exist in the article yet",
+        note: absentNote,
       });
     }
     timeline.push({
@@ -309,6 +324,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     abstained,
     bornAtOldest,
     removedSince: intro.removedSince,
+    earliestUnproven: !intro.earliestProven,
     origin: genealogy
       ? {
           reach: residualShape(genealogy.terminus),
@@ -358,6 +374,10 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
         read: cache.size,
         total: revisions.length,
         truncated,
+        // Whether the origin is the *proven* first occurrence (every earlier
+        // revision read and absent) or a found occurrence with earlier sparse
+        // ones not ruled out. Drives the corpus receipt's honesty.
+        originProven,
       },
       ...(() => {
         const notes = buildNotes(intro);
@@ -394,6 +414,7 @@ function chainTimeline(
   removedSince: boolean,
   phrase: string,
   abstained: boolean,
+  absentNote: string,
 ): TimelineEvent[] {
   const events: TimelineEvent[] = [];
   const origin = oldToNew[0];
@@ -404,7 +425,7 @@ function chainTimeline(
       id: "e-absent",
       date: year(revisions[originIdx - 1].timestamp),
       kind: "claim-absent",
-      note: "the idea does not appear in the article yet",
+      note: absentNote,
     });
   }
 

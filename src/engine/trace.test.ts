@@ -321,3 +321,77 @@ describe("traceClaim — verdicts", () => {
     expect(phases).toContain("detecting");
   });
 });
+
+describe("traceClaim — origin honesty (proven vs. sampled first occurrence)", () => {
+  it("presents a fully-read origin as the PROVEN first occurrence", async () => {
+    // A short history: the search reads every revision below the origin, so
+    // absence beneath it is proven — the strong claim is warranted.
+    const claim =
+      "the observatory was established on the ridge in 1888 by the society";
+    const fetchJson = history([
+      { revid: 1, timestamp: "2010-01-01T00:00:00Z", content: UNRELATED },
+      { revid: 2, timestamp: "2013-01-01T00:00:00Z", content: `Background prose. ${claim}.` },
+      { revid: 3, timestamp: "2020-01-01T00:00:00Z", content: `Background prose. ${claim}.` },
+    ]);
+
+    const prov = await traceClaim({
+      article: "Subject",
+      phrase: "established on the ridge in 1888",
+      fetchJson,
+    });
+
+    expect(prov.meta.corpus?.originProven).toBe(true);
+
+    // The claim-absent event asserts genuine non-existence (a proof).
+    const absent = prov.timeline.find((e) => e.kind === "claim-absent");
+    expect(absent?.note ?? "").toMatch(/does not exist in the article yet/i);
+
+    // No "sampled / not proven" caveat on confidence.
+    expect((prov.verdict.confidenceReasons ?? []).join(" ")).not.toMatch(
+      /sampled|isn't proven|not proven/i,
+    );
+  });
+
+  it("does NOT claim proof when a sparse earlier occurrence below the origin can't be ruled out", async () => {
+    // 1000 revisions, present only at index 3 and from index 500 on. The
+    // sample-then-bisect can't reach the lone index-3 island, so it settles on
+    // ~500. The result must find a valid occurrence but explicitly refuse to
+    // call it the proven first one.
+    const CLAIM = "the sparse figure was recorded as 4271 in the survey";
+    const present = (i: number) => i === 3 || i >= 500;
+    const revs: FakeRevision[] = Array.from({ length: 1000 }, (_, i) => ({
+      revid: 1000 + i,
+      parentid: i === 0 ? 0 : 1000 + i - 1,
+      timestamp: new Date(Date.UTC(2000, 0, 1) + i * 3 * 86_400_000)
+        .toISOString()
+        .replace(/\.\d{3}Z$/, "Z"),
+      content: present(i)
+        ? `Overview here. General context stays constant. The ${CLAIM} appears in this revision. Discussion follows.`
+        : `Overview here. General context stays constant. Discussion follows.`,
+    }));
+
+    const prov = await traceClaim({
+      article: "Subject",
+      phrase: CLAIM,
+      fetchJson: history(revs),
+    });
+
+    // A valid occurrence WAS found (the claim is located, not thrown away)…
+    expect(
+      prov.timeline.some((e) => e.kind === "claim-introduced"),
+    ).toBe(true);
+
+    // …but it is NOT presented as the proven earliest.
+    expect(prov.meta.corpus?.originProven).toBe(false);
+
+    const absent = prov.timeline.find((e) => e.kind === "claim-absent");
+    expect(absent?.note ?? "").not.toMatch(/does not exist in the article yet/i);
+    expect(absent?.note ?? "").toMatch(/ruled out/i);
+
+    // The verdict itself is not "high", and it names the reason.
+    expect(prov.verdict.confidence).not.toBe("high");
+    expect((prov.verdict.confidenceReasons ?? []).join(" ")).toMatch(
+      /sampled|isn't proven|not proven/i,
+    );
+  });
+});

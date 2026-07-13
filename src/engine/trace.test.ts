@@ -227,6 +227,28 @@ describe("traceClaim — verdicts", () => {
     ).rejects.toBeInstanceOf(ClaimNotFoundError);
   });
 
+  it("still closes the listing and search stages when the phrase is never found", async () => {
+    // The not-found path throws before genealogy, but the timing report must
+    // stay complete: listing and search both did work and must be marked.
+    const fetchJson = history([
+      { revid: 1, timestamp: "2010-01-01T00:00:00Z", content: UNRELATED },
+      { revid: 2, timestamp: "2020-01-01T00:00:00Z", content: UNRELATED },
+    ]);
+    const stages: string[] = [];
+
+    await expect(
+      traceClaim({
+        article: "Subject",
+        phrase: "a phrase that is simply not present",
+        fetchJson,
+        onStage: (s) => stages.push(s),
+      }),
+    ).rejects.toBeInstanceOf(ClaimNotFoundError);
+
+    expect(stages).toContain("listing");
+    expect(stages).toContain("search");
+  });
+
   it("reconstructs the reformulation chain and shows dual readings on a correction", async () => {
     const prov = await traceClaim({
       article: "Subject",

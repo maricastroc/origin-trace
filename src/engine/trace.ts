@@ -96,15 +96,17 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
 
   emit({ phase: "listing" });
   const { revisions, truncated } = await client.listRevisions(input.article);
+  // Close each stage the moment its work finishes, *before* any not-found guard,
+  // so the timing report stays complete even when the phrase is never located.
+  stage("listing");
   if (revisions.length === 0)
     throw new ClaimNotFoundError(input.article, input.phrase);
   estimate = Math.max(6, Math.ceil(Math.log2(revisions.length + 1)) * 2);
   emit({ phase: "listed", revisions: revisions.length, truncated });
-  stage("listing");
 
   const intro = await findIntroduction(revisions, input.phrase, read);
-  if (intro === null) throw new ClaimNotFoundError(input.article, input.phrase);
   stage("search");
+  if (intro === null) throw new ClaimNotFoundError(input.article, input.phrase);
   // Was the origin *proven* the first occurrence (every earlier revision read
   // and absent), or only sampled? `earliestProven` covers everything below the
   // lexical origin — which also covers any earlier genealogy origin, since that

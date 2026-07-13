@@ -14,8 +14,14 @@ export type FetchJson = (url: string) => Promise<unknown>;
 const USER_AGENT =
   "OriginTrace/0.1 (claim-provenance research; https://github.com/origin-trace)";
 
-const WINDOW_COUNT = 12;
-const WINDOW_CONCURRENCY = 6;
+// Split a long history into this many concurrent time-windows, fetching this many
+// at once. Measured sweep (Jupiter 8.9k revs): 24/12 halves listing wall vs the
+// old 12/6 (7.8s→3.8s) with zero 429s and a byte-identical merged list; 24 windows
+// keep each ≤1 page on typical articles, and 12-wide is as fast as 24-wide at half
+// the connection pressure. `budget = maxPages/windowCount`, so total capacity (and
+// the truncation threshold) is unchanged.
+const WINDOW_COUNT = 24;
+const WINDOW_CONCURRENCY = 12;
 const WINDOW_BIAS = 2;
 // Prefetch batches are only log-bounded in article size (~2·log₂(n) probes), not
 // a fixed constant, so cap how many cache reads are in flight at once rather than
@@ -133,6 +139,12 @@ export interface WikipediaClientOptions {
   fetchJson?: FetchJson;
   maxPages?: number;
   cache?: EngineCache;
+  /** How many concurrent time-windows to split a long history into, and how many
+   *  to fetch at once. Default to the module constants; overridable for tuning /
+   *  experiments. Higher values shorten the critical path but raise concurrency
+   *  against the API — the windows dedupe to the exact serial list either way. */
+  windowCount?: number;
+  windowConcurrency?: number;
 }
 
 export interface RevisionList {
@@ -145,12 +157,16 @@ export class WikipediaClient {
   private readonly fetchJson: FetchJson;
   private readonly maxPages: number;
   private readonly cache?: EngineCache;
+  private readonly windowCount: number;
+  private readonly windowConcurrency: number;
 
   constructor(opts: WikipediaClientOptions = {}) {
     this.lang = opts.lang ?? "en";
     this.fetchJson = opts.fetchJson ?? defaultFetchJson;
     this.maxPages = opts.maxPages ?? 200;
     this.cache = opts.cache;
+    this.windowCount = opts.windowCount ?? WINDOW_COUNT;
+    this.windowConcurrency = opts.windowConcurrency ?? WINDOW_CONCURRENCY;
   }
 
   private endpoint(params: Record<string, string>): string {
@@ -186,7 +202,7 @@ export class WikipediaClient {
     const startTs =
       firstPage.revisions[firstPage.revisions.length - 1]?.timestamp ?? "";
 
-    const windows = planTimeWindows(startTs, latest, WINDOW_COUNT);
+    const windows = planTimeWindows(startTs, latest, this.windowCount);
     if (windows.length === 0) {
       const rest = await this.collectRange(
         title,
@@ -200,7 +216,7 @@ export class WikipediaClient {
     }
 
     const budget = Math.max(1, Math.floor(this.maxPages / windows.length));
-    const parts = await mapConcurrent(windows, WINDOW_CONCURRENCY, (w) =>
+    const parts = await mapConcurrent(windows, this.windowConcurrency, (w) =>
       this.collectRange(title, w, budget),
     );
     const truncated = parts.some((p) => p.continued);

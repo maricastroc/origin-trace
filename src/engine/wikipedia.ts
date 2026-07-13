@@ -17,14 +17,116 @@ const USER_AGENT =
 const WINDOW_COUNT = 12;
 const WINDOW_CONCURRENCY = 6;
 const WINDOW_BIAS = 2;
+// Prefetch batches are only log-bounded in article size (~2·log₂(n) probes), not
+// a fixed constant, so cap how many cache reads are in flight at once rather than
+// opening one connection per revid.
+const CACHE_READ_CONCURRENCY = 16;
 
-const defaultFetchJson: FetchJson = async (url) => {
-  const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
-  if (!res.ok) {
-    throw new Error(`Wikipedia API ${res.status} ${res.statusText} for ${url}`);
-  }
-  return res.json();
-};
+export interface FetchJsonOptions {
+  /** Fired before each backoff wait, for observability (e.g. a retry counter).
+   *  `reason` is the HTTP status or the API error code that triggered the wait. */
+  onRetry?: (info: { attempt: number; reason: string; waitMs: number }) => void;
+  maxRetries?: number;
+  baseDelayMs?: number;
+  maxDelayMs?: number;
+  /** Abort in-flight requests and cancel any pending backoff (e.g. when the
+   *  client disconnects). Threaded to `fetch` and to the wait between retries. */
+  signal?: AbortSignal;
+}
+
+/** HTTP statuses worth retrying: 429 (rate limit) and 503 (overload). */
+const RETRYABLE_STATUS = new Set([429, 503]);
+/** MediaWiki action-API error codes that mean "back off and retry". The API
+ *  returns these in a **200** body (`{error:{code}}`) with a `Retry-After`
+ *  header, not only as an HTTP status — so a status-only check would miss them. */
+const RETRYABLE_API_ERROR = new Set(["maxlag", "ratelimited", "readonly"]);
+
+interface ApiErrorShape {
+  error?: { code?: string };
+  errors?: Array<{ code?: string }>;
+}
+
+function abortError(): Error {
+  return new DOMException("The operation was aborted.", "AbortError");
+}
+
+/** A backoff wait that resolves after `ms`, or rejects immediately if `signal`
+ *  aborts — so a cancelled request never sits out its retry delay. */
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(abortError());
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(abortError());
+      },
+      { once: true },
+    );
+  });
+}
+
+/** Build a {@link FetchJson} that survives transient rate-limiting instead of
+ *  aborting a whole trace. It retries on HTTP 429/503 **and** on the action
+ *  API's in-body `maxlag`/`ratelimited` errors, honouring `Retry-After` and
+ *  otherwise backing off exponentially with jitter. `fetchImpl` is injectable
+ *  for tests; production uses the global `fetch`. The success path is unchanged
+ *  — one request, parsed JSON. */
+export function createFetchJson(
+  opts: FetchJsonOptions = {},
+  fetchImpl: typeof fetch = fetch,
+): FetchJson {
+  const maxRetries = opts.maxRetries ?? 4;
+  const baseDelayMs = opts.baseDelayMs ?? 250;
+  const maxDelayMs = opts.maxDelayMs ?? 8000;
+
+  return async (url) => {
+    for (let attempt = 0; ; attempt++) {
+      const res = await fetchImpl(url, {
+        headers: { "User-Agent": USER_AGENT },
+        signal: opts.signal,
+      });
+
+      // Decide retry vs. return vs. hard-fail. Two rate-limit shapes: an HTTP
+      // status (429/503), or a 200 body carrying an action-API error code.
+      let reason: string | null = null;
+      let body: unknown;
+      if (res.ok) {
+        body = await res.json();
+        const code =
+          (body as ApiErrorShape)?.error?.code ??
+          (body as ApiErrorShape)?.errors?.[0]?.code;
+        if (code && RETRYABLE_API_ERROR.has(code)) reason = code;
+        else return body;
+      } else if (RETRYABLE_STATUS.has(res.status)) {
+        reason = String(res.status);
+      } else {
+        throw new Error(
+          `Wikipedia API ${res.status} ${res.statusText} for ${url}`,
+        );
+      }
+
+      if (attempt >= maxRetries) {
+        throw new Error(
+          `Wikipedia API kept signalling "${reason}" after ${maxRetries} retries for ${url}`,
+        );
+      }
+
+      const header = res.headers.get("retry-after");
+      const retryAfterMs =
+        header != null && Number.isFinite(Number(header))
+          ? Number(header) * 1000
+          : null;
+      const backoff = Math.min(maxDelayMs, baseDelayMs * 2 ** attempt);
+      const waitMs = retryAfterMs ?? backoff + Math.random() * backoff * 0.5;
+      opts.onRetry?.({ attempt, reason, waitMs });
+      await sleep(waitMs, opts.signal);
+    }
+  };
+}
+
+export const defaultFetchJson: FetchJson = createFetchJson();
 
 export interface WikipediaClientOptions {
   lang?: string;
@@ -207,17 +309,27 @@ export class WikipediaClient {
 
   async getContentBatch(revids: number[]): Promise<Map<number, string | null>> {
     const out = new Map<number, string | null>();
-    const misses = new Set<number>();
-    for (const revid of revids) {
-      if (out.has(revid) || misses.has(revid)) continue;
-      const cached = await this.cache?.getContent(this.lang, revid);
-      if (cached !== undefined) out.set(revid, cached);
-      else misses.add(revid);
-    }
-    if (misses.size > 0) {
-      const fetched = await this.getContent([...misses]);
+    const unique = [...new Set(revids)];
+
+    // Fan the cache reads out with bounded concurrency. A persistent L2
+    // (Redis/KV) charges a round-trip per read, so awaiting them one at a time
+    // was the batch's dominant cost — but the batch is only log-bounded in size,
+    // so cap in-flight reads rather than open a connection per revid. Results
+    // stay index-aligned; a cached `null` (known-empty) is distinct from a miss.
+    const cached = await mapConcurrent(unique, CACHE_READ_CONCURRENCY, (revid) =>
+      Promise.resolve(this.cache?.getContent(this.lang, revid)),
+    );
+
+    const misses: number[] = [];
+    unique.forEach((revid, i) => {
+      if (cached[i] !== undefined) out.set(revid, cached[i] as string | null);
+      else misses.push(revid);
+    });
+
+    if (misses.length > 0) {
+      const fetched = await this.getContent(misses);
       await Promise.all(
-        [...misses].map((revid) => {
+        misses.map((revid) => {
           const content = fetched.get(revid) ?? null;
           out.set(revid, content);
           return this.cache?.setContent(this.lang, revid, content);

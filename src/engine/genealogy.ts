@@ -89,6 +89,14 @@ export interface GenealogyInput {
   cache?: EngineCache;
   overlapMin?: number;
   onHop?: (hop: number) => void;
+  /** A revision listing already fetched by the caller. When present the walk
+   *  skips its own {@link WikipediaClient.listRevisions} — the trace passes the
+   *  list its introduction search already built. */
+  revisions?: RevisionMeta[];
+  /** A content reader (with its request-scoped cache) already warmed by the
+   *  caller's search. When present the walk reads through it instead of a fresh
+   *  one, so a revision the search downloaded is never downloaded again. */
+  read?: ContentReader;
 }
 
 const MAX_HOPS = 40;
@@ -110,7 +118,7 @@ export async function reconstructGenealogy(
   const contentCache = new Map<number, string | null>();
   let fetches = 0;
 
-  const read: ContentReader = async (revid) => {
+  const ownRead: ContentReader = async (revid) => {
     if (contentCache.has(revid)) return contentCache.get(revid)!;
 
     const content = await client.getRevisionContent(revid);
@@ -121,7 +129,7 @@ export async function reconstructGenealogy(
 
     return content;
   };
-  read.prefetch = async (revids) => {
+  ownRead.prefetch = async (revids) => {
     const missing = revids.filter((r) => !contentCache.has(r));
 
     if (missing.length === 0) return;
@@ -133,7 +141,14 @@ export async function reconstructGenealogy(
     fetches += missing.length;
   };
 
-  const { revisions } = await client.listRevisions(input.article);
+  // Reuse the caller's reader and listing when supplied (the trace path) so the
+  // introduction search and this walk never fetch the same revision twice; a
+  // standalone caller gets the self-contained reader above. `fetches` — hence
+  // `contentFetches` — reflects only reads this walk owns, so it stays 0 when an
+  // external reader absorbs them; the trace counts the shared corpus itself.
+  const read = input.read ?? ownRead;
+  const revisions =
+    input.revisions ?? (await client.listRevisions(input.article)).revisions;
   if (revisions.length === 0)
     throw new ClaimNotFoundError(input.article, input.phrase);
 

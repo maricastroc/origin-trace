@@ -238,6 +238,119 @@ describe("findIntroduction", () => {
   });
 });
 
+// Adversarial cases for the sample-then-bisect search. Each locks a specific
+// guarantee of the CURRENT algorithm so a future k-ary rewrite is measured
+// against it. Outputs were verified empirically before being asserted. Runs
+// through the prefetch (batched) reader — the path production actually uses.
+describe("findIntroduction — adversarial guarantees", () => {
+  const run = (has: boolean[]) => {
+    const { revisions, getContent, phrase } = batchedCorpus(has);
+    return findIntroduction(revisions, phrase, getContent);
+  };
+  const presentAt = (has: boolean[], i: number) => has[i] === true;
+
+  it("finds the earliest island, not a later block, under non-monotonic presence", async () => {
+    // Two present islands with a gap between them, still present now. Plain
+    // binary search converges on the later block (~6); sample-then-bisect must
+    // step back to the true origin.
+    // LOCKS: earliest-origin discovery across gaps (the engine's differentiator).
+    const has = [false, true, true, false, false, false, true, true, true, true];
+    const res = await run(has);
+    expect(res!.index).toBe(1);
+    expect(presentAt(has, res!.index)).toBe(true);
+    expect(res!.removedSince).toBe(false);
+  });
+
+  it("is not fooled by a removal followed by re-addition", async () => {
+    // present [1,2] → removed → re-added [5..7], present now.
+    // LOCKS: re-addition never masks the first appearance, and present-now is
+    // detected across the intervening gap (removedSince stays false).
+    const has = [false, true, true, false, false, true, true, true];
+    const res = await run(has);
+    expect(res!.index).toBe(1);
+    expect(res!.removedSince).toBe(false);
+  });
+
+  it("detects removal of a short-lived mid-history island", async () => {
+    // A width-3 island at 400 in a 1000-rev history, absent by the latest rev.
+    // LOCKS: removedSince for a claim that existed only briefly, and that a
+    // narrow island within the search's reach is still located exactly.
+    const has = Array.from({ length: 1000 }, (_, i) => i >= 400 && i < 403);
+    const res = await run(has);
+    expect(res!.index).toBe(400);
+    expect(presentAt(has, res!.index)).toBe(true);
+    expect(res!.removedSince).toBe(true);
+  });
+
+  it("pins the exact introduction on a large monotonic history, off the sample grid", async () => {
+    // Introduced at 617 (not on any coarse sample stride), present onward.
+    // LOCKS: monotonic exactness — the bisection converges to the precise
+    // boundary even when the initial sampling never lands on it.
+    const has = Array.from({ length: 1000 }, (_, i) => i >= 617);
+    const res = await run(has);
+    expect(res!.index).toBe(617);
+    expect(res!.removedSince).toBe(false);
+  });
+
+  it("resolves a first-revision origin to index 0 with no prior, despite later gaps", async () => {
+    // present at 0, a gap, then a block.
+    // LOCKS: a claim as old as the article resolves to index 0 with
+    // priorRevision null — nothing predates it.
+    const has = [true, false, true, true, true, true, true, true];
+    const res = await run(has);
+    expect(res!.index).toBe(0);
+    expect(res!.priorRevision).toBeNull();
+  });
+
+  it("stays sound when a narrow early island lies beyond the sample grid", async () => {
+    // Island at index 3 + a block from 500, in 1000 revisions. Index 3 is off
+    // every coarse stride, so the search can't reach it and settles on the block.
+    // LOCKS the honest contract: on large sparse histories completeness is
+    // best-effort, but soundness is never sacrificed — the returned index is a
+    // real occurrence, no later than the reachable block, with removal correct.
+    // NB the exact 500 documents the *current* miss; a future k-ary may return 3
+    // and still satisfy the <= guarantee — that line is the one to revisit then.
+    const has = Array.from({ length: 1000 }, (_, i) => i === 3 || i >= 500);
+    const res = await run(has);
+    expect(presentAt(has, res!.index)).toBe(true); // soundness — hard guarantee
+    expect(res!.index).toBeLessThanOrEqual(500); // no worse than the block start
+    expect(res!.removedSince).toBe(false);
+    expect(res!.index).toBe(500); // documents the current best-effort limit
+  });
+
+  it("does not raise assumptionViolated even across a non-monotonic boundary", async () => {
+    // DOCUMENTS current behavior (not a desired invariant): the flag never
+    // fires — lowerBound always converges onto a present revision and the outer
+    // loop halts only once the prior is absent. So downstream must not read
+    // assumptionViolated as a completeness signal here. A k-ary rewrite that
+    // truly detects non-monotonicity would change this assertion.
+    const has = [false, true, false, true, false, true, false, true];
+    const res = await run(has);
+    expect(presentAt(has, res!.index)).toBe(true);
+    expect(res!.assumptionViolated).toBe(false);
+  });
+
+  it("locates the same origin whether or not reads are prefetched", async () => {
+    // LOCKS the optimization invariant: prefetch/batching changes only the
+    // number of round-trips, never the located origin.
+    const has = [false, true, true, false, false, false, true, true, true, true];
+    const plain = corpus(has);
+    const batched = batchedCorpus(has);
+    const a = await findIntroduction(
+      plain.revisions,
+      plain.phrase,
+      plain.getContent,
+    );
+    const b = await findIntroduction(
+      batched.revisions,
+      batched.phrase,
+      batched.getContent,
+    );
+    expect(a!.index).toBe(b!.index);
+    expect(b!.index).toBe(1);
+  });
+});
+
 describe("classifyInline", () => {
   it("marks a sentence with a citation ref as sourced", () => {
     const det = classifyInline(

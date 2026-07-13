@@ -25,6 +25,7 @@ import {
   type RevisionMeta,
 } from "./wikipedia.ts";
 import type { EngineCache } from "./cache.ts";
+import type { Stage } from "./metrics.ts";
 
 export type TraceProgress =
   | { phase: "listing" }
@@ -44,6 +45,9 @@ export interface TraceInput {
   fetchJson?: FetchJson;
   cache?: EngineCache;
   onProgress?: (progress: TraceProgress) => void;
+  /** Coarse stage boundaries for timing. Fired once per stage as it closes;
+   *  a {@link TraceProfiler} timestamps them. Additive and optional. */
+  onStage?: (stage: Stage) => void;
 }
 
 export class ClaimNotFoundError extends Error {
@@ -67,6 +71,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   });
 
   const emit = input.onProgress ?? (() => {});
+  const stage = input.onStage ?? (() => {});
   let phase: "searching" | "reading" = "searching";
   let reads = 0;
   let estimate = 12;
@@ -95,9 +100,11 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     throw new ClaimNotFoundError(input.article, input.phrase);
   estimate = Math.max(6, Math.ceil(Math.log2(revisions.length + 1)) * 2);
   emit({ phase: "listed", revisions: revisions.length, truncated });
+  stage("listing");
 
   const intro = await findIntroduction(revisions, input.phrase, read);
   if (intro === null) throw new ClaimNotFoundError(input.article, input.phrase);
+  stage("search");
   emit({
     phase: "located",
     year: year(intro.revision.timestamp),
@@ -136,6 +143,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       ? "retrofit"
       : "unsourced-stable";
 
+  stage("read");
   emit({ phase: "genealogy", hop: 0 });
   const genealogy = await reconstructGenealogy({
     article: input.article,
@@ -144,8 +152,13 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     maxPages: input.maxPages,
     fetchJson: input.fetchJson,
     cache: input.cache,
+    // Hand the walk the listing and reader the search already built, so it
+    // re-locates the origin without re-listing or re-downloading revisions.
+    revisions,
+    read,
     onHop: (hop) => emit({ phase: "genealogy", hop }),
   }).catch(() => null);
+  stage("genealogy");
 
   const chainOldToNew: GenealogyHop[] = genealogy
     ? [...genealogy.chain].reverse()
@@ -305,7 +318,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       : null,
   });
 
-  return {
+  const provenance: ClaimProvenance = {
     claim: {
       text: input.claimText ?? input.phrase,
       article: input.article,
@@ -339,7 +352,10 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       generatedBy: "wikiblame-pipeline",
       fetchedAt: new Date().toISOString(),
       corpus: {
-        read: intro.contentFetches + (genealogy?.contentFetches ?? 0),
+        // Distinct revisions actually downloaded across the search and the
+        // genealogy walk — they share one reader, so this is the true count
+        // with no double-counting of revisions the walk reuses.
+        read: cache.size,
         total: revisions.length,
         truncated,
       },
@@ -349,6 +365,8 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       })(),
     },
   };
+  stage("assemble");
+  return provenance;
 }
 
 const VERDICT_PHRASE: Record<Verdict, string> = {

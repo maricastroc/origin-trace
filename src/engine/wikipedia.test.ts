@@ -1,6 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
-import { WikipediaClient, type FetchJson } from "@/engine/wikipedia.ts";
-import { createEngineCache } from "@/engine/cache.ts";
+import {
+  WikipediaClient,
+  createFetchJson,
+  type FetchJson,
+} from "@/engine/wikipedia.ts";
+import { createEngineCache, type EngineCache } from "@/engine/cache.ts";
+
+/** A fetch stand-in that returns a scripted sequence of Responses (repeating the
+ *  last one), and counts how many times it was called. */
+function scriptedFetch(responses: Response[]) {
+  let calls = 0;
+  const fetchImpl = (async () => {
+    const res = responses[Math.min(calls, responses.length - 1)];
+    calls++;
+    return res;
+  }) as unknown as typeof fetch;
+  return { fetchImpl, calls: () => calls };
+}
+const ok = (body: unknown) =>
+  new Response(JSON.stringify(body), { status: 200 });
+const rate = (status = 429) =>
+  new Response("", { status, headers: { "retry-after": "0" } });
 
 describe("WikipediaClient.listRevisions", () => {
   it("follows rvcontinue and merges pages, oldest-first", async () => {
@@ -194,6 +214,72 @@ describe("WikipediaClient.getContentBatch", () => {
       "4",
     );
   });
+
+  it("reads the cache concurrently, not one revision at a time", async () => {
+    // A cache whose reads overlap in wall-time; the batch must fan them out
+    // rather than await each in series (the serial loop dominated the Redis path).
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const content = new Map<number, string>([
+      [1, "c1"],
+      [2, "c2"],
+      [3, "c3"],
+      [4, "c4"],
+    ]);
+    const cache: EngineCache = {
+      async getContent(_lang, revid) {
+        inFlight++;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        await new Promise((r) => setTimeout(r, 5));
+        inFlight--;
+        return content.get(revid);
+      },
+      async setContent() {},
+      async getList() {
+        return undefined;
+      },
+      async setList() {},
+    };
+    const fetchJson: FetchJson = async () => {
+      throw new Error("no revision should be fetched — all four are cached");
+    };
+    const client = new WikipediaClient({ fetchJson, cache });
+
+    const out = await client.getContentBatch([1, 2, 3, 4]);
+
+    expect(out.get(1)).toBe("c1");
+    expect(out.get(4)).toBe("c4");
+    // Prove the reads overlap (not a serial loop) without pinning the exact
+    // width — the batch caps concurrency, so don't couple the test to that cap.
+    expect(maxInFlight).toBeGreaterThan(1);
+  });
+
+  it("collapses repeated revids to a single fetch of one id", async () => {
+    const fetchJson = vi.fn<FetchJson>(async (url) => {
+      const ids = new URL(url).searchParams.get("revids")!.split("|");
+      return {
+        query: {
+          pages: [
+            {
+              revisions: ids.map((id) => ({
+                revid: Number(id),
+                slots: { main: { content: `c${id}` } },
+              })),
+            },
+          ],
+        },
+      };
+    });
+    const client = new WikipediaClient({ fetchJson });
+
+    const out = await client.getContentBatch([7, 7, 7]);
+
+    expect(out.get(7)).toBe("c7");
+    expect(fetchJson).toHaveBeenCalledTimes(1);
+    expect(new URL(fetchJson.mock.calls[0][0]).searchParams.get("revids")).toBe(
+      "7",
+    );
+  });
 });
 
 describe("WikipediaClient.search", () => {
@@ -285,5 +371,99 @@ describe("WikipediaClient caching", () => {
     ).length;
     expect(listCalls).toBe(1);
     expect(contentCalls).toBe(1);
+  });
+});
+
+describe("createFetchJson — retry/backoff", () => {
+  it("returns parsed JSON on success, with no retry", async () => {
+    const retries: unknown[] = [];
+    const { fetchImpl, calls } = scriptedFetch([ok({ v: 1 })]);
+    const fetchJson = createFetchJson(
+      { onRetry: (i) => retries.push(i), baseDelayMs: 0 },
+      fetchImpl,
+    );
+    expect(await fetchJson("http://x")).toEqual({ v: 1 });
+    expect(calls()).toBe(1);
+    expect(retries).toHaveLength(0);
+  });
+
+  it("retries a 429 then succeeds, reporting the retry", async () => {
+    const retries: { attempt: number; reason: string; waitMs: number }[] = [];
+    const { fetchImpl, calls } = scriptedFetch([rate(429), ok({ v: 2 })]);
+    const fetchJson = createFetchJson(
+      { onRetry: (i) => retries.push(i), baseDelayMs: 0 },
+      fetchImpl,
+    );
+    expect(await fetchJson("http://x")).toEqual({ v: 2 });
+    expect(calls()).toBe(2);
+    expect(retries).toEqual([{ attempt: 0, reason: "429", waitMs: 0 }]);
+  });
+
+  it("also retries a 503 (overload)", async () => {
+    const { fetchImpl } = scriptedFetch([rate(503), ok({ v: 3 })]);
+    const fetchJson = createFetchJson({ baseDelayMs: 0 }, fetchImpl);
+    expect(await fetchJson("http://x")).toEqual({ v: 3 });
+  });
+
+  it("retries a maxlag error delivered as a 200 body, then succeeds", async () => {
+    // The action API returns maxlag/ratelimited in a 200 body with Retry-After,
+    // not as an HTTP status — a status-only check would silently return the
+    // error object as if it were data.
+    const maxlag = new Response(
+      JSON.stringify({ error: { code: "maxlag", info: "0.8s lagged" } }),
+      { status: 200, headers: { "retry-after": "0" } },
+    );
+    const retries: { reason: string }[] = [];
+    const { fetchImpl, calls } = scriptedFetch([maxlag, ok({ v: 4 })]);
+    const fetchJson = createFetchJson(
+      { baseDelayMs: 0, onRetry: (i) => retries.push(i) },
+      fetchImpl,
+    );
+    expect(await fetchJson("http://x")).toEqual({ v: 4 });
+    expect(calls()).toBe(2);
+    expect(retries[0].reason).toBe("maxlag");
+  });
+
+  it("cancels an in-flight backoff on abort and stops retrying", async () => {
+    const ac = new AbortController();
+    let attempts = 0;
+    const fetchImpl = (async () => {
+      attempts++;
+      return new Response("", { status: 429 }); // no Retry-After → real backoff
+    }) as unknown as typeof fetch;
+    const fetchJson = createFetchJson(
+      { baseDelayMs: 50, signal: ac.signal },
+      fetchImpl,
+    );
+
+    const outcome = fetchJson("http://x").then(
+      () => "resolved",
+      (e) => String(e),
+    );
+    setTimeout(() => ac.abort(), 10); // abort mid-backoff (before the 50ms wait)
+
+    expect(await outcome).toMatch(/abort/i);
+    expect(attempts).toBe(1); // the backoff was cancelled, no second attempt
+  });
+
+  it("fails fast on a non-retryable status, without retrying", async () => {
+    const { fetchImpl, calls } = scriptedFetch([
+      new Response("", { status: 404, statusText: "Not Found" }),
+    ]);
+    const fetchJson = createFetchJson({ baseDelayMs: 0 }, fetchImpl);
+    await expect(fetchJson("http://x")).rejects.toThrow(/404/);
+    expect(calls()).toBe(1);
+  });
+
+  it("gives up after maxRetries and throws", async () => {
+    const retries: unknown[] = [];
+    const { fetchImpl, calls } = scriptedFetch([rate(429)]); // always 429
+    const fetchJson = createFetchJson(
+      { maxRetries: 3, baseDelayMs: 0, onRetry: (i) => retries.push(i) },
+      fetchImpl,
+    );
+    await expect(fetchJson("http://x")).rejects.toThrow(/429/);
+    expect(retries).toHaveLength(3); // 3 retries after the first attempt
+    expect(calls()).toBe(4); // initial + 3 retries
   });
 });

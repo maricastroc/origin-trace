@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ClaimNotFoundError, traceClaim } from "@/engine/trace.ts";
 import { fakeWiki, type FakeRevision } from "@/test/fakeWiki";
+import type { FetchJson } from "@/engine/wikipedia.ts";
 
 function history(revisions: FakeRevision[]) {
   return fakeWiki({ title: "Subject", revisions }).fetchJson;
@@ -8,6 +9,47 @@ function history(revisions: FakeRevision[]) {
 
 const UNRELATED =
   "This paragraph is about something else entirely and unrelated.";
+
+/** Wrap a fetchJson to record the revid of every content request, so a test can
+ *  assert nothing is downloaded twice across the search → genealogy handoff. */
+function recordingHistory(revisions: FakeRevision[]) {
+  const base = fakeWiki({ title: "Subject", revisions }).fetchJson;
+  const fetchedRevids: number[] = [];
+  const fetchJson: FetchJson = async (url) => {
+    const revids = new URL(url).searchParams.get("revids");
+    if (revids) fetchedRevids.push(...revids.split("|").map(Number));
+    return base(url);
+  };
+  return { fetchJson, fetchedRevids };
+}
+
+const REFORMULATION_CHAIN: FakeRevision[] = [
+  { revid: 1, timestamp: "2006-01-01T00:00:00Z", content: UNRELATED },
+  {
+    revid: 2,
+    timestamp: "2006-06-01T00:00:00Z",
+    content:
+      "In 1911 Marie received the prize and was hospitalized with a serious illness.",
+  },
+  {
+    revid: 3,
+    timestamp: "2009-06-01T00:00:00Z",
+    content:
+      "In 1911 Marie received the prize and was hospitalised with a serious illness.",
+  },
+  {
+    revid: 4,
+    timestamp: "2013-06-01T00:00:00Z",
+    content:
+      "In 1911 she received the prize and was hospitalised with a serious illness.<ref>{{cite book|title=Bio|date=2010}}</ref>",
+  },
+  {
+    revid: 5,
+    timestamp: "2020-01-01T00:00:00Z",
+    content:
+      "In 1911 she received the prize and was hospitalised with a serious illness.<ref>{{cite book|title=Bio|date=2010}}</ref>",
+  },
+];
 
 describe("traceClaim — verdicts", () => {
   it("classifies a claim born with its citation as born-sourced", async () => {
@@ -186,30 +228,10 @@ describe("traceClaim — verdicts", () => {
   });
 
   it("reconstructs the reformulation chain and shows dual readings on a correction", async () => {
-    const cited =
-      "In 1911 she received the prize and was hospitalised with a serious illness.<ref>{{cite book|title=Bio|date=2010}}</ref>";
-    const fetchJson = history([
-      { revid: 1, timestamp: "2006-01-01T00:00:00Z", content: UNRELATED },
-      {
-        revid: 2,
-        timestamp: "2006-06-01T00:00:00Z",
-        content:
-          "In 1911 Marie received the prize and was hospitalized with a serious illness.",
-      },
-      {
-        revid: 3,
-        timestamp: "2009-06-01T00:00:00Z",
-        content:
-          "In 1911 Marie received the prize and was hospitalised with a serious illness.",
-      },
-      { revid: 4, timestamp: "2013-06-01T00:00:00Z", content: cited },
-      { revid: 5, timestamp: "2020-01-01T00:00:00Z", content: cited },
-    ]);
-
     const prov = await traceClaim({
       article: "Subject",
       phrase: "she received the prize and was hospitalised",
-      fetchJson,
+      fetchJson: history(REFORMULATION_CHAIN),
     });
 
     expect(prov.verdict.primary).toBe("ambiguous");
@@ -223,6 +245,34 @@ describe("traceClaim — verdicts", () => {
     expect(prov.timeline.some((e) => e.kind === "source-added")).toBe(true);
     expect(prov.timeline[prov.timeline.length - 1].kind).toBe("current");
     expect(prov.annotations?.circularLoop).toBeDefined();
+  });
+
+  it("never downloads a revision twice across the search → genealogy handoff", async () => {
+    // The genealogy walk re-locates the origin the introduction search already
+    // found. It must reuse the search's revision listing and content reader, so
+    // no revid is fetched in more than one content request — even with no
+    // persistent cache in play (the request-scoped reader is the guarantee).
+    const { fetchJson, fetchedRevids } = recordingHistory(REFORMULATION_CHAIN);
+
+    const prov = await traceClaim({
+      article: "Subject",
+      phrase: "she received the prize and was hospitalised",
+      fetchJson,
+    });
+
+    // Behaviour is unchanged: this is still the dual-reading correction case.
+    expect(prov.verdict.primary).toBe("ambiguous");
+    expect(prov.verdict.readings).toHaveLength(2);
+
+    const seen = new Map<number, number>();
+    for (const id of fetchedRevids) seen.set(id, (seen.get(id) ?? 0) + 1);
+    const refetched = [...seen.entries()]
+      .filter(([, n]) => n > 1)
+      .map(([id, n]) => `rev ${id}×${n}`);
+    expect(refetched).toEqual([]);
+    // And at least one revision was genuinely shared: the search located the
+    // origin, so the genealogy walk had something to reuse rather than refetch.
+    expect(fetchedRevids.length).toBeGreaterThan(0);
   });
 
   it("abstains from asserting an origin it can't confirm (low-overlap reword)", async () => {

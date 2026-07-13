@@ -1,5 +1,7 @@
 import { ClaimNotFoundError, traceClaim } from "@/engine/trace.ts";
 import { getEngineCache } from "@/engine/persistent-cache.ts";
+import { createFetchJson } from "@/engine/wikipedia.ts";
+import { TraceProfiler } from "@/engine/metrics.ts";
 import { safeLang } from "@/lib/lang";
 
 export const runtime = "nodejs";
@@ -33,15 +35,27 @@ export async function GET(request: Request): Promise<Response> {
         }
       };
 
+      const profiler = new TraceProfiler();
       try {
         const provenance = await traceClaim({
           article,
           phrase,
           lang,
-          cache: getEngineCache(),
+          cache: profiler.instrumentCache(getEngineCache()),
+          fetchJson: profiler.instrumentFetch(
+            createFetchJson({
+              onRetry: profiler.recordRetry,
+              signal: request.signal,
+            }),
+          ),
           onProgress: (progress) => send({ type: "progress", progress }),
+          onStage: profiler.onStage,
         });
-        send({ type: "result", data: provenance });
+        // Metrics ride on the result frame itself — a streamed response can't
+        // set a Server-Timing header after the body has started. Existing
+        // consumers read only `data`, so the extra sibling field is inert: no
+        // new event type, nothing for a `type` switch to mishandle.
+        send({ type: "result", data: provenance, metrics: profiler.snapshot() });
       } catch (err) {
         if (!(err instanceof ClaimNotFoundError))
           console.error("trace failed", err);

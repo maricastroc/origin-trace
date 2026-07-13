@@ -1,5 +1,7 @@
 import { ArticleNotFoundError, auditArticle } from "@/engine/audit.ts";
 import { getEngineCache } from "@/engine/persistent-cache.ts";
+import { createFetchJson } from "@/engine/wikipedia.ts";
+import { TraceProfiler } from "@/engine/metrics.ts";
 import { safeLang } from "@/lib/lang";
 
 export const runtime = "nodejs";
@@ -14,13 +16,23 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ error: "Provide 'article'." }, { status: 400 });
   }
 
+  const profiler = new TraceProfiler();
   try {
     const audit = await auditArticle({
       article,
       lang,
-      cache: getEngineCache(),
+      cache: profiler.instrumentCache(getEngineCache()),
+      fetchJson: profiler.instrumentFetch(
+        createFetchJson({
+          onRetry: profiler.recordRetry,
+          signal: request.signal,
+        }),
+      ),
+      onStage: profiler.onStage,
     });
-    return Response.json(audit);
+    return Response.json(audit, {
+      headers: { "Server-Timing": profiler.serverTiming() },
+    });
   } catch (err) {
     if (err instanceof ArticleNotFoundError) {
       return Response.json(

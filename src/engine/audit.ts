@@ -8,12 +8,14 @@ import type {
 import { classifyInline, indexRefDefinitions, maskedRanges } from "./blame.ts";
 import { WikipediaClient, type FetchJson } from "./wikipedia.ts";
 import type { EngineCache } from "./cache.ts";
+import type { Stage } from "./metrics.ts";
 
 export interface AuditInput {
   article: string;
   lang?: string;
   fetchJson?: FetchJson;
   cache?: EngineCache;
+  onStage?: (stage: Stage) => void;
 }
 
 export class ArticleNotFoundError extends Error {
@@ -40,10 +42,12 @@ export async function auditArticle(input: AuditInput): Promise<ArticleAudit> {
   });
 
   if (!current) throw new ArticleNotFoundError(input.article, lang);
+  input.onStage?.("read");
 
   const sections = segmentArticle(current.content);
 
   const summary = tally(sections);
+  input.onStage?.("assemble");
 
   return {
     article: {

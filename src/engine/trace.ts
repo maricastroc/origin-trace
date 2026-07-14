@@ -96,8 +96,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
 
   emit({ phase: "listing" });
   const { revisions, truncated } = await client.listRevisions(input.article);
-  // Close each stage the moment its work finishes, *before* any not-found guard,
-  // so the timing report stays complete even when the phrase is never located.
+
   stage("listing");
   if (revisions.length === 0)
     throw new ClaimNotFoundError(input.article, input.phrase);
@@ -107,11 +106,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   const intro = await findIntroduction(revisions, input.phrase, read);
   stage("search");
   if (intro === null) throw new ClaimNotFoundError(input.article, input.phrase);
-  // Was the origin *proven* the first occurrence (every earlier revision read
-  // and absent), or only sampled? `earliestProven` covers everything below the
-  // lexical origin — which also covers any earlier genealogy origin, since that
-  // sits inside the same verified prefix. Truncation means we never even had the
-  // full corpus, so it can't be proven either way.
+
   const originProven = intro.earliestProven && !truncated;
   emit({
     phase: "located",
@@ -160,8 +155,6 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     maxPages: input.maxPages,
     fetchJson: input.fetchJson,
     cache: input.cache,
-    // Hand the walk the listing and reader the search already built, so it
-    // re-locates the origin without re-listing or re-downloading revisions.
     revisions,
     read,
     onHop: (hop) => emit({ phase: "genealogy", hop }),
@@ -217,10 +210,6 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
         )
       : null;
 
-  // A "claim-absent" event asserts the claim was not there before the origin.
-  // Only say it *doesn't exist yet* (a proof) when absence below was exhaustively
-  // verified; when sampled, state only the verified fact — the immediate prior is
-  // absent — without implying nothing earlier ever existed.
   const absentNote = originProven
     ? "the claim does not exist in the article yet"
     : "not present in the revision just before this one — an earlier sparse occurrence below the searched range isn't ruled out";
@@ -370,15 +359,9 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       generatedBy: "wikiblame-pipeline",
       fetchedAt: new Date().toISOString(),
       corpus: {
-        // Distinct revisions actually downloaded across the search and the
-        // genealogy walk — they share one reader, so this is the true count
-        // with no double-counting of revisions the walk reuses.
         read: cache.size,
         total: revisions.length,
         truncated,
-        // Whether the origin is the *proven* first occurrence (every earlier
-        // revision read and absent) or a found occurrence with earlier sparse
-        // ones not ruled out. Drives the corpus receipt's honesty.
         originProven,
       },
       ...(() => {

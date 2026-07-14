@@ -14,10 +14,6 @@ export function CorpusReceipt({
 
   const engine = typeof read === "number";
 
-  // Closure (we listed every revision) is proven when the history wasn't
-  // truncated. Origin-earliest (this is the *first* occurrence) is a separate,
-  // stronger claim — proven only when the search read every revision below the
-  // origin. Sampling leaves that unproven, and the copy must not conflate them.
   const proven = originProven === true;
 
   return (

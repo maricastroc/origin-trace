@@ -14,18 +14,9 @@ export type FetchJson = (url: string) => Promise<unknown>;
 const USER_AGENT =
   "OriginTrace/0.1 (claim-provenance research; https://github.com/origin-trace)";
 
-// Split a long history into this many concurrent time-windows, fetching this many
-// at once. Measured sweep (Jupiter 8.9k revs): 24/12 halves listing wall vs the
-// old 12/6 (7.8s→3.8s) with zero 429s and a byte-identical merged list; 24 windows
-// keep each ≤1 page on typical articles, and 12-wide is as fast as 24-wide at half
-// the connection pressure. `budget = maxPages/windowCount`, so total capacity (and
-// the truncation threshold) is unchanged.
 const WINDOW_COUNT = 24;
 const WINDOW_CONCURRENCY = 12;
 const WINDOW_BIAS = 2;
-// Prefetch batches are only log-bounded in article size (~2·log₂(n) probes), not
-// a fixed constant, so cap how many cache reads are in flight at once rather than
-// opening one connection per revid.
 const CACHE_READ_CONCURRENCY = 16;
 
 export interface FetchJsonOptions {
@@ -94,8 +85,6 @@ export function createFetchJson(
         signal: opts.signal,
       });
 
-      // Decide retry vs. return vs. hard-fail. Two rate-limit shapes: an HTTP
-      // status (429/503), or a 200 body carrying an action-API error code.
       let reason: string | null = null;
       let body: unknown;
       if (res.ok) {
@@ -327,11 +316,6 @@ export class WikipediaClient {
     const out = new Map<number, string | null>();
     const unique = [...new Set(revids)];
 
-    // Fan the cache reads out with bounded concurrency. A persistent L2
-    // (Redis/KV) charges a round-trip per read, so awaiting them one at a time
-    // was the batch's dominant cost — but the batch is only log-bounded in size,
-    // so cap in-flight reads rather than open a connection per revid. Results
-    // stay index-aligned; a cached `null` (known-empty) is distinct from a miss.
     const cached = await mapConcurrent(unique, CACHE_READ_CONCURRENCY, (revid) =>
       Promise.resolve(this.cache?.getContent(this.lang, revid)),
     );

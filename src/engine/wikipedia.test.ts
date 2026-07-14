@@ -216,8 +216,6 @@ describe("WikipediaClient.getContentBatch", () => {
   });
 
   it("reads the cache concurrently, not one revision at a time", async () => {
-    // A cache whose reads overlap in wall-time; the batch must fan them out
-    // rather than await each in series (the serial loop dominated the Redis path).
     let inFlight = 0;
     let maxInFlight = 0;
     const content = new Map<number, string>([
@@ -249,8 +247,6 @@ describe("WikipediaClient.getContentBatch", () => {
 
     expect(out.get(1)).toBe("c1");
     expect(out.get(4)).toBe("c4");
-    // Prove the reads overlap (not a serial loop) without pinning the exact
-    // width — the batch caps concurrency, so don't couple the test to that cap.
     expect(maxInFlight).toBeGreaterThan(1);
   });
 
@@ -406,9 +402,6 @@ describe("createFetchJson — retry/backoff", () => {
   });
 
   it("retries a maxlag error delivered as a 200 body, then succeeds", async () => {
-    // The action API returns maxlag/ratelimited in a 200 body with Retry-After,
-    // not as an HTTP status — a status-only check would silently return the
-    // error object as if it were data.
     const maxlag = new Response(
       JSON.stringify({ error: { code: "maxlag", info: "0.8s lagged" } }),
       { status: 200, headers: { "retry-after": "0" } },
@@ -429,7 +422,7 @@ describe("createFetchJson — retry/backoff", () => {
     let attempts = 0;
     const fetchImpl = (async () => {
       attempts++;
-      return new Response("", { status: 429 }); // no Retry-After → real backoff
+      return new Response("", { status: 429 });
     }) as unknown as typeof fetch;
     const fetchJson = createFetchJson(
       { baseDelayMs: 50, signal: ac.signal },
@@ -440,10 +433,9 @@ describe("createFetchJson — retry/backoff", () => {
       () => "resolved",
       (e) => String(e),
     );
-    setTimeout(() => ac.abort(), 10); // abort mid-backoff (before the 50ms wait)
 
     expect(await outcome).toMatch(/abort/i);
-    expect(attempts).toBe(1); // the backoff was cancelled, no second attempt
+    expect(attempts).toBe(1);
   });
 
   it("fails fast on a non-retryable status, without retrying", async () => {
@@ -457,13 +449,13 @@ describe("createFetchJson — retry/backoff", () => {
 
   it("gives up after maxRetries and throws", async () => {
     const retries: unknown[] = [];
-    const { fetchImpl, calls } = scriptedFetch([rate(429)]); // always 429
+    const { fetchImpl, calls } = scriptedFetch([rate(429)]);
     const fetchJson = createFetchJson(
       { maxRetries: 3, baseDelayMs: 0, onRetry: (i) => retries.push(i) },
       fetchImpl,
     );
     await expect(fetchJson("http://x")).rejects.toThrow(/429/);
-    expect(retries).toHaveLength(3); // 3 retries after the first attempt
-    expect(calls()).toBe(4); // initial + 3 retries
+    expect(retries).toHaveLength(3);
+    expect(calls()).toBe(4);
   });
 });

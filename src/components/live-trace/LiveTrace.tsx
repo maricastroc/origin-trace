@@ -10,6 +10,7 @@ import { parseArticleInput } from "@/lib/articleInput";
 import { errMsg } from "@/lib/errMsg";
 import { useHistory } from "@/lib/history";
 import { paramsToKey, readParams, updateUrl } from "@/lib/permalink";
+import { useRevealResults } from "@/lib/useRevealResults";
 import { verdictStyle } from "@/lib/verdictStyle";
 import { CopyLinkButton } from "../common/CopyLinkButton";
 import { HistoryStrip } from "../common/HistoryStrip";
@@ -38,8 +39,16 @@ type State =
 
 const EXAMPLES: { phrase: string; article: string; label: string }[] = [
   { phrase: "happiest animal", article: "Quokka", label: "happiest animal" },
-  { phrase: "Brazilian aardvark", article: "Coati", label: "Brazilian aardvark" },
-  { phrase: "pyrrolizidine alkaloids", article: "Petasites", label: "pyrrolizidine alkaloids" },
+  {
+    phrase: "Brazilian aardvark",
+    article: "Coati",
+    label: "Brazilian aardvark",
+  },
+  {
+    phrase: "pyrrolizidine alkaloids",
+    article: "Petasites",
+    label: "pyrrolizidine alkaloids",
+  },
 ];
 
 const enc = encodeURIComponent;
@@ -50,6 +59,10 @@ export function LiveTrace() {
   const [lang, setLang] = useState("en");
   const [state, setState] = useState<State>({ status: "idle" });
   const { items: history, remember, forget, clear } = useHistory("trace");
+  const { ref: resultsRef, reveal } = useRevealResults(
+    state.status,
+    state.status === "resolving" || state.status === "tracing",
+  );
 
   async function trace(scope: string, claimPhrase: string, lang = "en") {
     setState({ status: "tracing", scope, progress: null });
@@ -130,6 +143,8 @@ export function LiveTrace() {
     const effLang = parsed.lang ?? lang;
     if (parsed.title !== article) setArticle(parsed.title);
     if (effLang !== lang) setLang(effLang);
+    if (!phrase.trim()) return;
+    reveal();
     await resolveAndTrace(phrase.trim(), parsed.title, effLang);
   }
 
@@ -161,6 +176,7 @@ export function LiveTrace() {
     setPhrase(p);
     setArticle(a);
     setLang(lang);
+    reveal();
     void resolveAndTrace(p, a, lang);
   }
 
@@ -267,74 +283,79 @@ export function LiveTrace() {
         onClear={clear}
       />
 
-      {state.status === "resolving" && (
-        <StatusCard title="Resolving scope…" pulse>
-          Searching Wikipedia for the article(s) that carry this claim.
-        </StatusCard>
-      )}
+      <div
+        ref={resultsRef}
+        className="flex scroll-mt-24 flex-col gap-5 empty:hidden"
+      >
+        {state.status === "resolving" && (
+          <StatusCard title="Resolving scope…" pulse>
+            Searching Wikipedia for the article(s) that carry this claim.
+          </StatusCard>
+        )}
 
-      {state.status === "ambiguous" && (
-        <ScopePicker
-          resolution={state.resolution}
-          onPick={(title) => trace(title, phrase.trim(), lang)}
-        />
-      )}
+        {state.status === "ambiguous" && (
+          <ScopePicker
+            resolution={state.resolution}
+            onPick={(title) => trace(title, phrase.trim(), lang)}
+          />
+        )}
 
-      {state.status === "unresolved" && (
-        <div className="rounded-2xl border border-line-strong bg-surface-2 p-5">
-          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink">
-            couldn&rsquo;t resolve a scope
-          </p>
-          <p className="mt-2 text-[13.5px] leading-relaxed text-ink-muted">
-            {state.note}
-          </p>
-        </div>
-      )}
-
-      {state.status === "tracing" && (
-        <>
-          <ScopeBanner scope={state.scope} />
-          <LiveTraceLoading progress={state.progress} />
-        </>
-      )}
-
-      {state.status === "error" && (
-        <div className="rounded-xl border border-danger/30 bg-danger-bg px-5 py-4">
-          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-danger">
-            couldn&rsquo;t trace
-            <span className="ml-2 text-ink-faint">
-              · searched {state.lang}.wikipedia
-            </span>
-          </p>
-          <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-muted">
-            {state.message}
-          </p>
-          {state.lang !== "en" ? null : (
-            <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-faint">
-              Not in English? Pick a different Wikipedia language above and
-              trace again.
+        {state.status === "unresolved" && (
+          <div className="rounded-2xl border border-line-strong bg-surface-2 p-5">
+            <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink">
+              couldn&rsquo;t resolve a scope
             </p>
-          )}
-        </div>
-      )}
+            <p className="mt-2 text-[13.5px] leading-relaxed text-ink-muted">
+              {state.note}
+            </p>
+          </div>
+        )}
 
-      {state.status === "done" && (
-        <div className="animate-rise flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        {state.status === "tracing" && (
+          <>
             <ScopeBanner scope={state.scope} />
-            <CopyLinkButton
-              params={{
-                trace: state.phrase,
-                article: state.scope,
-                lang: state.lang,
-              }}
-            />
+            <LiveTraceLoading progress={state.progress} />
+          </>
+        )}
+
+        {state.status === "error" && (
+          <div className="rounded-xl border border-danger/30 bg-danger-bg px-5 py-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-danger">
+              couldn&rsquo;t trace
+              <span className="ml-2 text-ink-faint">
+                · searched {state.lang}.wikipedia
+              </span>
+            </p>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-muted">
+              {state.message}
+            </p>
+            {state.lang !== "en" ? null : (
+              <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-faint">
+                Not in English? Pick a different Wikipedia language above and
+                trace again.
+              </p>
+            )}
           </div>
-          <div className="rounded-2xl border border-line-strong bg-surface-2 p-5 shadow-[0_30px_60px_-40px_rgba(90,60,30,0.4)] sm:p-8">
-            <CaseFile data={state.data} />
+        )}
+
+        {state.status === "done" && (
+          <div className="animate-rise flex flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <ScopeBanner scope={state.scope} />
+              <CopyLinkButton
+                params={{
+                  trace: state.phrase,
+                  article: state.scope,
+                  lang: state.lang,
+                }}
+              />
+            </div>
+            <div className="rounded-2xl border border-line-strong bg-surface-2 p-5 shadow-[0_30px_60px_-40px_rgba(90,60,30,0.4)] sm:p-8">
+              <CaseFile data={state.data} />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

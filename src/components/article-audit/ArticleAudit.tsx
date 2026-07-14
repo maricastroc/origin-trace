@@ -6,6 +6,7 @@ import type { ArticleAudit as ArticleAuditData } from "@/types/ArticleAudit";
 import { errMsg } from "@/lib/errMsg";
 import { useHistory } from "@/lib/history";
 import { paramsToKey, readParams, updateUrl } from "@/lib/permalink";
+import { useRevealResults } from "@/lib/useRevealResults";
 import { CopyLinkButton } from "../common/CopyLinkButton";
 import { HistoryStrip } from "../common/HistoryStrip";
 import { ClearableInput } from "../live-trace/ClearableInput";
@@ -39,6 +40,10 @@ export function ArticleAudit() {
   const [input, setInput] = useState("Quokka");
   const [state, setState] = useState<State>({ status: "idle" });
   const { items: history, remember, forget, clear } = useHistory("audit");
+  const { ref: resultsRef, reveal } = useRevealResults(
+    state.status,
+    state.status === "loading",
+  );
 
   async function execute(article: string, lang: string) {
     if (!article) return;
@@ -73,7 +78,9 @@ export function ArticleAudit() {
 
   function run(raw: string) {
     const { article, lang } = parseArticle(raw);
+    if (!article.trim()) return;
     void execute(article, lang);
+    reveal();
   }
 
   function replay(entry: (typeof history)[number]) {
@@ -81,6 +88,7 @@ export function ArticleAudit() {
     const lang = entry.params.lang ?? "en";
     setInput(article);
     void execute(article, lang);
+    reveal();
   }
 
   const bootstrapped = useRef(false);
@@ -181,45 +189,50 @@ export function ArticleAudit() {
         onClear={clear}
       />
 
-      {state.status === "loading" && (
-        <div className="rounded-2xl border border-line-strong bg-surface-2 px-5 py-6">
-          <div className="flex items-center gap-2.5">
-            <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-accent" />
-            <p className="font-mono text-[13px] text-ink">
-              Reading the current revision of “{state.article}”…
+      <div
+        ref={resultsRef}
+        className="flex scroll-mt-24 flex-col gap-5 empty:hidden"
+      >
+        {state.status === "loading" && (
+          <div className="rounded-2xl border border-line-strong bg-surface-2 px-5 py-6">
+            <div className="flex items-center gap-2.5">
+              <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-accent" />
+              <p className="font-mono text-[13px] text-ink">
+                Reading the current revision of “{state.article}”…
+              </p>
+            </div>
+            <p className="mt-2.5 text-[12.5px] leading-relaxed text-ink-faint">
+              One fetch, then a structural read of every sentence — no history
+              walk.
             </p>
           </div>
-          <p className="mt-2.5 text-[12.5px] leading-relaxed text-ink-faint">
-            One fetch, then a structural read of every sentence — no history
-            walk.
-          </p>
-        </div>
-      )}
+        )}
 
-      {state.status === "error" && (
-        <div className="rounded-xl border border-danger/30 bg-danger-bg px-5 py-4">
-          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-danger">
-            couldn&rsquo;t audit
-          </p>
-          <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-muted">
-            {state.message}
-          </p>
-        </div>
-      )}
-
-      {state.status === "done" && (
-        <div className="animate-rise flex flex-col gap-3">
-          <div className="flex justify-end">
-            <CopyLinkButton
-              params={{
-                audit: state.data.article.title,
-                lang: state.data.article.lang,
-              }}
-            />
+        {state.status === "error" && (
+          <div className="rounded-xl border border-danger/30 bg-danger-bg px-5 py-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-danger">
+              couldn&rsquo;t audit
+            </p>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-muted">
+              {state.message}
+            </p>
           </div>
-          <AuditReport data={state.data} />
-        </div>
-      )}
+        )}
+
+        {state.status === "done" && (
+          <div className="animate-rise flex flex-col gap-3">
+            <div className="flex justify-end">
+              <CopyLinkButton
+                params={{
+                  audit: state.data.article.title,
+                  lang: state.data.article.lang,
+                }}
+              />
+            </div>
+            <AuditReport data={state.data} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

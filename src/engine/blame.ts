@@ -16,10 +16,7 @@ export function normalize(text: string): string {
     .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\[\[(?:[^\]]*\|)?([^\]|]*)\]\]/g, "$1")
-    // Unwrap inline formatting templates to their rendered text: {{em|strong}} →
-    // strong, {{lang|fr|bonjour}} → bonjour. Keep the last positional argument;
-    // drop the template name and any named params. Otherwise the template name
-    // ("em") leaks into the text and breaks the phrase match.
+
     .replace(INLINE_TEMPLATE, (_m, body: string) => {
       const positional = body.split("|").filter((p) => p && !p.includes("="));
       return ` ${positional[positional.length - 1] ?? ""} `;
@@ -101,10 +98,6 @@ export async function findIntroduction(
 
   const foundContains = await contains(first);
 
-  // The origin is the *proven* earliest occurrence only if every revision below
-  // it was actually evaluated (via `seen`) and found absent. The sample-then-
-  // bisect skips revisions on large spans, so an unread gap below the origin
-  // could still hide a sparse earlier occurrence — say so rather than claim proof.
   let earliestProven = true;
   for (let i = 0; i < first; i++) {
     if (!seen.has(i)) {
@@ -247,9 +240,6 @@ export function detectRefNear(
 
   const from = at >= 0 ? at : 0;
 
-  // A blockquote is one quotation from one source: a citation at its end backs
-  // every sentence inside it. Scope to the block's tail rather than stopping at
-  // the phrase's own sentence, which would miss that shared citation.
   const tail = isQuotationBlock(paragraph)
     ? paragraph.slice(from)
     : scopeToSentence(paragraph, from);
@@ -568,9 +558,7 @@ export function maskedRanges(text: string): [number, number][] {
       ranges.push([m.index, m.index + m[0].length]);
     }
   }
-  // Balanced scan for {{...}} so a template with a nested one — e.g. an {{sfn}}
-  // whose quote parameter contains {{nbsp}} — masks as a single range instead of
-  // being truncated at the first inner "}}", which would strand the citation.
+
   for (let i = 0; i < text.length - 1; i++) {
     if (text[i] === "{" && text[i + 1] === "{") {
       const block = balancedTemplate(text, i);

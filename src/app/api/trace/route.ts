@@ -51,10 +51,7 @@ export async function GET(request: Request): Promise<Response> {
           onProgress: (progress) => send({ type: "progress", progress }),
           onStage: profiler.onStage,
         });
-        // Metrics ride on the result frame itself — a streamed response can't
-        // set a Server-Timing header after the body has started. Existing
-        // consumers read only `data`, so the extra sibling field is inert: no
-        // new event type, nothing for a `type` switch to mishandle.
+
         send({ type: "result", data: provenance, metrics: profiler.snapshot() });
       } catch (err) {
         if (!(err instanceof ClaimNotFoundError))

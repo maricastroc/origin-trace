@@ -141,11 +141,6 @@ export async function reconstructGenealogy(
     fetches += missing.length;
   };
 
-  // Reuse the caller's reader and listing when supplied (the trace path) so the
-  // introduction search and this walk never fetch the same revision twice; a
-  // standalone caller gets the self-contained reader above. `fetches` — hence
-  // `contentFetches` — reflects only reads this walk owns, so it stays 0 when an
-  // external reader absorbs them; the trace counts the shared corpus itself.
   const read = input.read ?? ownRead;
   const revisions =
     input.revisions ?? (await client.listRevisions(input.article)).revisions;

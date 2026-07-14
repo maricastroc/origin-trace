@@ -79,6 +79,23 @@ The result is presented as a **case file**: an evidence-status verdict up top (t
 
 <br/>
 
+## 🖼️ Screenshots
+
+<table>
+  <tr>
+    <td align="center" width="62%"><strong>Desktop</strong></td>
+    <td align="center" width="38%"><strong>Mobile</strong></td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/desktop-1.png" alt="Home — Desktop" /></td>
+    <td rowspan="2" valign="top"><img src="docs/mobile-1.png" alt="Home - Mobile" /></td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/desktop-2.png" alt="Home — Desktop" /></td>
+  </tr>
+</table>
+
+
 ## 🔬 How it works
 
 The pipeline is fully deterministic end to end — there is no probabilistic component to distrust. Every stage is a pure function of the revision history:

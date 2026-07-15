@@ -1,18 +1,38 @@
-<div align="center">
+<h1 align="center">
+  <br>
+  🔍
+  <br>
+  Origin Trace
+  <br>
+</h1>
 
-# Origin Trace
+<h4 align="center">Provenance for a claim on Wikipedia — deterministic, no language model anywhere.</h4>
 
-**🔍 Provenance for a Claim on Wikipedia**
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/No_LLM-2e7d32?style=for-the-badge&logoColor=white" alt="No LLM" />
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" />
+</p>
 
-Point at any claim and get back the history of its _evidence_ — when it entered the article, whether it was ever sourced, and how its citation changed over time.<br/>
-Reconstructed deterministically from Wikipedia's full revision history — no language model anywhere. Not a fact-check: it classifies the _life of the evidence_, and when a claim was never backed, it says so.
+<p align="center">
+  <a href="#-features">Features</a> •
+  <a href="#-how-it-works">How It Works</a> •
+  <a href="#-the-vocabulary">Vocabulary</a> •
+  <a href="#ℹ%EF%B8%8F-how-to-run-the-application">How To Run</a> •
+  <a href="#-try-these">Try These</a> •
+  <a href="#-license">License</a>
+</p>
 
-<br/>
+<p align="center">
+  Point at any claim and get back the history of its <em>evidence</em> — when it entered the article, whether it was ever sourced, and how its citation changed over time. Reconstructed deterministically from Wikipedia's full revision history. Not a fact-check: it classifies the <em>life of the evidence</em>, and when a claim was never backed, it says so.
+</p>
 
-[![Features](https://img.shields.io/badge/★_Features-1a1a1a?style=for-the-badge)](#-features)
-[![Docs](https://img.shields.io/badge/▣_Docs-1a1a1a?style=for-the-badge)](#ℹ%EF%B8%8F-how-to-run-the-application)
-
-</div>
+<p align="center">
+  <img src="docs/desktop-1.png" alt="Origin Trace" width="800" />
+</p>
 
 <br/>
 

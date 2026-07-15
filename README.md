@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <img src="src/app/icon.svg" alt="Origin Trace" width="90">
+  <img src="src/app/icon.svg" alt="Origin Trace" width="40">
   <br>
   Origin Trace
   <br>

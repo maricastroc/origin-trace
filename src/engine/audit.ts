@@ -5,7 +5,12 @@ import type {
   AuditTally,
   SentenceStatus,
 } from "@/types/ArticleAudit";
-import { classifyInline, indexRefDefinitions, maskedRanges } from "./blame.ts";
+import {
+  classifyInline,
+  indexRefDefinitions,
+  maskedRanges,
+  unwrapTemplate,
+} from "./blame.ts";
 import { WikipediaClient, type FetchJson } from "./wikipedia.ts";
 import type { EngineCache } from "./cache.ts";
 import type { Stage } from "./metrics.ts";
@@ -149,7 +154,7 @@ function splitSections(text: string): RawSection[] {
   const sections: RawSection[] = [];
 
   let lastIndex = 0;
-  
+
   let pending: { heading: string; level: number } | null = null;
 
   const push = (
@@ -293,7 +298,7 @@ function stripTables(text: string): string {
 
     if (depth === 0) out += text[i];
   }
-  
+
   if (depth > 0 && openAt >= 0) out += text.slice(openAt);
 
   return out;
@@ -357,7 +362,6 @@ function splitSentences(para: string): string[] {
       continue;
     }
 
-
     if (ch === "." && isAbbrevBefore(masked, i)) {
       i = j;
       continue;
@@ -384,7 +388,6 @@ function splitSentences(para: string): string[] {
       start = end + gap.length;
 
       i = end + gap.length - 1;
-
     } else {
       i = j;
     }
@@ -466,50 +469,6 @@ export function cleanProse(sentence: string): string {
     .trim();
 }
 
-function unwrapTemplate(tpl: string): string {
-  const inner = tpl.slice(2, -2);
-
-  const parts = inner.split("|");
-
-  const name = parts[0].trim().toLowerCase();
-
-  const args = parts.slice(1).filter((p) => !p.includes("="));
-
-  if (name === "convert" || name === "cvt") {
-    const nums: string[] = [];
-
-    let unit = "";
-
-    for (const a of args) {
-      const t = a.trim();
-
-      if (/^-?\d[\d.,]*$/.test(t)) nums.push(t);
-
-      else if (/^(to|-|–|and|by|x|×|±)$/i.test(t)) nums.push("–");
-
-      else {
-        unit = t;
-        break;
-      }
-    }
-
-    const value = nums.length === 2 ? nums.join("–") : nums.join(" ");
-
-    return `${value} ${unit}`.replace(/\s*–\s*/g, "–").trim();
-  }
-  if (["lang", "transl", "transliteration"].includes(name)) {
-    return args[args.length - 1] ?? "";
-  }
-  // Inline emphasis/formatting wrappers render as their text.
-  if (
-    ["nowrap", "nobr", "nowraplinks", "sic", "typo", "em", "strong", "'"].includes(
-      name,
-    )
-  )
-    return args.join(" ");
-  return "";
-}
-
 function isAuditable(text: string): boolean {
   if (text.length < 25) return false;
 
@@ -530,9 +489,7 @@ function tally(sections: AuditSection[]): ArticleAudit["summary"] {
       t.total++;
 
       if (c.status === "sourced") t.sourced++;
-
       else if (c.status === "note-only") t.noteOnly++;
-
       else t.unsourced++;
     }
   }

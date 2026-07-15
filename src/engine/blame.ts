@@ -2,31 +2,98 @@ import type { ClaimSource } from "@/types/ClaimSource";
 import type { SourceType } from "@/types/SourceType";
 import type { RevisionMeta } from "./wikipedia.ts";
 
-/** Inline formatting templates that render as their text, not their name — so a
- *  pasted phrase (rendered form) matches wikitext that wraps a word in one. */
+/** Inline templates that render as text mid-sentence, so their raw form has to
+ *  be unwrapped to what the reader sees or a rendered phrase can't be matched
+ *  against the wikitext ({{convert|41200|sqkm}} → "41200 sqkm"). Deliberately a
+ *  fixed list of *inline* templates: container templates like {{blockquote|…}}
+ *  are left in place so the prose they wrap survives into the token stream. */
 const INLINE_TEMPLATE =
-  /\{\{\s*(?:em|strong|nowrap|nobr|nowraplinks|lang|lang-\w+|transl|transliteration|sic|typo)\b([^{}]*)\}\}/gi;
-/** Micro-templates that render as whitespace. */
-const SPACE_TEMPLATE = /\{\{\s*(?:nbsp|spaces?|thinsp|hairsp)\s*(?:\|[^{}]*)?\}\}/gi;
+  /\{\{\s*(?:convert|cvt|lang(?:-[a-z-]+)?|transl|transliteration|nbsp|spaces?|thinsp|hairsp|nowrap|nobr|nowraplinks|sic|typo|em|strong)\b[^{}]*\}\}/gi;
 
 export function normalize(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/<ref[^>]*\/>/g, " ")
-    .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\[\[(?:[^\]]*\|)?([^\]|]*)\]\]/g, "$1")
+  return (
+    text
+      .toLowerCase()
+      .replace(/<ref[^>]*\/>/g, " ")
+      .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\[\[(?:[^\]]*\|)?([^\]|]*)\]\]/g, "$1")
+      // Labelled external link → its label, matching the audit's cleanProse.
+      .replace(/\[https?:\/\/\S+\s+([^\]]*)\]/g, "$1")
+      // Render inline templates to their displayed text, the same way cleanProse
+      // does, so a phrase taken from rendered prose matches the raw wikitext it
+      // came from. Padded with spaces so an unwrap never fuses two words.
+      .replace(INLINE_TEMPLATE, (m) => ` ${unwrapTemplate(m)} `)
+      .replace(/[’‘`]/g, "'")
+      .replace(/'{2,}/g, "")
+      .replace(/[^a-z0-9']+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+}
 
-    .replace(INLINE_TEMPLATE, (_m, body: string) => {
-      const positional = body.split("|").filter((p) => p && !p.includes("="));
-      return ` ${positional[positional.length - 1] ?? ""} `;
-    })
-    .replace(SPACE_TEMPLATE, " ")
-    .replace(/[’‘`]/g, "'")
-    .replace(/'{2,}/g, "")
-    .replace(/[^a-z0-9']+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+/**
+ * Render an inline wikitext template to the text it displays as. Shared by
+ * {@link normalize} here and `cleanProse` in the audit so the two never disagree
+ * on how a template renders — any divergence produces a phrase the trace can't
+ * find in its own source. Anything that isn't inline display text (citations,
+ * layout helpers, …) renders as "" and drops out.
+ */
+export function unwrapTemplate(tpl: string): string {
+  const inner = tpl.slice(2, -2);
+
+  const parts = inner.split("|");
+
+  const name = parts[0].trim().toLowerCase();
+
+  const args = parts.slice(1).filter((p) => !p.includes("="));
+
+  if (name === "convert" || name === "cvt") {
+    const nums: string[] = [];
+
+    let unit = "";
+
+    for (const a of args) {
+      const t = a.trim();
+
+      if (/^-?\d[\d.,]*$/.test(t)) nums.push(t);
+      else if (/^(to|-|–|and|by|x|×|±)$/i.test(t)) nums.push("–");
+      else {
+        unit = t;
+        break;
+      }
+    }
+
+    const value = nums.length === 2 ? nums.join("–") : nums.join(" ");
+
+    return `${value} ${unit}`.replace(/\s*–\s*/g, "–").trim();
+  }
+  if (
+    name === "lang" ||
+    name === "transl" ||
+    name === "transliteration" ||
+    name.startsWith("lang-")
+  ) {
+    return args[args.length - 1] ?? "";
+  }
+  // Micro-templates that render as whitespace — keep words apart, don't fuse.
+  if (["nbsp", "spaces", "space", "thinsp", "hairsp"].includes(name))
+    return " ";
+  // Inline emphasis/formatting wrappers render as their text.
+  if (
+    [
+      "nowrap",
+      "nobr",
+      "nowraplinks",
+      "sic",
+      "typo",
+      "em",
+      "strong",
+      "'",
+    ].includes(name)
+  )
+    return args.join(" ");
+  return "";
 }
 
 export function containsPhrase(content: string, phrase: string): boolean {
@@ -87,7 +154,7 @@ export async function findIntroduction(
     : undefined;
 
   const n = revisions.length;
-  
+
   const first = await earliestContaining(n, contains, prefetch);
 
   if (first < 0) return null;
@@ -421,7 +488,7 @@ export function collectMarkers(
 
   for (const m of text.matchAll(refRe)) {
     if (m.index === undefined || m.index > maxGap) continue;
-    
+
     const attrs = `${m[1] ?? ""}${m[2] ?? ""}`;
 
     if (/\bgroup\s*=/.test(attrs)) {
@@ -504,7 +571,6 @@ const SHORT_CITE_RE =
   /\{\{\s*(?:sfnp|sfnm|sfn|harvnb|harvtxt|harvcolnb|harvcoltxt|harvcol|harvp|harv)\b/gi;
 
 export function parseShortFootnote(block: string): ClaimSource {
-
   const inner = block.replace(/^\{\{\s*/, "").replace(/\}\}\s*$/, "");
 
   const parts = inner.split("|").map((p) => p.trim());
@@ -520,7 +586,6 @@ export function parseShortFootnote(block: string): ClaimSource {
     const y = part.match(/^(1[89]\d{2}|20\d{2})[a-z]?$/);
 
     if (y && year === undefined) year = Number(y[1]);
-
     else authors.push(part);
   }
 
@@ -670,7 +735,6 @@ function parseTemplateFields(body: string): Record<string, string> {
   fields["__citetype"] = head.replace(/^cite\s+/, "");
 
   for (const part of body.split("|").slice(1)) {
-
     const eq = part.indexOf("=");
 
     if (eq < 0) continue;
@@ -680,7 +744,6 @@ function parseTemplateFields(body: string): Record<string, string> {
     const value = part.slice(eq + 1).trim();
 
     if (key) fields[key] = value;
-
   }
   return fields;
 }

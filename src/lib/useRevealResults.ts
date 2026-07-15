@@ -12,10 +12,11 @@ import { useCallback, useEffect, useRef } from "react";
  *  - Flows that show nothing until a status arrives (idle → loading): keying on
  *    `status` means the first scroll waits for real content, never an
  *    `empty:hidden` (display:none) container.
- *  - A loading → results reflow cancels an in-flight smooth scroll, leaving it
- *    parked partway. Re-issuing on each status change fixes it: the final scroll
- *    fires once the flow has settled (`!busy`), after the last reflow, so it
- *    sticks. Intermediate re-issues that land on the same spot are no-ops.
+ *  - A loading → results reflow can cut an in-flight smooth scroll short. Rather
+ *    than snap (which reads as abrupt), we re-issue the smooth glide on every
+ *    status change and let the last one — fired once the flow has settled
+ *    (`!busy`), after the final reflow — carry it home. Re-issues that are
+ *    already at the target are no-ops.
  */
 export function useRevealResults<T extends HTMLElement = HTMLDivElement>(
   status: string,
@@ -30,7 +31,7 @@ export function useRevealResults<T extends HTMLElement = HTMLDivElement>(
 
   useEffect(() => {
     if (!pending.current || status === "idle") return;
-    ref.current?.scrollIntoView({ behavior: "auto", block: "start" });
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     if (!busy) pending.current = false;
   }, [status, busy]);
 

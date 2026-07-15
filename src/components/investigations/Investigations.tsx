@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { investigations, PHENOMENA, phenomenonById } from "@/investigations";
 import type { PhenomenonId } from "@/investigations";
@@ -32,6 +32,16 @@ export function Investigations() {
   const active = activeSlug
     ? visible.find((i) => i.slug === activeSlug)
     : undefined;
+
+  // When a card is opened, its detail renders below the whole grid — often past
+  // the fold. Glide it into view so the reader lands on the case, not on empty
+  // space. Only fires on open/switch (activeSlug truthy), never on close; the
+  // detail is embedded data with no fetch, so a smooth scroll runs uninterrupted.
+  const detailRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!activeSlug) return;
+    detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [activeSlug]);
 
   function pick(next: Filter) {
     setFilter(next);
@@ -72,14 +82,20 @@ export function Investigations() {
             inv={inv}
             active={inv.slug === activeSlug}
             onSelect={() =>
-              setActiveSlug((prev) => (prev === inv.slug ? undefined : inv.slug))
+              setActiveSlug((prev) =>
+                prev === inv.slug ? undefined : inv.slug,
+              )
             }
           />
         ))}
       </div>
 
       {active && (
-        <div key={active.slug} className="animate-rise flex flex-col gap-5">
+        <div
+          key={active.slug}
+          ref={detailRef}
+          className="animate-rise flex scroll-mt-24 flex-col gap-5"
+        >
           <div className="rounded-2xl border border-line bg-surface-1/45 p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <p className="max-w-md font-mono text-[11px] uppercase tracking-[0.12em] text-ink-faint">

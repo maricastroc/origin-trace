@@ -109,6 +109,42 @@ describe("normalize / containsPhrase", () => {
     expect(normalize("a {{lang|fr|bonjour}} b")).toBe("a bonjour b");
     expect(normalize("held{{nbsp}}together")).toBe("held together");
   });
+
+  it("renders {{convert}}/{{cvt}} to its value so a rendered phrase matches", () => {
+    // Real Quokka bug: the audit renders {{convert}} to "41200 sqkm" but the
+    // trace left the template name in place ("convert 41200 sqkm sqmi abbr on"),
+    // so the sentence it had just read could never be found in its own history.
+    expect(
+      normalize("about {{convert|41200|sqkm|sqmi|abbr=on}} of the coast"),
+    ).toBe("about 41200 sqkm of the coast");
+    expect(normalize("a {{cvt|5|km}} walk")).toBe("a 5 km walk");
+    expect(
+      containsPhrase(
+        "an area of about {{convert|41200|sqkm|sqmi|abbr=on}} of the South West",
+        "an area of about 41200 sqkm of the South West",
+      ),
+    ).toBe(true);
+    // A range: the phrase carries an en-dash, the wikitext a {{convert|…to…}};
+    // both survive normalization to the same tokens.
+    expect(
+      containsPhrase(
+        "spanning {{convert|10|to|20|km}} north",
+        "spanning 10–20 km north",
+      ),
+    ).toBe(true);
+  });
+
+  it("resolves a labelled external link to its label", () => {
+    expect(normalize("see [https://example.org/x The Report] now")).toBe(
+      "see the report now",
+    );
+    expect(
+      containsPhrase(
+        "noted in [https://example.org/x the field guide] clearly",
+        "noted in the field guide clearly",
+      ),
+    ).toBe(true);
+  });
 });
 
 describe("findIntroduction", () => {
@@ -256,7 +292,18 @@ describe("findIntroduction — adversarial guarantees", () => {
   const presentAt = (has: boolean[], i: number) => has[i] === true;
 
   it("finds the earliest island, not a later block, under non-monotonic presence", async () => {
-    const has = [false, true, true, false, false, false, true, true, true, true];
+    const has = [
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+    ];
     const res = await run(has);
     expect(res!.index).toBe(1);
     expect(presentAt(has, res!.index)).toBe(true);
@@ -309,7 +356,18 @@ describe("findIntroduction — adversarial guarantees", () => {
   });
 
   it("locates the same origin whether or not reads are prefetched", async () => {
-    const has = [false, true, true, false, false, false, true, true, true, true];
+    const has = [
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+    ];
     const plain = corpus(has);
     const batched = batchedCorpus(has);
     const a = await findIntroduction(
@@ -516,8 +574,8 @@ describe("detectRefNear", () => {
   it("detects an inline citation attached to the sentence carrying the phrase", () => {
     const content =
       "The quokka is a small marsupial native to Australia.<ref>{{cite news|newspaper=The Guardian|title=Q|date=2019}}</ref>\n\nA later paragraph with no bearing.";
-    
-      const det = detectRefNear(content, "small marsupial native to Australia");
+
+    const det = detectRefNear(content, "small marsupial native to Australia");
     expect(det.sourced).toBe(true);
 
     expect(det.source?.label).toBe("The Guardian");
@@ -537,7 +595,7 @@ describe("detectRefNear", () => {
   it("detects a shortened-footnote citation on the sentence carrying the phrase", () => {
     const content =
       "Cleopatra was the last active ruler of the Ptolemaic Kingdom of Egypt.{{sfn|Roller|2010|p=1}}\n\nUnrelated paragraph.";
-    
+
     const det = detectRefNear(
       content,
       "last active ruler of the Ptolemaic Kingdom",
@@ -619,7 +677,7 @@ describe("anchorIndex", () => {
       "a marsupial endemic to rottnest",
       "marsupial vanished",
     );
-    
+
     expect(idx).toBe("a ".length);
   });
 

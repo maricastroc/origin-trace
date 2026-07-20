@@ -5,6 +5,8 @@ import { Quote, Search } from "lucide-react";
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
 import type { Resolution } from "@/types/Resolution";
 import type { TraceProgress } from "@/types/TraceProgress";
+import type { SearchProbe } from "@/types/SearchProbe";
+import type { TraceMetrics } from "@/engine/metrics";
 import { streamTrace } from "@/lib/traceClient";
 import { parseArticleInput } from "@/lib/articleInput";
 import { errMsg } from "@/lib/errMsg";
@@ -27,11 +29,18 @@ type State =
   | { status: "resolving" }
   | { status: "ambiguous"; resolution: Resolution }
   | { status: "unresolved"; note: string }
-  | { status: "tracing"; scope: string; progress: TraceProgress | null }
+  | {
+      status: "tracing";
+      scope: string;
+      progress: TraceProgress | null;
+      probes: SearchProbe[];
+      corpusSize?: number;
+    }
   | { status: "error"; message: string; lang: string }
   | {
       status: "done";
       data: ClaimProvenance;
+      metrics?: TraceMetrics;
       scope: string;
       phrase: string;
       lang?: string;
@@ -65,16 +74,48 @@ export function LiveTrace() {
   );
 
   async function trace(scope: string, claimPhrase: string, lang = "en") {
-    setState({ status: "tracing", scope, progress: null });
+    setState({
+      status: "tracing",
+      scope,
+      progress: null,
+      probes: [],
+      corpusSize: undefined,
+    });
     try {
+      let capturedMetrics: TraceMetrics | undefined;
       const data = await streamTrace({
         article: scope,
         phrase: claimPhrase,
         lang,
+        onMetrics: (m) => {
+          capturedMetrics = m;
+        },
         onProgress: (progress) =>
-          setState({ status: "tracing", scope, progress }),
+          setState((prev) =>
+            prev.status === "tracing"
+              ? {
+                  ...prev,
+                  progress,
+                  probes:
+                    progress.phase === "searching" && progress.probe
+                      ? [...prev.probes, progress.probe]
+                      : prev.probes,
+                  corpusSize:
+                    progress.phase === "listed"
+                      ? progress.revisions
+                      : prev.corpusSize,
+                }
+              : prev,
+          ),
       });
-      setState({ status: "done", data, scope, phrase: claimPhrase, lang });
+      setState({
+        status: "done",
+        data,
+        metrics: capturedMetrics,
+        scope,
+        phrase: claimPhrase,
+        lang,
+      });
       const params = { trace: claimPhrase, article: scope, lang };
       remember({
         key: paramsToKey(params),
@@ -314,7 +355,11 @@ export function LiveTrace() {
         {state.status === "tracing" && (
           <>
             <ScopeBanner scope={state.scope} />
-            <LiveTraceLoading progress={state.progress} />
+            <LiveTraceLoading
+              progress={state.progress}
+              probes={state.probes}
+              corpusSize={state.corpusSize}
+            />
           </>
         )}
 
@@ -351,7 +396,7 @@ export function LiveTrace() {
               />
             </div>
             <div className="rounded-2xl border border-line-strong bg-surface-2 p-5 shadow-[0_30px_60px_-40px_rgba(90,60,30,0.4)] sm:p-8">
-              <CaseFile data={state.data} />
+              <CaseFile data={state.data} metrics={state.metrics} />
             </div>
           </div>
         )}

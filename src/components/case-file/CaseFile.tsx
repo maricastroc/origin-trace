@@ -1,15 +1,24 @@
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
+import type { TraceMetrics } from "@/engine/metrics";
 import { CaseFileHeader } from "./CaseFileHeader";
 import { CircularLoop } from "./CircularLoop";
 import { CorpusReceipt } from "./CorpusReceipt";
 import { CredibilityRead } from "./CredibilityRead";
 import { DualReadings } from "./DualReadings";
+import { EngineReceipt } from "./EngineReceipt";
 import { EvidenceStatus } from "./EvidenceStatus";
 import { ProvenanceFooter } from "./ProvenanceFooter";
+import { SearchDescent } from "./SearchDescent";
 import { SourceQualityNote } from "./SourceQualityNote";
 import { Timeline } from "./Timeline";
 
-export function CaseFile({ data }: { data: ClaimProvenance }) {
+export function CaseFile({
+  data,
+  metrics,
+}: {
+  data: ClaimProvenance;
+  metrics?: TraceMetrics;
+}) {
   const isAmbiguous = data.verdict.primary === "ambiguous";
 
   return (
@@ -20,6 +29,16 @@ export function CaseFile({ data }: { data: ClaimProvenance }) {
         <CorpusReceipt
           corpus={data.meta.corpus}
           manual={data.meta.generatedBy === "manual-trace"}
+        />
+      )}
+      {data.search && (
+        <SearchDescent
+          corpusSize={data.search.corpusSize}
+          probes={data.search.probes}
+          originIndex={data.search.originIndex}
+          originProven={data.search.originProven}
+          reads={data.search.reads}
+          span={data.search.span}
         />
       )}
       <Timeline
@@ -39,6 +58,7 @@ export function CaseFile({ data }: { data: ClaimProvenance }) {
       )}
       <CredibilityRead text={data.credibilityRead} />
       {data.sourceQuality && <SourceQualityNote quality={data.sourceQuality} />}
+      {metrics && <EngineReceipt metrics={metrics} />}
       <ProvenanceFooter meta={data.meta} />
     </article>
   );

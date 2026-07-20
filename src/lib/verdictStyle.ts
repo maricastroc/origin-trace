@@ -82,25 +82,6 @@ export const verdictStyle: Record<Verdict, VerdictStyle> = {
     rank: 4,
     ...PALETTE.warn,
   },
-  churn: {
-    label: "churn",
-    health: "unstable",
-    gloss: "the evidence was swapped repeatedly",
-    meaning:
-      "Stayed in the article while its citation was swapped again and again — the evidence keeps shifting underneath it.",
-    severity: "warn",
-    rank: 4,
-    ...PALETTE.warn,
-  },
-  contested: {
-    label: "contested",
-    health: "contested",
-    gloss: "reverted / edit war",
-    meaning: "Reverted or fought over — its place in the article is disputed.",
-    severity: "warn",
-    rank: 5,
-    ...PALETTE.warn,
-  },
   "unsourced-stable": {
     label: "unsourced-stable",
     health: "unsourced",

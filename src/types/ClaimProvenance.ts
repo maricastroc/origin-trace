@@ -1,4 +1,5 @@
 import type { Confidence } from "./Confidence";
+import type { SearchTrace } from "./SearchTrace";
 import type { TimelineEvent } from "./TimelineEvent";
 import type { Verdict } from "./Verdict";
 import type { VerdictReading } from "./VerdictReading";
@@ -20,6 +21,10 @@ export interface ClaimProvenance {
     readings?: VerdictReading[];
   };
   timeline: TimelineEvent[];
+  /** The origin search's descent over the closed corpus — the sampling sweep and
+   *  the bisection that converged on the first occurrence. Present on every live
+   *  trace; absent only on hand-authored fixtures that predate it. */
+  search?: SearchTrace;
   credibilityRead: string;
   sourceQuality?: {
     note: string;

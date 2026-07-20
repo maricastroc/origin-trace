@@ -159,7 +159,7 @@ Origin Trace doesn't return true or false. Every claim resolves to one of these 
 | **unsourced-stable** | unsourced   | Has carried no citation in its entire history, yet no one removed it.                                     |
 | **ambiguous**        | ambiguous   | The verdict flips depending on where you draw the line around "the same claim" — both readings are shown. |
 
-> The live engine classifies claims into **born-sourced**, **retrofit**, **source-lost**, **unsourced-stable** and **ambiguous**, plus a terminal **removed** state. `churn` (a citation swapped repeatedly) and `contested` (revert / edit-war analysis) are on the roadmap and are **not shown** in the UI until the engine actually emits them — until then it deliberately says "no removal recorded" rather than "never challenged".
+> The live engine classifies claims into **born-sourced**, **retrofit**, **source-lost**, **unsourced-stable** and **ambiguous**, plus a terminal **removed** state — the whole taxonomy it can prove from the revision history alone. It deliberately stops there: revert / edit-war analysis isn't implemented, so it says "no removal recorded" rather than "never challenged", and won't name a pattern (a contested claim, a repeatedly-swapped citation) it can't yet demonstrate.
 
 <br/>
 
@@ -182,7 +182,7 @@ A tool that stakes its value on honesty should be just as honest about its own e
 - **Citation detection is heuristic.** It looks for a `<ref>`/`{{cite}}` on the claim's own sentence — good for the common `claim.<ref>…</ref>` shape, deliberately modest about exotic citation structures. It reports `confidence: low` accordingly.
 - **Sentence segmentation is structural, not perfect.** The whole-article audit infers sentence boundaries from markup with an abbreviation guard — reliable, but heuristic. "Uncited" means _no inline citation sits on the sentence_; it is descriptive, and some sentences legitimately need none.
 - **Reworded claims may not be found.** The trace matches a phrase across history; if the wording drifted substantially, the exact phrase won't be in the older revisions, and the tool returns an honest "not found" rather than a wrong origin.
-- **Contested and churn aren't detected yet.** Revert and edit-war analysis is unimplemented, so the engine says "no removal recorded" rather than "never challenged", and doesn't yet surface a citation that was swapped repeatedly.
+- **Revert and edit-war analysis isn't implemented.** The engine says "no removal recorded" rather than "never challenged", and doesn't attempt to classify a claim that was fought over or whose citation was swapped repeatedly — it stays with the patterns it can prove from presence and citation, rather than naming one it can't.
 - **Circular-source detection needs a live citation.** The citogenesis check compares the cited source's publication _year_ to the claim's introduction year, so it only fires on a retrofit still present in the current revision — a claim exposed and _removed_ (the canonical "Brazilian aardvark") no longer carries a citation to test. It also reasons at year granularity, and doesn't pin the exact revision that attached the citation — the loop's note says so rather than overstating it.
 - **Current-state vs. history can differ — legitimately.** The audit reads the _current_ revision; the drill-down reads the _history_. A claim that was born with a source later stripped shows as `uncited` now in the audit, and as `source-lost` in its trace — the badge names the loss instead of asserting the birth state. Both are true; they describe different points in time.
 - **Very long histories can be truncated.** Enumeration is capped at a generous page limit. When it bites, closure is _unproven_ — and the receipt says so, rather than quietly presenting a partial search as complete.
@@ -193,12 +193,12 @@ A tool that stakes its value on honesty should be just as honest about its own e
 
 Because the pipeline is a set of pure, deterministic functions, it's tested the same way — **no network, no live API**. The engine takes an injectable `fetchJson`, so a small in-memory stand-in for the MediaWiki API drives whole traces end to end; every assertion is reproducible offline, exactly like the verdicts themselves.
 
-- **178 tests across 18 files**, run with **Vitest**.
-- **Engine** — the gap-robust binary search (including removed-and-reintroduced histories) and its **speculative-prefetch descent** (proven to locate the identical origin with far fewer round-trips), citation-vs-note detection, `{{cite}}` parsing, structural article segmentation, and every verdict path: `born-sourced`, `retrofit`, `source-lost`, `unsourced-stable`, _removed_, and the **citogenesis loop**.
+- **232 tests across 20 files**, run with **Vitest**.
+- **Engine** — the gap-robust binary search (including removed-and-reintroduced histories) and its **speculative-prefetch descent** (proven to locate the identical origin with far fewer round-trips), the **probe stream that records that descent** (every probe truthful and inside its own window, converging on the origin — the data the UI redraws), citation-vs-note detection, `{{cite}}` parsing, structural article segmentation, and every verdict path: `born-sourced`, `retrofit`, `source-lost`, `unsourced-stable`, _removed_, and the **citogenesis loop**.
 - **Wikipedia client** — `rvcontinue` pagination, truncation, missing pages, wikitext-snippet cleaning, and the **parallel windowed enumeration proven equivalent to a serial walk** — same revisions, same order, nothing lost or duplicated even when a window boundary splits a same-timestamp cluster.
 - **Caching** — the two-tier cache (in-process LRU + gzip'd Redis round-trip, backfill, and cached-`null`-vs-miss), exercised against an in-memory Redis stand-in.
-- **Lib** — high-impact phrase detection (EN + PT), audit metrics/model, evidence signals, and the label/verdict maps.
-- **API routes** — input-validation branches.
+- **Lib** — high-impact phrase detection (EN + PT), audit metrics/model, evidence signals, the label/verdict maps, and the **token-bucket rate limiter** (burst, smooth refill, per-caller isolation, driven on a synthetic clock).
+- **API routes** — input-validation branches and the **429 over-budget path**.
 
 ```bash
 npm test

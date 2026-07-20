@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { TraceProgress } from "@/types/TraceProgress";
+import type { SearchProbe } from "@/types/SearchProbe";
+import { SearchDescent } from "../case-file/SearchDescent";
 
 function readProgress(p: TraceProgress | null): {
   label: string;
@@ -72,8 +74,12 @@ function readProgress(p: TraceProgress | null): {
 
 export function LiveTraceLoading({
   progress,
+  probes = [],
+  corpusSize,
 }: {
   progress: TraceProgress | null;
+  probes?: SearchProbe[];
+  corpusSize?: number;
 }) {
   const [elapsed, setElapsed] = useState(0);
 
@@ -86,34 +92,40 @@ export function LiveTraceLoading({
   const pct = Math.round(fraction * 100);
 
   return (
-    <div className="rounded-2xl border border-line-strong bg-surface-2 px-5 py-6 sm:px-6">
-      <div className="flex items-center gap-2.5">
-        <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-accent" />
-        <p className="font-mono text-[13px] text-ink">{label}</p>
-        <span className="ml-auto font-mono text-[11px] tabular-nums text-ink-faint">
-          {elapsed}s
-        </span>
-      </div>
+    <div className="flex flex-col gap-4">
+      <div className="rounded-2xl border border-line-strong bg-surface-2 px-5 py-6 sm:px-6">
+        <div className="flex items-center gap-2.5">
+          <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-accent" />
+          <p className="font-mono text-[13px] text-ink">{label}</p>
+          <span className="ml-auto font-mono text-[11px] tabular-nums text-ink-faint">
+            {elapsed}s
+          </span>
+        </div>
 
-      <div
-        className="mt-4 h-1 w-full overflow-hidden rounded-full bg-line"
-        role="progressbar"
-        aria-valuenow={pct}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
         <div
-          className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out"
-          style={{ width: `${pct}%` }}
-        />
+          className="mt-4 h-1 w-full overflow-hidden rounded-full bg-line"
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+
+        <p className="mt-2.5 flex items-center justify-between gap-3 text-[12.5px] leading-relaxed text-ink-faint">
+          <span>{detail}</span>
+          <span className="shrink-0 font-mono tabular-nums text-ink-muted">
+            {pct}%
+          </span>
+        </p>
       </div>
 
-      <p className="mt-2.5 flex items-center justify-between gap-3 text-[12.5px] leading-relaxed text-ink-faint">
-        <span>{detail}</span>
-        <span className="shrink-0 font-mono tabular-nums text-ink-muted">
-          {pct}%
-        </span>
-      </p>
+      {corpusSize && probes.length > 0 && (
+        <SearchDescent corpusSize={corpusSize} probes={probes} live />
+      )}
     </div>
   );
 }

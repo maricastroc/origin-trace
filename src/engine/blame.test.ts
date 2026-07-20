@@ -14,6 +14,8 @@ import {
 } from "@/engine/blame.ts";
 import type { RevisionMeta } from "@/engine/wikipedia.ts";
 
+import type { SearchProbe } from "@/types/SearchProbe";
+
 function rev(i: number): RevisionMeta {
   return {
     revid: 100 + i,
@@ -111,9 +113,6 @@ describe("normalize / containsPhrase", () => {
   });
 
   it("renders {{convert}}/{{cvt}} to its value so a rendered phrase matches", () => {
-    // Real Quokka bug: the audit renders {{convert}} to "41200 sqkm" but the
-    // trace left the template name in place ("convert 41200 sqkm sqmi abbr on"),
-    // so the sentence it had just read could never be found in its own history.
     expect(
       normalize("about {{convert|41200|sqkm|sqmi|abbr=on}} of the coast"),
     ).toBe("about 41200 sqkm of the coast");
@@ -124,8 +123,7 @@ describe("normalize / containsPhrase", () => {
         "an area of about 41200 sqkm of the South West",
       ),
     ).toBe(true);
-    // A range: the phrase carries an en-dash, the wikitext a {{convert|…to…}};
-    // both survive normalization to the same tokens.
+
     expect(
       containsPhrase(
         "spanning {{convert|10|to|20|km}} north",
@@ -683,5 +681,56 @@ describe("anchorIndex", () => {
 
   it("returns -1 when nothing matches", () => {
     expect(anchorIndex("short text", "absolutely nowhere")).toBe(-1);
+  });
+});
+
+describe("findIntroduction — probe descent", () => {
+  const has = Array.from({ length: 40 }, (_, i) => i >= 25);
+
+  async function descend() {
+    const { revisions, getContent, phrase } = corpus(has);
+    const probes: SearchProbe[] = [];
+    const res = await findIntroduction(revisions, phrase, getContent, (p) =>
+      probes.push(p),
+    );
+    return { res: res!, probes };
+  }
+
+  it("emits a probe stream that pins the true origin", async () => {
+    const { res, probes } = await descend();
+    expect(res.index).toBe(25);
+    expect(probes.length).toBeGreaterThan(0);
+  });
+
+  it("reports every probe truthfully and inside its own window", async () => {
+    const { probes } = await descend();
+    probes.forEach((p, i) => {
+      expect(p.step).toBe(i);
+      expect(p.hit).toBe(has[p.index]);
+      expect(p.lo).toBeLessThanOrEqual(p.index);
+      expect(p.index).toBeLessThan(p.hi);
+    });
+  });
+
+  it("samples first, then bisects toward the edge", async () => {
+    const { probes } = await descend();
+    const kinds = new Set(probes.map((p) => p.kind));
+    expect(kinds.has("sample")).toBe(true);
+    expect(kinds.has("bisect")).toBe(true);
+    const bisected = probes.filter((p) => p.kind === "bisect").map((p) => p.index);
+    expect(bisected).toContain(25);
+    expect(bisected).toContain(24);
+  });
+
+  it("converges in O(log n) reads, not a linear scan", async () => {
+    const { res } = await descend();
+
+    expect(res.contentFetches).toBeLessThan(20);
+  });
+
+  it("stays inert when no sink is passed (no behaviour change)", async () => {
+    const { revisions, getContent, phrase } = corpus(has);
+    const res = await findIntroduction(revisions, phrase, getContent);
+    expect(res!.index).toBe(25);
   });
 });

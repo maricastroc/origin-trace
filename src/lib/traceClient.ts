@@ -1,5 +1,6 @@
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
 import type { TraceProgress } from "@/types/TraceProgress";
+import type { TraceMetrics } from "@/engine/metrics";
 
 const enc = encodeURIComponent;
 
@@ -8,9 +9,14 @@ export async function streamTrace(opts: {
   phrase: string;
   lang?: string;
   onProgress?: (p: TraceProgress) => void;
+  /** The profiler snapshot the route measures for this trace — network
+   *  round-trips, revisions read, cache hits, per-stage timing. Delivered once,
+   *  alongside the result. A side channel like {@link onProgress} so the return
+   *  type stays `ClaimProvenance` and callers that don't care are unaffected. */
+  onMetrics?: (m: TraceMetrics) => void;
   signal?: AbortSignal;
 }): Promise<ClaimProvenance> {
-  const { article, phrase, lang, onProgress, signal } = opts;
+  const { article, phrase, lang, onProgress, onMetrics, signal } = opts;
 
   const langQuery = lang ? `&lang=${enc(lang)}` : "";
 
@@ -47,12 +53,14 @@ export async function streamTrace(opts: {
 
       const msg = JSON.parse(json) as
         | { type: "progress"; progress: TraceProgress }
-        | { type: "result"; data: ClaimProvenance }
+        | { type: "result"; data: ClaimProvenance; metrics?: TraceMetrics }
         | { type: "error"; message: string };
 
       if (msg.type === "progress") onProgress?.(msg.progress);
-      else if (msg.type === "result") return msg.data;
-      else throw new Error(msg.message);
+      else if (msg.type === "result") {
+        if (msg.metrics) onMetrics?.(msg.metrics);
+        return msg.data;
+      } else throw new Error(msg.message);
     }
   }
 

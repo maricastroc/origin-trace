@@ -5,6 +5,8 @@ import type { Verdict } from "@/types/Verdict";
 import type { VerdictReading } from "@/types/VerdictReading";
 import type { EventKind } from "@/types/EventKind";
 import type { ChangeTag } from "@/types/ChangeTag";
+import type { SearchProbe } from "@/types/SearchProbe";
+import type { SearchTrace } from "@/types/SearchTrace";
 import {
   anchorIndex,
   detectRefNear,
@@ -30,7 +32,7 @@ import type { Stage } from "./metrics.ts";
 export type TraceProgress =
   | { phase: "listing" }
   | { phase: "listed"; revisions: number; truncated: boolean }
-  | { phase: "searching"; read: number; estimate: number }
+  | { phase: "searching"; read: number; estimate: number; probe?: SearchProbe }
   | { phase: "located"; year: string; removed: boolean }
   | { phase: "reading" }
   | { phase: "detecting" }
@@ -75,6 +77,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   let phase: "searching" | "reading" = "searching";
   let reads = 0;
   let estimate = 12;
+  const probes: SearchProbe[] = [];
 
   const cache = new Map<number, string | null>();
   const read: ContentReader = async (revid) => {
@@ -103,7 +106,15 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   estimate = Math.max(6, Math.ceil(Math.log2(revisions.length + 1)) * 2);
   emit({ phase: "listed", revisions: revisions.length, truncated });
 
-  const intro = await findIntroduction(revisions, input.phrase, read);
+  const intro = await findIntroduction(
+    revisions,
+    input.phrase,
+    read,
+    (probe) => {
+      probes.push(probe);
+      emit({ phase: "searching", read: reads, estimate, probe });
+    },
+  );
   stage("search");
   if (intro === null) throw new ClaimNotFoundError(input.article, input.phrase);
 
@@ -325,6 +336,16 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       : null,
   });
 
+  const search: SearchTrace = {
+    corpusSize: revisions.length,
+    reads: intro.contentFetches,
+    probes,
+    originIndex: intro.index,
+    originRevId: intro.revision.revid,
+    originProven,
+    span: { from: year(revisions[0].timestamp), to: year(latest.timestamp) },
+  };
+
   const provenance: ClaimProvenance = {
     claim: {
       text: input.claimText ?? input.phrase,
@@ -346,6 +367,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       ...(readings ? { readings } : {}),
     },
     timeline,
+    search,
     ...(circularLoop ? { annotations: { circularLoop } } : {}),
     credibilityRead: credibilityRead(narrativePrimary, {
       introRef: effectiveIntroSource,
@@ -379,8 +401,6 @@ const VERDICT_PHRASE: Record<Verdict, string> = {
   retrofit: "a retrofit (born unsourced)",
   "source-lost": "born-sourced but since stripped of its source",
   "unsourced-stable": "unsourced",
-  churn: "churned",
-  contested: "contested",
   ambiguous: "ambiguous",
   removed: "removed",
 };

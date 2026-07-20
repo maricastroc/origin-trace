@@ -1,9 +1,13 @@
 import { resolveArticles } from "@/engine/resolve.ts";
 import { safeLang } from "@/lib/lang";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request): Promise<Response> {
+  const limited = enforceRateLimit(request, "resolve", RATE_LIMITS.resolve);
+  if (limited) return limited;
+
   const { searchParams } = new URL(request.url);
   const phrase = searchParams.get("phrase")?.trim();
   const lang = safeLang(searchParams.get("lang"));

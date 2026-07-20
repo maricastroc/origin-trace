@@ -433,10 +433,10 @@ describe("createFetchJson — retry/backoff", () => {
       () => "resolved",
       (e) => String(e),
     );
-    setTimeout(() => ac.abort(), 10); // abort mid-backoff (before the 50ms wait)
+    setTimeout(() => ac.abort(), 10);
 
     expect(await outcome).toMatch(/abort/i);
-    expect(attempts).toBe(1); // the backoff was cancelled, no second attempt
+    expect(attempts).toBe(1);
   });
 
   it("fails fast on a non-retryable status, without retrying", async () => {

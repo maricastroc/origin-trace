@@ -3,11 +3,15 @@ import { getEngineCache } from "@/engine/persistent-cache.ts";
 import { createFetchJson } from "@/engine/wikipedia.ts";
 import { TraceProfiler } from "@/engine/metrics.ts";
 import { safeLang } from "@/lib/lang";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 export async function GET(request: Request): Promise<Response> {
+  const limited = enforceRateLimit(request, "trace", RATE_LIMITS.trace);
+  if (limited) return limited;
+
   const { searchParams } = new URL(request.url);
   const article = searchParams.get("article")?.trim();
   const phrase = searchParams.get("phrase")?.trim();

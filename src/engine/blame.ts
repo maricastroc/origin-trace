@@ -1,12 +1,8 @@
 import type { ClaimSource } from "@/types/ClaimSource";
 import type { SourceType } from "@/types/SourceType";
+import type { SearchProbe } from "@/types/SearchProbe";
 import type { RevisionMeta } from "./wikipedia.ts";
 
-/** Inline templates that render as text mid-sentence, so their raw form has to
- *  be unwrapped to what the reader sees or a rendered phrase can't be matched
- *  against the wikitext ({{convert|41200|sqkm}} → "41200 sqkm"). Deliberately a
- *  fixed list of *inline* templates: container templates like {{blockquote|…}}
- *  are left in place so the prose they wrap survives into the token stream. */
 const INLINE_TEMPLATE =
   /\{\{\s*(?:convert|cvt|lang(?:-[a-z-]+)?|transl|transliteration|nbsp|spaces?|thinsp|hairsp|nowrap|nobr|nowraplinks|sic|typo|em|strong)\b[^{}]*\}\}/gi;
 
@@ -18,11 +14,7 @@ export function normalize(text: string): string {
       .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, " ")
       .replace(/<[^>]+>/g, " ")
       .replace(/\[\[(?:[^\]]*\|)?([^\]|]*)\]\]/g, "$1")
-      // Labelled external link → its label, matching the audit's cleanProse.
       .replace(/\[https?:\/\/\S+\s+([^\]]*)\]/g, "$1")
-      // Render inline templates to their displayed text, the same way cleanProse
-      // does, so a phrase taken from rendered prose matches the raw wikitext it
-      // came from. Padded with spaces so an unwrap never fuses two words.
       .replace(INLINE_TEMPLATE, (m) => ` ${unwrapTemplate(m)} `)
       .replace(/[’‘`]/g, "'")
       .replace(/'{2,}/g, "")
@@ -76,10 +68,10 @@ export function unwrapTemplate(tpl: string): string {
   ) {
     return args[args.length - 1] ?? "";
   }
-  // Micro-templates that render as whitespace — keep words apart, don't fuse.
+
   if (["nbsp", "spaces", "space", "thinsp", "hairsp"].includes(name))
     return " ";
-  // Inline emphasis/formatting wrappers render as their text.
+
   if (
     [
       "nowrap",
@@ -118,16 +110,46 @@ export interface IntroductionResult {
   contentFetches: number;
 }
 
+/** A single evaluation the search made, reported as it happens. `index` is a
+ *  corpus position; the caller enriches it into a {@link SearchProbe} with the
+ *  revision's id and timestamp. Optional — with no sink the search is unchanged
+ *  and allocates nothing extra. */
+type ProbeSink = (
+  index: number,
+  hit: boolean,
+  lo: number,
+  hi: number,
+  kind: "sample" | "bisect",
+) => void;
+
 export async function findIntroduction(
   revisions: RevisionMeta[],
   phrase: string,
   getContent: ContentReader,
+  onProbe?: (probe: SearchProbe) => void,
 ): Promise<IntroductionResult | null> {
   if (revisions.length === 0) return null;
   const norm = normalize(phrase);
 
   const seen = new Map<number, boolean>();
   let fetches = 0;
+  let step = 0;
+
+  const record: ProbeSink | undefined = onProbe
+    ? (index, hit, lo, hi, kind) => {
+        const r = revisions[index];
+        onProbe({
+          step: step++,
+          index,
+          revid: r.revid,
+          timestamp: r.timestamp,
+          lo,
+          hi,
+          hit,
+          kind,
+        });
+      }
+    : undefined;
 
   const contains = async (i: number): Promise<boolean> => {
     if (seen.has(i)) return seen.get(i)!;
@@ -155,7 +177,7 @@ export async function findIntroduction(
 
   const n = revisions.length;
 
-  const first = await earliestContaining(n, contains, prefetch);
+  const first = await earliestContaining(n, contains, prefetch, record);
 
   if (first < 0) return null;
 
@@ -188,15 +210,16 @@ async function earliestContaining(
   n: number,
   contains: (i: number) => Promise<boolean>,
   prefetch?: (indices: number[]) => Promise<void>,
+  onProbe?: ProbeSink,
 ): Promise<number> {
   let earliest = -1;
 
   let bound = n;
 
   while (bound > 0) {
-    const hit = await sampleTrue(0, bound, contains, prefetch);
+    const hit = await sampleTrue(0, bound, contains, prefetch, onProbe);
     if (hit < 0) break;
-    const edge = await lowerBoundTrue(0, hit, contains, prefetch);
+    const edge = await lowerBoundTrue(0, hit, contains, prefetch, onProbe);
     earliest = edge;
     if (edge === 0) break;
     bound = edge;
@@ -228,6 +251,7 @@ async function lowerBoundTrue(
   hi: number,
   pred: (i: number) => Promise<boolean>,
   prefetch?: (indices: number[]) => Promise<void>,
+  onProbe?: ProbeSink,
 ): Promise<number> {
   while (lo < hi) {
     if (prefetch && hi - lo > PREFETCH_MIN_SPAN) {
@@ -238,7 +262,9 @@ async function lowerBoundTrue(
 
     while (lo < hi && steps-- > 0) {
       const mid = (lo + hi) >> 1;
-      if (await pred(mid)) hi = mid;
+      const hit = await pred(mid);
+      onProbe?.(mid, hit, lo, hi, "bisect");
+      if (hit) hi = mid;
       else lo = mid + 1;
     }
   }
@@ -250,12 +276,15 @@ async function sampleTrue(
   hi: number,
   pred: (i: number) => Promise<boolean>,
   prefetch?: (indices: number[]) => Promise<void>,
+  onProbe?: ProbeSink,
 ): Promise<number> {
   const span = hi - lo;
 
   if (span <= 0) return -1;
 
-  if (await pred(hi - 1)) return hi - 1;
+  const topHit = await pred(hi - 1);
+  onProbe?.(hi - 1, topHit, lo, hi, "sample");
+  if (topHit) return hi - 1;
 
   const probes = Math.min(
     span,
@@ -271,7 +300,9 @@ async function sampleTrue(
   if (prefetch) await prefetch(indices);
 
   for (const i of indices) {
-    if (await pred(i)) return i;
+    const hit = await pred(i);
+    onProbe?.(i, hit, lo, hi, "sample");
+    if (hit) return i;
   }
 
   return -1;

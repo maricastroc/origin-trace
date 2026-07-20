@@ -33,10 +33,6 @@ export function Investigations() {
     ? visible.find((i) => i.slug === activeSlug)
     : undefined;
 
-  // When a card is opened, its detail renders below the whole grid — often past
-  // the fold. Glide it into view so the reader lands on the case, not on empty
-  // space. Only fires on open/switch (activeSlug truthy), never on close; the
-  // detail is embedded data with no fetch, so a smooth scroll runs uninterrupted.
   const detailRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!activeSlug) return;

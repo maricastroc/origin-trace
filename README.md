@@ -193,11 +193,11 @@ A tool that stakes its value on honesty should be just as honest about its own e
 
 Because the pipeline is a set of pure, deterministic functions, it's tested the same way — **no network, no live API**. The engine takes an injectable `fetchJson`, so a small in-memory stand-in for the MediaWiki API drives whole traces end to end; every assertion is reproducible offline, exactly like the verdicts themselves.
 
-- **232 tests across 20 files**, run with **Vitest**.
+- **238 tests across 21 files**, run with **Vitest**.
 - **Engine** — the gap-robust binary search (including removed-and-reintroduced histories) and its **speculative-prefetch descent** (proven to locate the identical origin with far fewer round-trips), the **probe stream that records that descent** (every probe truthful and inside its own window, converging on the origin — the data the UI redraws), citation-vs-note detection, `{{cite}}` parsing, structural article segmentation, and every verdict path: `born-sourced`, `retrofit`, `source-lost`, `unsourced-stable`, _removed_, and the **citogenesis loop**.
 - **Wikipedia client** — `rvcontinue` pagination, truncation, missing pages, wikitext-snippet cleaning, and the **parallel windowed enumeration proven equivalent to a serial walk** — same revisions, same order, nothing lost or duplicated even when a window boundary splits a same-timestamp cluster.
 - **Caching** — the two-tier cache (in-process LRU + gzip'd Redis round-trip, backfill, and cached-`null`-vs-miss), exercised against an in-memory Redis stand-in.
-- **Lib** — high-impact phrase detection (EN + PT), audit metrics/model, evidence signals, the label/verdict maps, and the **token-bucket rate limiter** (burst, smooth refill, per-caller isolation, driven on a synthetic clock).
+- **Lib** — high-impact phrase detection (EN + PT), audit metrics/model, evidence signals, the label/verdict maps, the **word-level diff** (LCS over tokens) behind the reformulation chain, and the **token-bucket rate limiter** (burst, smooth refill, per-caller isolation, driven on a synthetic clock).
 - **API routes** — input-validation branches and the **429 over-budget path**.
 
 ```bash

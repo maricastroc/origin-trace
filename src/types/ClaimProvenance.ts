@@ -1,4 +1,5 @@
 import type { Confidence } from "./Confidence";
+import type { GenealogyTrace } from "./GenealogyTrace";
 import type { SearchTrace } from "./SearchTrace";
 import type { TimelineEvent } from "./TimelineEvent";
 import type { Verdict } from "./Verdict";
@@ -25,6 +26,10 @@ export interface ClaimProvenance {
    *  the bisection that converged on the first occurrence. Present on every live
    *  trace; absent only on hand-authored fixtures that predate it. */
   search?: SearchTrace;
+  /** The reformulation chain, when the wording drifted across revisions — each
+   *  wording, the anchors that carried it, and how far the walk reached. Absent
+   *  when the string never changed (the timeline already tells that story). */
+  genealogy?: GenealogyTrace;
   credibilityRead: string;
   sourceQuality?: {
     note: string;

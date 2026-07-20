@@ -7,6 +7,7 @@ import { CredibilityRead } from "./CredibilityRead";
 import { DualReadings } from "./DualReadings";
 import { EngineReceipt } from "./EngineReceipt";
 import { EvidenceStatus } from "./EvidenceStatus";
+import { GenealogyChain } from "./GenealogyChain";
 import { ProvenanceFooter } from "./ProvenanceFooter";
 import { SearchDescent } from "./SearchDescent";
 import { SourceQualityNote } from "./SourceQualityNote";
@@ -50,6 +51,7 @@ export function CaseFile({
             : "the evidence for the verdict — each node is an auditable revision; between them, what changed"
         }
       />
+      {data.genealogy && <GenealogyChain genealogy={data.genealogy} />}
       {data.annotations?.circularLoop && (
         <CircularLoop loop={data.annotations.circularLoop} />
       )}

@@ -265,6 +265,20 @@ describe("traceClaim — verdicts", () => {
     expect(prov.timeline.some((e) => e.kind === "source-added")).toBe(true);
     expect(prov.timeline[prov.timeline.length - 1].kind).toBe("current");
     expect(prov.annotations?.circularLoop).toBeDefined();
+
+    // The reformulation chain is exposed as structured data, oldest → newest.
+    const g = prov.genealogy;
+    expect(g).toBeDefined();
+    expect(g!.steps.length).toBeGreaterThanOrEqual(2);
+    expect(g!.movedEarlier).toBe(true);
+    // Origin (first) shares no anchors; a later step carries some across.
+    expect(g!.steps[0].anchorsShared).toEqual([]);
+    expect(g!.steps.slice(1).some((s) => s.anchorsShared.length > 0)).toBe(true);
+    // Non-origin steps report their overlap with the predecessor.
+    expect(g!.steps.slice(1).every((s) => typeof s.overlap === "number")).toBe(
+      true,
+    );
+    expect(g!.terminus.length).toBeGreaterThan(0);
   });
 
   it("never downloads a revision twice across the search → genealogy handoff", async () => {

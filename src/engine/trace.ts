@@ -7,6 +7,7 @@ import type { EventKind } from "@/types/EventKind";
 import type { ChangeTag } from "@/types/ChangeTag";
 import type { SearchProbe } from "@/types/SearchProbe";
 import type { SearchTrace } from "@/types/SearchTrace";
+import type { GenealogyTrace } from "@/types/GenealogyTrace";
 import {
   anchorIndex,
   detectRefNear,
@@ -346,6 +347,28 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     span: { from: year(revisions[0].timestamp), to: year(latest.timestamp) },
   };
 
+  // The reformulation chain — only when the wording actually drifted (≥2 steps).
+  // A claim whose string never changed has no chain worth drawing; the timeline
+  // already covers it.
+  const genealogyTrace: GenealogyTrace | undefined =
+    genealogy && chainOldToNew.length >= 2
+      ? {
+          steps: chainOldToNew.map((h) => ({
+            wording: h.wording,
+            date: h.date,
+            revId: h.revId,
+            sourced: h.sourced,
+            sourceLabel: h.sourceLabel,
+            anchorsShared: h.anchorsShared,
+            ...(h.overlap !== undefined ? { overlap: h.overlap } : {}),
+          })),
+          terminus: genealogy.terminus,
+          residual: residualShape(genealogy.terminus),
+          movedEarlier: genealogy.movedEarlier,
+          nonMonotonic: genealogy.nonMonotonic,
+        }
+      : undefined;
+
   const provenance: ClaimProvenance = {
     claim: {
       text: input.claimText ?? input.phrase,
@@ -368,6 +391,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     },
     timeline,
     search,
+    ...(genealogyTrace ? { genealogy: genealogyTrace } : {}),
     ...(circularLoop ? { annotations: { circularLoop } } : {}),
     credibilityRead: credibilityRead(narrativePrimary, {
       introRef: effectiveIntroSource,

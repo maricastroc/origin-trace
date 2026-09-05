@@ -1,7 +1,6 @@
 import type { ArticleAudit } from "../types/ArticleAudit.ts";
 import type { ClaimProvenance } from "../types/ClaimProvenance.ts";
 
-
 export type PhenomenonId =
   | "citogenesis"
   | "retrofit"

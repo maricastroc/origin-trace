@@ -13,7 +13,9 @@ import {
   detectRefNear,
   findIntroduction,
   normalize,
+  searchBudget,
   type ContentReader,
+  type SearchStopReason,
 } from "./blame.ts";
 import {
   reconstructGenealogy,
@@ -47,9 +49,9 @@ export interface TraceInput {
   maxPages?: number;
   fetchJson?: FetchJson;
   cache?: EngineCache;
+  searchBudgetMs?: number;
+  now?: () => number;
   onProgress?: (progress: TraceProgress) => void;
-  /** Coarse stage boundaries for timing. Fired once per stage as it closes;
-   *  a {@link TraceProfiler} timestamps them. Additive and optional. */
   onStage?: (stage: Stage) => void;
 }
 
@@ -64,6 +66,33 @@ export class ClaimNotFoundError extends Error {
   }
 }
 
+export class SearchIncompleteError extends Error {
+  readonly article: string;
+  readonly phrase: string;
+  readonly searchedRevisions: number;
+  readonly totalCandidateRevisions: number;
+  readonly stopReason: SearchStopReason = "budget-exhausted";
+
+  constructor(
+    article: string,
+    phrase: string,
+    searchedRevisions: number,
+    totalCandidateRevisions: number,
+  ) {
+    super(
+      `Search budget exhausted for ${JSON.stringify(phrase)} in "${article}" ` +
+        `after ${searchedRevisions} of ${totalCandidateRevisions} revisions`,
+    );
+    this.name = "SearchIncompleteError";
+    this.article = article;
+    this.phrase = phrase;
+    this.searchedRevisions = searchedRevisions;
+    this.totalCandidateRevisions = totalCandidateRevisions;
+  }
+}
+
+export const DEFAULT_SEARCH_BUDGET_MS = 12_000;
+
 export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
   const lang = input.lang ?? "en";
   const client = new WikipediaClient({
@@ -75,6 +104,10 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
 
   const emit = input.onProgress ?? (() => {});
   const stage = input.onStage ?? (() => {});
+  const budgetMs = input.searchBudgetMs ?? DEFAULT_SEARCH_BUDGET_MS;
+  const budget = Number.isFinite(budgetMs)
+    ? searchBudget(budgetMs, input.now)
+    : undefined;
   let phase: "searching" | "reading" = "searching";
   let reads = 0;
   let estimate = 12;
@@ -115,9 +148,19 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
       probes.push(probe);
       emit({ phase: "searching", read: reads, estimate, probe });
     },
+    budget,
   );
   stage("search");
-  if (intro === null) throw new ClaimNotFoundError(input.article, input.phrase);
+  if (intro === null) {
+    if (budget?.expired())
+      throw new SearchIncompleteError(
+        input.article,
+        input.phrase,
+        cache.size,
+        revisions.length,
+      );
+    throw new ClaimNotFoundError(input.article, input.phrase);
+  }
 
   const originProven = intro.earliestProven && !truncated;
   emit({
@@ -328,6 +371,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     bornAtOldest,
     removedSince: intro.removedSince,
     earliestUnproven: !intro.earliestProven,
+    searchTruncated: intro.searchTruncated,
     origin: genealogy
       ? {
           reach: residualShape(genealogy.terminus),
@@ -344,12 +388,13 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
     originIndex: intro.index,
     originRevId: intro.revision.revid,
     originProven,
+    searchTruncated: intro.searchTruncated,
+    searchedRevisions: intro.searchedRevisions,
+    totalCandidateRevisions: intro.totalCandidateRevisions,
+    stopReason: intro.stopReason,
     span: { from: year(revisions[0].timestamp), to: year(latest.timestamp) },
   };
 
-  // The reformulation chain — only when the wording actually drifted (≥2 steps).
-  // A claim whose string never changed has no chain worth drawing; the timeline
-  // already covers it.
   const genealogyTrace: GenealogyTrace | undefined =
     genealogy && chainOldToNew.length >= 2
       ? {
@@ -409,6 +454,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
         total: revisions.length,
         truncated,
         originProven,
+        searchTruncated: intro.searchTruncated,
       },
       ...(() => {
         const notes = buildNotes(intro);

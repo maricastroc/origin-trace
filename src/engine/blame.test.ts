@@ -717,7 +717,9 @@ describe("findIntroduction — probe descent", () => {
     const kinds = new Set(probes.map((p) => p.kind));
     expect(kinds.has("sample")).toBe(true);
     expect(kinds.has("bisect")).toBe(true);
-    const bisected = probes.filter((p) => p.kind === "bisect").map((p) => p.index);
+    const bisected = probes
+      .filter((p) => p.kind === "bisect")
+      .map((p) => p.index);
     expect(bisected).toContain(25);
     expect(bisected).toContain(24);
   });

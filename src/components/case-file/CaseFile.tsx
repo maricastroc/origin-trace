@@ -38,6 +38,7 @@ export function CaseFile({
           probes={data.search.probes}
           originIndex={data.search.originIndex}
           originProven={data.search.originProven}
+          searchTruncated={data.search.searchTruncated}
           reads={data.search.reads}
           span={data.search.span}
         />

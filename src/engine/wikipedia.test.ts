@@ -6,8 +6,6 @@ import {
 } from "@/engine/wikipedia.ts";
 import { createEngineCache, type EngineCache } from "@/engine/cache.ts";
 
-/** A fetch stand-in that returns a scripted sequence of Responses (repeating the
- *  last one), and counts how many times it was called. */
 function scriptedFetch(responses: Response[]) {
   let calls = 0;
   const fetchImpl = (async () => {

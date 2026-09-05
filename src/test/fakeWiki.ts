@@ -8,11 +8,8 @@ export interface FakeRevision {
 }
 
 export interface FakeWikiOptions {
-  /** The one title the fake knows about; any other title reads as missing. */
   title: string;
-  /** Chronological order, oldest first (matches rvdir=newer listing). */
   revisions: FakeRevision[];
-  /** Search results keyed by the exact srsearch query string. */
   search?: Record<string, { title: string; snippet?: string }[]>;
 }
 
@@ -21,11 +18,6 @@ export interface FakeWiki {
   calls: { list: number; content: number; current: number; search: number };
 }
 
-/**
- * A minimal in-memory stand-in for the MediaWiki API, routing by query params
- * the same way {@link WikipediaClient} builds them. Enough to exercise
- * listRevisions / getContent / getCurrentContent / search end to end.
- */
 export function fakeWiki(opts: FakeWikiOptions): FakeWiki {
   const byId = new Map(opts.revisions.map((r) => [r.revid, r]));
   const calls = { list: 0, content: 0, current: 0, search: 0 };

@@ -1,16 +1,16 @@
 import type { EngineCache } from "./cache.ts";
+import type {
+  CacheChannel as GuardChannel,
+  CacheHealth,
+  CacheOp,
+  CacheOutcome,
+} from "./cache-guard.ts";
 import type { FetchJson, RevisionList } from "./wikipedia.ts";
 
-/** Coarse pipeline stages, in the order a trace runs them. */
 export type Stage = "listing" | "search" | "read" | "genealogy" | "assemble";
 
 export type RequestKind =
-  | "list"
-  | "content"
-  | "current"
-  | "latest-ts"
-  | "search"
-  | "other";
+  "list" | "content" | "current" | "latest-ts" | "search" | "other";
 
 export interface CacheChannel {
   reads: number;
@@ -21,9 +21,6 @@ export interface CacheChannel {
   writeMs: number;
 }
 
-/** Everything one trace or audit spent its wall-clock on, measured at the two
- *  external seams (the Wikipedia fetch and the {@link EngineCache}) plus coarse
- *  stage marks. Purely observational — see {@link TraceProfiler}. */
 export interface TraceMetrics {
   wallMs: number;
   stages: Partial<Record<Stage, number>>;
@@ -38,6 +35,8 @@ export interface TraceMetrics {
   cache: {
     content: CacheChannel;
     list: CacheChannel;
+    result: CacheChannel;
+    health?: CacheHealth;
   };
 }
 
@@ -74,16 +73,6 @@ function countRevids(url: string): number {
 
 const clock = (): number => performance.now();
 
-/**
- * A request-scoped profiler for one trace or audit. It wraps the pipeline's two
- * external seams — {@link FetchJson} and {@link EngineCache} — and collects
- * coarse stage marks, so a route can report exactly where the wall-clock went
- * (Wikipedia latency vs. cache latency vs. per-stage time, request and batch
- * counts, cache hit/miss) without the engine knowing it is being watched.
- *
- * Strictly additive: with no profiler the pipeline runs unchanged, and the
- * wrappers only observe — they never alter results, order, or error behaviour.
- */
 export class TraceProfiler {
   private readonly startedAt = clock();
   private lastMarkAt = this.startedAt;
@@ -94,27 +83,25 @@ export class TraceProfiler {
     retries: 0,
     contentBatches: 0,
     revisionsFetched: 0,
-    byKind: {} as Partial<Record<RequestKind, { requests: number; ms: number }>>,
+    byKind: {} as Partial<
+      Record<RequestKind, { requests: number; ms: number }>
+    >,
   };
   private readonly cacheContent = emptyChannel();
   private readonly cacheList = emptyChannel();
+  private readonly cacheResult = emptyChannel();
+  private cacheHealth: (() => CacheHealth) | null = null;
 
-  /** Close the stage that just ended and start timing the next one. Call only
-   *  at the coarse boundaries in {@link traceClaim}/{@link auditArticle}. */
   readonly onStage = (stage: Stage): void => {
     const t = clock();
     this.stages[stage] = (this.stages[stage] ?? 0) + (t - this.lastMarkAt);
     this.lastMarkAt = t;
   };
 
-  /** Count a retry a backoff-aware fetch performed. No-op with the default
-   *  fetch (it doesn't retry) — wired for the later concurrency/backoff work. */
   readonly recordRetry = (): void => {
     this.net.retries++;
   };
 
-  /** Wrap a {@link FetchJson} so every Wikipedia call is counted and timed by
-   *  kind. Latency here is real network time (cache hits never reach it). */
   instrumentFetch(inner: FetchJson): FetchJson {
     return async (url) => {
       const kind = classifyRequest(url);
@@ -134,9 +121,6 @@ export class TraceProfiler {
     };
   }
 
-  /** Wrap an {@link EngineCache} so hits/misses and cumulative read/write
-   *  latency are recorded per channel. This is the seam where a Redis/KV L2's
-   *  per-call round-trips show up as cache latency. */
   instrumentCache(inner: EngineCache): EngineCache {
     const content = this.cacheContent;
     const list = this.cacheList;
@@ -174,6 +158,28 @@ export class TraceProfiler {
     };
   }
 
+  readonly onCacheOutcome = (
+    channel: GuardChannel,
+    op: CacheOp,
+    outcome: CacheOutcome,
+    ms: number,
+  ): void => {
+    if (channel !== "result") return;
+    if (op === "read") {
+      this.cacheResult.reads++;
+      this.cacheResult.readMs += ms;
+      if (outcome === "hit") this.cacheResult.hits++;
+      else if (outcome === "miss") this.cacheResult.misses++;
+    } else {
+      this.cacheResult.writes++;
+      this.cacheResult.writeMs += ms;
+    }
+  };
+
+  attachCacheHealth(health: () => CacheHealth): void {
+    this.cacheHealth = health;
+  }
+
   snapshot(): TraceMetrics {
     return {
       wallMs: clock() - this.startedAt,
@@ -189,12 +195,12 @@ export class TraceProfiler {
       cache: {
         content: { ...this.cacheContent },
         list: { ...this.cacheList },
+        result: { ...this.cacheResult },
+        ...(this.cacheHealth ? { health: this.cacheHealth() } : {}),
       },
     };
   }
 
-  /** Format a W3C `Server-Timing` header value. Only meaningful on a
-   *  non-streaming response, whose headers are sent after the work completes. */
   serverTiming(): string {
     const m = this.snapshot();
     const parts: string[] = [];
@@ -211,7 +217,7 @@ export class TraceProfiler {
       m.cache.list.readMs +
       m.cache.list.writeMs;
     parts.push(
-      `cache;dur=${cacheMs.toFixed(1)};desc="${m.cache.content.hits}h/${m.cache.content.misses}m"`,
+      `cache;dur=${cacheMs.toFixed(1)};desc="${m.cache.content.hits}h/${m.cache.content.misses}m/${m.cache.health?.state ?? "none"}"`,
     );
     parts.push(`total;dur=${m.wallMs.toFixed(1)}`);
     return parts.join(", ");

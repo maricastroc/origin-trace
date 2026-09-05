@@ -1,16 +1,6 @@
 import type { GenealogyTrace } from "@/types/GenealogyTrace";
 import { wordDiff } from "@/lib/wordDiff";
 
-/**
- * The reformulation chain — the case file's second algorithm made visible. Where
- * the descent shows the search finding *where* a claim began, this shows *how its
- * wording drifted* on the way there: each revision's wording is diffed against
- * the one before it, and the anchors that survived the rewording are lit up as
- * the invariant idea the walk actually followed. It's the LCS-diff genealogy,
- * legible — a picture of why the trace could follow a claim past a paraphrase
- * that a plain string search would have lost.
- */
-
 const core = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const RESIDUAL: Record<
@@ -86,7 +76,10 @@ export function GenealogyChain({ genealogy }: { genealogy: GenealogyTrace }) {
                   aria-hidden="true"
                 />
                 {!isLast && (
-                  <span className="mt-1 w-px flex-1 bg-line" aria-hidden="true" />
+                  <span
+                    className="mt-1 w-px flex-1 bg-line"
+                    aria-hidden="true"
+                  />
                 )}
               </div>
 
@@ -121,23 +114,23 @@ export function GenealogyChain({ genealogy }: { genealogy: GenealogyTrace }) {
                   )}
                 </p>
 
-                {k >= 1 && (s.overlap !== undefined || s.anchorsShared.length > 0) && (
-                  <p className="mt-1.5 font-mono text-[10.5px] text-ink-faint">
-                    {s.overlap !== undefined
-                      ? `≈${Math.round(s.overlap * 100)}% shared`
-                      : ""}
-                    {s.anchorsShared.length
-                      ? `${s.overlap !== undefined ? " · " : ""}held ${formatAnchors(s.anchorsShared)}`
-                      : ""}
-                  </p>
-                )}
+                {k >= 1 &&
+                  (s.overlap !== undefined || s.anchorsShared.length > 0) && (
+                    <p className="mt-1.5 font-mono text-[10.5px] text-ink-faint">
+                      {s.overlap !== undefined
+                        ? `≈${Math.round(s.overlap * 100)}% shared`
+                        : ""}
+                      {s.anchorsShared.length
+                        ? `${s.overlap !== undefined ? " · " : ""}held ${formatAnchors(s.anchorsShared)}`
+                        : ""}
+                    </p>
+                  )}
               </div>
             </li>
           );
         })}
       </ol>
 
-      {/* Legend */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line pt-3 font-mono text-[10.5px] text-ink-faint">
         <span className="inline-flex items-center gap-1.5">
           <Anchor>held</Anchor> anchor held
@@ -204,7 +197,7 @@ function Diff({
 
 function Anchor({ children }: { children: React.ReactNode }) {
   return (
-    <span className="mx-0.5 rounded-[2px] bg-accent/10 text-ink underline decoration-accent/50 decoration-1 underline-offset-2">
+    <span className="mx-0.5 rounded-xs bg-accent/10 text-ink underline decoration-accent/50 decoration-1 underline-offset-2">
       {children}
     </span>
   );

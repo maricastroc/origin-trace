@@ -4,19 +4,33 @@ import type { TraceMetrics } from "@/engine/metrics";
 
 const enc = encodeURIComponent;
 
+export class SearchIncomplete extends Error {
+  readonly searchedRevisions: number;
+  readonly totalCandidateRevisions: number;
+
+  constructor(
+    message: string,
+    searchedRevisions: number,
+    totalCandidateRevisions: number,
+  ) {
+    super(message);
+    this.name = "SearchIncomplete";
+    this.searchedRevisions = searchedRevisions;
+    this.totalCandidateRevisions = totalCandidateRevisions;
+  }
+}
+
 export async function streamTrace(opts: {
   article: string;
   phrase: string;
   lang?: string;
   onProgress?: (p: TraceProgress) => void;
-  /** The profiler snapshot the route measures for this trace — network
-   *  round-trips, revisions read, cache hits, per-stage timing. Delivered once,
-   *  alongside the result. A side channel like {@link onProgress} so the return
-   *  type stays `ClaimProvenance` and callers that don't care are unaffected. */
   onMetrics?: (m: TraceMetrics) => void;
+  onCached?: (cached: boolean) => void;
   signal?: AbortSignal;
 }): Promise<ClaimProvenance> {
-  const { article, phrase, lang, onProgress, onMetrics, signal } = opts;
+  const { article, phrase, lang, onProgress, onMetrics, onCached, signal } =
+    opts;
 
   const langQuery = lang ? `&lang=${enc(lang)}` : "";
 
@@ -53,14 +67,37 @@ export async function streamTrace(opts: {
 
       const msg = JSON.parse(json) as
         | { type: "progress"; progress: TraceProgress }
-        | { type: "result"; data: ClaimProvenance; metrics?: TraceMetrics }
-        | { type: "error"; message: string };
+        | {
+            type: "result";
+            data: ClaimProvenance;
+            metrics?: TraceMetrics;
+            cached?: boolean;
+          }
+        | {
+            type: "incomplete";
+            message: string;
+            searchedRevisions: number;
+            totalCandidateRevisions: number;
+            metrics?: TraceMetrics;
+          }
+        | { type: "error"; message: string; metrics?: TraceMetrics };
 
       if (msg.type === "progress") onProgress?.(msg.progress);
       else if (msg.type === "result") {
         if (msg.metrics) onMetrics?.(msg.metrics);
+        onCached?.(msg.cached === true);
         return msg.data;
-      } else throw new Error(msg.message);
+      } else if (msg.type === "incomplete") {
+        if (msg.metrics) onMetrics?.(msg.metrics);
+        throw new SearchIncomplete(
+          msg.message,
+          msg.searchedRevisions,
+          msg.totalCandidateRevisions,
+        );
+      } else {
+        if (msg.metrics) onMetrics?.(msg.metrics);
+        throw new Error(msg.message);
+      }
     }
   }
 

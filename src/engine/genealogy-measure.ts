@@ -316,17 +316,13 @@ async function main(argv: string[]): Promise<number> {
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--only")
       only = args[++i] === "representative" ? "representative" : "curated";
-
     else if (args[i] === "--lang") lang = args[++i] ?? "en";
-
     else if (args[i] === "--sample") sample = Number(args[++i]) || 4;
-
     else if (args[i] === "--articles")
       articles = (args[++i] ?? "")
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-
     else if (args[i] === "--out") out = args[++i] ?? out;
   }
 

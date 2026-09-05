@@ -33,7 +33,6 @@ export interface AuditModel {
   longestRun: UncitedRun | null;
 }
 
-/** Sections small enough that a coverage ratio is noise, not signal. */
 const RANKABLE_MIN = 3;
 
 export function buildAuditModel(data: ArticleAudit): AuditModel {

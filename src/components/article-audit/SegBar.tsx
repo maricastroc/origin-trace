@@ -21,8 +21,10 @@ export function SegBar({
     >
       <div className="h-full bg-success" style={{ width: seg(sourced) }} />
       <div className="h-full bg-warn" style={{ width: seg(noteOnly) }} />
-      {/* Uncited reads as a neutral, unfilled tan — descriptive coverage gap, not an error. */}
-      <div className="h-full bg-line-strong" style={{ width: seg(unsourced) }} />
+      <div
+        className="h-full bg-line-strong"
+        style={{ width: seg(unsourced) }}
+      />
     </div>
   );
 }

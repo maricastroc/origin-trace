@@ -1,12 +1,3 @@
-/**
- * A word-level diff between two wordings, via the same longest-common-subsequence
- * the engine's genealogy uses over sentences — here over tokens, so the UI can
- * render one wording morphing into the next (kept words, dropped words, new
- * words). Tokens are compared on their alphanumeric core, case-insensitively, so
- * punctuation and casing don't register as changes; the original text is what's
- * rendered.
- */
-
 export interface DiffToken {
   text: string;
   op: "same" | "add" | "del";
@@ -23,7 +14,6 @@ export function wordDiff(prev: string, next: string): DiffToken[] {
   const m = a.length;
   const n = b.length;
 
-  // LCS lengths, filled from the bottom-right so the walk below is forward.
   const dp: Int32Array[] = Array.from(
     { length: m + 1 },
     () => new Int32Array(n + 1),

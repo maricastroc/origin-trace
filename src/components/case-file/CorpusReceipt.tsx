@@ -10,7 +10,7 @@ export function CorpusReceipt({
   corpus: Corpus;
   manual: boolean;
 }) {
-  const { read, total, truncated, originProven } = corpus;
+  const { read, total, truncated, originProven, searchTruncated } = corpus;
 
   const engine = typeof read === "number";
 
@@ -43,6 +43,8 @@ export function CorpusReceipt({
             <Tag>traced by hand</Tag>
           ) : truncated ? (
             <Tag tone="warn">history truncated</Tag>
+          ) : searchTruncated ? (
+            <Tag tone="warn">search incomplete</Tag>
           ) : proven ? (
             <Tag tone="ok">origin proven</Tag>
           ) : (
@@ -64,6 +66,16 @@ export function CorpusReceipt({
             this trace — the search pinned the origin from the{" "}
             {read!.toLocaleString()} revisions it read, but earlier occurrences
             can&rsquo;t be ruled out.
+          </>
+        ) : searchTruncated ? (
+          <>
+            The search stopped on its time budget after reading{" "}
+            {read!.toLocaleString()} of {total.toLocaleString()} revisions. The
+            origin shown was read and confirmed &mdash; the phrase is there
+            &mdash; but the descent below it never finished, so this is the
+            earliest occurrence <em>found</em>, not the earliest that exists.
+            Running the trace again resumes from a warm corpus and usually
+            completes.
           </>
         ) : proven ? (
           <>

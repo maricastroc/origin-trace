@@ -77,7 +77,11 @@ export function AuditSummary({
         <Stat
           label="sentences read"
           value={String(model.totals.sentences)}
-          sub={lead.total > 0 ? `${body.total} body · ${lead.total} lead` : undefined}
+          sub={
+            lead.total > 0
+              ? `${body.total} body · ${lead.total} lead`
+              : undefined
+          }
         />
         <Stat label="sections mapped" value={String(data.sections.length)} />
         <Stat
@@ -114,7 +118,7 @@ export function AuditSummary({
         {lead.total > 0 && (
           <p>
             <span className="text-ink-muted">Lead:</span> {lead.sourced} of{" "}
-            {lead.total} {" "}sentences cited inline — the rest are conventionally
+            {lead.total} sentences cited inline — the rest are conventionally
             sourced in the body (WP:LEADCITE), so they&rsquo;re counted apart
             and kept out of the section ranking.
           </p>

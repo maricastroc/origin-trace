@@ -49,7 +49,7 @@ export function residualShape(
 
 export interface GenealogyHop {
   wording: string;
-  revId: number
+  revId: number;
   parentId: number;
   date: string;
   sourced: boolean;
@@ -89,13 +89,7 @@ export interface GenealogyInput {
   cache?: EngineCache;
   overlapMin?: number;
   onHop?: (hop: number) => void;
-  /** A revision listing already fetched by the caller. When present the walk
-   *  skips its own {@link WikipediaClient.listRevisions} — the trace passes the
-   *  list its introduction search already built. */
   revisions?: RevisionMeta[];
-  /** A content reader (with its request-scoped cache) already warmed by the
-   *  caller's search. When present the walk reads through it instead of a fresh
-   *  one, so a revision the search downloaded is never downloaded again. */
   read?: ContentReader;
 }
 
@@ -197,7 +191,6 @@ export async function reconstructGenealogy(
       anchorsShared: [],
     };
     if (chain.length === 0) lexicalOrigin = originOf(hop);
-
 
     if (intro.index === 0 || !intro.priorRevision) {
       chain.push(hop);
@@ -406,7 +399,7 @@ function findPredecessor(
   }
 
   let best: { predecessor: string; anchors: Anchor[] } | null = null;
-  
+
   for (const del of dels) {
     const anchors = guardShared(cur, del, titleTokens);
 
@@ -716,7 +709,7 @@ function locateSentence(content: string, phrase: string): string | null {
     const clean = cleanProse(raw);
     if (normalize(clean).includes(target)) return clean;
   }
-  
+
   return null;
 }
 

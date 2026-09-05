@@ -7,7 +7,7 @@ import type { Resolution } from "@/types/Resolution";
 import type { TraceProgress } from "@/types/TraceProgress";
 import type { SearchProbe } from "@/types/SearchProbe";
 import type { TraceMetrics } from "@/engine/metrics";
-import { streamTrace } from "@/lib/traceClient";
+import { SearchIncomplete, streamTrace } from "@/lib/traceClient";
 import { parseArticleInput } from "@/lib/articleInput";
 import { errMsg } from "@/lib/errMsg";
 import { useHistory } from "@/lib/history";
@@ -37,6 +37,14 @@ type State =
       corpusSize?: number;
     }
   | { status: "error"; message: string; lang: string }
+  | {
+      status: "incomplete";
+      message: string;
+      searchedRevisions: number;
+      totalCandidateRevisions: number;
+      scope: string;
+      lang: string;
+    }
   | {
       status: "done";
       data: ClaimProvenance;
@@ -126,6 +134,20 @@ export function LiveTrace() {
       });
       updateUrl(params);
     } catch (err) {
+      // An incomplete search is not a failed one. Collapsing it into the error
+      // card would tell the reader the claim is not in the history, which is
+      // exactly what the engine refused to conclude.
+      if (err instanceof SearchIncomplete) {
+        setState({
+          status: "incomplete",
+          message: err.message,
+          searchedRevisions: err.searchedRevisions,
+          totalCandidateRevisions: err.totalCandidateRevisions,
+          scope,
+          lang,
+        });
+        return;
+      }
       setState({ status: "error", message: errMsg(err), lang });
     }
   }
@@ -380,6 +402,25 @@ export function LiveTrace() {
                 trace again.
               </p>
             )}
+          </div>
+        )}
+
+        {state.status === "incomplete" && (
+          <div className="rounded-xl border border-warn/30 bg-surface-1/60 px-5 py-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-warn">
+              search incomplete
+              <span className="ml-2 text-ink-faint">
+                &middot; not the same as not found
+              </span>
+            </p>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-muted">
+              {state.message}
+            </p>
+            <p className="mt-2 font-mono text-[11.5px] text-ink-faint">
+              {state.searchedRevisions.toLocaleString()} of{" "}
+              {state.totalCandidateRevisions.toLocaleString()} revisions
+              examined &middot; {state.scope}
+            </p>
           </div>
         )}
 

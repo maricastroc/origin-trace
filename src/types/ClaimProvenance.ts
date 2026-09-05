@@ -15,20 +15,12 @@ export interface ClaimProvenance {
   verdict: {
     primary: Verdict;
     confidence: Confidence;
-    /** The uncertainties that lowered `confidence`, most concerning first.
-     *  Empty/absent when nothing undermined the trace (a `high` verdict). */
     confidenceReasons?: string[];
     summary: string;
     readings?: VerdictReading[];
   };
   timeline: TimelineEvent[];
-  /** The origin search's descent over the closed corpus — the sampling sweep and
-   *  the bisection that converged on the first occurrence. Present on every live
-   *  trace; absent only on hand-authored fixtures that predate it. */
   search?: SearchTrace;
-  /** The reformulation chain, when the wording drifted across revisions — each
-   *  wording, the anchors that carried it, and how far the walk reached. Absent
-   *  when the string never changed (the timeline already tells that story). */
   genealogy?: GenealogyTrace;
   credibilityRead: string;
   sourceQuality?: {
@@ -52,11 +44,8 @@ export interface ClaimProvenance {
       read?: number;
       total: number;
       truncated: boolean;
-      /** True only if the search read every revision below the origin and found
-       *  it absent — the origin is the proven first occurrence. False/absent
-       *  when the sub-origin range was sampled: a valid occurrence was found,
-       *  but a sparse earlier one cannot be ruled out. */
       originProven?: boolean;
+      searchTruncated?: boolean;
     };
   };
 }

@@ -20,22 +20,14 @@ const WINDOW_BIAS = 2;
 const CACHE_READ_CONCURRENCY = 16;
 
 export interface FetchJsonOptions {
-  /** Fired before each backoff wait, for observability (e.g. a retry counter).
-   *  `reason` is the HTTP status or the API error code that triggered the wait. */
   onRetry?: (info: { attempt: number; reason: string; waitMs: number }) => void;
   maxRetries?: number;
   baseDelayMs?: number;
   maxDelayMs?: number;
-  /** Abort in-flight requests and cancel any pending backoff (e.g. when the
-   *  client disconnects). Threaded to `fetch` and to the wait between retries. */
   signal?: AbortSignal;
 }
 
-/** HTTP statuses worth retrying: 429 (rate limit) and 503 (overload). */
 const RETRYABLE_STATUS = new Set([429, 503]);
-/** MediaWiki action-API error codes that mean "back off and retry". The API
- *  returns these in a **200** body (`{error:{code}}`) with a `Retry-After`
- *  header, not only as an HTTP status — so a status-only check would miss them. */
 const RETRYABLE_API_ERROR = new Set(["maxlag", "ratelimited", "readonly"]);
 
 interface ApiErrorShape {
@@ -47,8 +39,6 @@ function abortError(): Error {
   return new DOMException("The operation was aborted.", "AbortError");
 }
 
-/** A backoff wait that resolves after `ms`, or rejects immediately if `signal`
- *  aborts — so a cancelled request never sits out its retry delay. */
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return reject(abortError());
@@ -64,12 +54,6 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-/** Build a {@link FetchJson} that survives transient rate-limiting instead of
- *  aborting a whole trace. It retries on HTTP 429/503 **and** on the action
- *  API's in-body `maxlag`/`ratelimited` errors, honouring `Retry-After` and
- *  otherwise backing off exponentially with jitter. `fetchImpl` is injectable
- *  for tests; production uses the global `fetch`. The success path is unchanged
- *  — one request, parsed JSON. */
 export function createFetchJson(
   opts: FetchJsonOptions = {},
   fetchImpl: typeof fetch = fetch,
@@ -128,10 +112,6 @@ export interface WikipediaClientOptions {
   fetchJson?: FetchJson;
   maxPages?: number;
   cache?: EngineCache;
-  /** How many concurrent time-windows to split a long history into, and how many
-   *  to fetch at once. Default to the module constants; overridable for tuning /
-   *  experiments. Higher values shorten the critical path but raise concurrency
-   *  against the API — the windows dedupe to the exact serial list either way. */
   windowCount?: number;
   windowConcurrency?: number;
 }
@@ -262,15 +242,15 @@ export class WikipediaClient {
     return { revisions, continued: Boolean(rvcontinue) };
   }
 
-  /** The timestamp of the current (newest) revision — the upper bound for windowing.
-   *  One tiny request; `null` when the article somehow has no revisions. */
-  private async latestTimestamp(title: string): Promise<string | null> {
+  async latestRevision(
+    title: string,
+  ): Promise<{ revid: number; timestamp: string } | null> {
     const params: Record<string, string> = {
       action: "query",
       prop: "revisions",
       titles: title,
       redirects: "1",
-      rvprop: "timestamp",
+      rvprop: "ids|timestamp",
       rvlimit: "1",
       rvdir: "older",
     };
@@ -279,7 +259,13 @@ export class WikipediaClient {
     if (page?.missing) {
       throw new Error(`Article not found: "${title}" (${this.lang}.wikipedia)`);
     }
-    return page?.revisions?.[0]?.timestamp ?? null;
+    const rev = page?.revisions?.[0];
+    if (!rev) return null;
+    return { revid: rev.revid, timestamp: rev.timestamp ?? "" };
+  }
+
+  private async latestTimestamp(title: string): Promise<string | null> {
+    return (await this.latestRevision(title))?.timestamp ?? null;
   }
 
   async getContent(revids: number[]): Promise<Map<number, string>> {
@@ -316,8 +302,10 @@ export class WikipediaClient {
     const out = new Map<number, string | null>();
     const unique = [...new Set(revids)];
 
-    const cached = await mapConcurrent(unique, CACHE_READ_CONCURRENCY, (revid) =>
-      Promise.resolve(this.cache?.getContent(this.lang, revid)),
+    const cached = await mapConcurrent(
+      unique,
+      CACHE_READ_CONCURRENCY,
+      (revid) => Promise.resolve(this.cache?.getContent(this.lang, revid)),
     );
 
     const misses: number[] = [];
@@ -414,7 +402,7 @@ export function planTimeWindows(
   const windows: Array<{ start: string; end: string }> = [];
   let prev = startMs;
   for (let i = 1; i <= k; i++) {
-    const frac = 1 - Math.pow(1 - i / k, WINDOW_BIAS); // 0→1, gaps shrink toward endMs
+    const frac = 1 - Math.pow(1 - i / k, WINDOW_BIAS);
     const boundary =
       i === k ? endMs : Math.round(startMs + (endMs - startMs) * frac);
     if (boundary > prev) {
@@ -425,10 +413,6 @@ export function planTimeWindows(
   return windows;
 }
 
-/** Union several (possibly overlapping) revision batches into one canonically
- *  ordered list: dedupe by revid, then sort by (timestamp, revid) ascending — the
- *  exact order the API returns for a serial `rvdir=newer` walk. This is what makes
- *  windowed and serial pagination provably interchangeable. Exported for tests. */
 export function mergeRevisions(
   batches: RevisionMeta[][],
   truncated: boolean,
@@ -497,21 +481,19 @@ function stripSnippet(html: string): string {
   } while (s !== prev);
   s = s.replace(/^[^{}]*\}\}/, "").replace(/\{\{[^{}]*$/, "");
 
-  return (
-    s
-      .replace(/\[\[(?:[^\]|]*\|)?([^\]|]*)\]\]/g, "$1")
-      .replace(/\[https?:\/\/\S+\s+([^\]]*)\]/g, "$1")
-      .replace(/\[https?:\/\/\S+\]/g, "")
-      .replace(/\[\[|\]\]/g, "")
-      .replace(/={2,}\s*([^=]*?)\s*={2,}/g, "$1")
-      .replace(/'{2,}/g, "")
-      .replace(/(^|\s)[*#]+\s*/g, "$1")
-      .replace(/\{\||\|\}|\|[-+]/g, " ")
-      .replace(/\s*\|\s*/g, " ")
-      .replace(/\s+([.,;:)])/g, "$1")
-      .replace(/\s+/g, " ")
-      .trim()
-  );
+  return s
+    .replace(/\[\[(?:[^\]|]*\|)?([^\]|]*)\]\]/g, "$1")
+    .replace(/\[https?:\/\/\S+\s+([^\]]*)\]/g, "$1")
+    .replace(/\[https?:\/\/\S+\]/g, "")
+    .replace(/\[\[|\]\]/g, "")
+    .replace(/={2,}\s*([^=]*?)\s*={2,}/g, "$1")
+    .replace(/'{2,}/g, "")
+    .replace(/(^|\s)[*#]+\s*/g, "$1")
+    .replace(/\{\||\|\}|\|[-+]/g, " ")
+    .replace(/\s*\|\s*/g, " ")
+    .replace(/\s+([.,;:)])/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 interface ApiRevision {

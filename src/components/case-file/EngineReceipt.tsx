@@ -1,15 +1,5 @@
 import type { TraceMetrics, Stage } from "@/engine/metrics";
 
-/**
- * The performance receipt — where this trace's wall-clock actually went. The
- * profiler measures it at the two external seams (the Wikipedia fetch and the
- * cache) plus coarse stage marks, so this is observed, not estimated. It sits
- * next to the CorpusReceipt (which counts *what* was read) and answers the other
- * question a reviewer has: was it cheap, and why. The honest answer the numbers
- * keep giving — nearly all of it is serial Wikipedia latency; the engine's own
- * CPU is a rounding error.
- */
-
 const STAGE_ORDER: Stage[] = [
   "listing",
   "search",
@@ -36,9 +26,10 @@ export function EngineReceipt({ metrics }: { metrics?: TraceMetrics }) {
 
   const { wallMs, stages, network, cache } = metrics;
 
-  const segments = STAGE_ORDER.map((s) => ({ stage: s, ms: stages[s] ?? 0 })).filter(
-    (s) => s.ms > 0,
-  );
+  const segments = STAGE_ORDER.map((s) => ({
+    stage: s,
+    ms: stages[s] ?? 0,
+  })).filter((s) => s.ms > 0);
   const stageSum = segments.reduce((a, s) => a + s.ms, 0);
 
   const other = Math.max(0, wallMs - stageSum);
@@ -56,7 +47,6 @@ export function EngineReceipt({ metrics }: { metrics?: TraceMetrics }) {
         </p>
       </div>
 
-      {/* Where the wall-clock went */}
       {stageSum > 0 && (
         <>
           <div className="mt-3 flex h-2 w-full overflow-hidden rounded-full bg-line">
@@ -91,7 +81,6 @@ export function EngineReceipt({ metrics }: { metrics?: TraceMetrics }) {
         </>
       )}
 
-      {/* The seam counters */}
       <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-4">
         <Stat
           value={network.requests.toLocaleString()}
@@ -126,7 +115,9 @@ export function EngineReceipt({ metrics }: { metrics?: TraceMetrics }) {
             being watched, so these numbers don&rsquo;t alter the result.
           </>
         )}
-        {network.retries > 0 ? ` ${network.retries} retr${network.retries === 1 ? "y" : "ies"} on backoff.` : ""}
+        {network.retries > 0
+          ? ` ${network.retries} retr${network.retries === 1 ? "y" : "ies"} on backoff.`
+          : ""}
       </p>
     </section>
   );
@@ -135,7 +126,9 @@ export function EngineReceipt({ metrics }: { metrics?: TraceMetrics }) {
 function Stat({ value, unit }: { value: string; unit: string }) {
   return (
     <div className="flex flex-col">
-      <dd className="font-display text-[24px] leading-none text-ink">{value}</dd>
+      <dd className="font-display text-[24px] leading-none text-ink">
+        {value}
+      </dd>
       <dt className="mt-1.5 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
         {unit}
       </dt>

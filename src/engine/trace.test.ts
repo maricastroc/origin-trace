@@ -10,8 +10,6 @@ function history(revisions: FakeRevision[]) {
 const UNRELATED =
   "This paragraph is about something else entirely and unrelated.";
 
-/** Wrap a fetchJson to record the revid of every content request, so a test can
- *  assert nothing is downloaded twice across the search → genealogy handoff. */
 function recordingHistory(revisions: FakeRevision[]) {
   const base = fakeWiki({ title: "Subject", revisions }).fetchJson;
   const fetchedRevids: number[] = [];
@@ -266,15 +264,16 @@ describe("traceClaim — verdicts", () => {
     expect(prov.timeline[prov.timeline.length - 1].kind).toBe("current");
     expect(prov.annotations?.circularLoop).toBeDefined();
 
-    // The reformulation chain is exposed as structured data, oldest → newest.
     const g = prov.genealogy;
     expect(g).toBeDefined();
     expect(g!.steps.length).toBeGreaterThanOrEqual(2);
     expect(g!.movedEarlier).toBe(true);
-    // Origin (first) shares no anchors; a later step carries some across.
+
     expect(g!.steps[0].anchorsShared).toEqual([]);
-    expect(g!.steps.slice(1).some((s) => s.anchorsShared.length > 0)).toBe(true);
-    // Non-origin steps report their overlap with the predecessor.
+    expect(g!.steps.slice(1).some((s) => s.anchorsShared.length > 0)).toBe(
+      true,
+    );
+
     expect(g!.steps.slice(1).every((s) => typeof s.overlap === "number")).toBe(
       true,
     );
@@ -355,8 +354,16 @@ describe("traceClaim — origin honesty (proven vs. sampled first occurrence)", 
       "the observatory was established on the ridge in 1888 by the society";
     const fetchJson = history([
       { revid: 1, timestamp: "2010-01-01T00:00:00Z", content: UNRELATED },
-      { revid: 2, timestamp: "2013-01-01T00:00:00Z", content: `Background prose. ${claim}.` },
-      { revid: 3, timestamp: "2020-01-01T00:00:00Z", content: `Background prose. ${claim}.` },
+      {
+        revid: 2,
+        timestamp: "2013-01-01T00:00:00Z",
+        content: `Background prose. ${claim}.`,
+      },
+      {
+        revid: 3,
+        timestamp: "2020-01-01T00:00:00Z",
+        content: `Background prose. ${claim}.`,
+      },
     ]);
 
     const prov = await traceClaim({
@@ -395,14 +402,14 @@ describe("traceClaim — origin honesty (proven vs. sampled first occurrence)", 
       fetchJson: history(revs),
     });
 
-    expect(
-      prov.timeline.some((e) => e.kind === "claim-introduced"),
-    ).toBe(true);
+    expect(prov.timeline.some((e) => e.kind === "claim-introduced")).toBe(true);
 
     expect(prov.meta.corpus?.originProven).toBe(false);
 
     const absent = prov.timeline.find((e) => e.kind === "claim-absent");
-    expect(absent?.note ?? "").not.toMatch(/does not exist in the article yet/i);
+    expect(absent?.note ?? "").not.toMatch(
+      /does not exist in the article yet/i,
+    );
     expect(absent?.note ?? "").toMatch(/ruled out/i);
 
     expect(prov.verdict.confidence).not.toBe("high");

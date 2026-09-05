@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createEngineCache,
+  listOnlyTiered,
   tieredCache,
   type EngineCache,
 } from "@/engine/cache.ts";
@@ -105,5 +106,60 @@ describe("tieredCache", () => {
     const cache = tieredCache(createEngineCache(), createEngineCache());
     await cache.setContent("en", 9, null);
     expect(await cache.getContent("en", 9)).toBeNull();
+  });
+});
+
+describe("listOnlyTiered", () => {
+  function spyCache() {
+    const calls: string[] = [];
+    const inner = createEngineCache();
+    return {
+      calls,
+      cache: {
+        async getContent(lang: string, revid: number) {
+          calls.push("getContent");
+          return inner.getContent(lang, revid);
+        },
+        async setContent(lang: string, revid: number, v: string | null) {
+          calls.push("setContent");
+          return inner.setContent(lang, revid, v);
+        },
+        async getList(lang: string, title: string) {
+          calls.push("getList");
+          return inner.getList(lang, title);
+        },
+        async setList(lang: string, title: string, v: RevisionList) {
+          calls.push("setList");
+          return inner.setList(lang, title, v);
+        },
+      },
+    };
+  }
+
+  it("never sends revision content to the persistent store", async () => {
+    // Wikipedia returns up to 50 revisions per round-trip; a REST key-value store
+    // answers one key per round-trip. Caching content per revision trades the
+    // batch away, so L2 must never see it.
+    const l2 = spyCache();
+    const cache = listOnlyTiered(createEngineCache(), l2.cache);
+
+    await cache.setContent("en", 1, "wikitext");
+    expect(await cache.getContent("en", 1)).toBe("wikitext");
+    expect(await cache.getContent("en", 2)).toBeUndefined();
+
+    expect(l2.calls).toEqual([]);
+  });
+
+  it("still tiers the revision list through L2", async () => {
+    const l2 = spyCache();
+    const l1 = createEngineCache();
+    const cache = listOnlyTiered(l1, l2.cache);
+
+    await cache.setList("en", "Quokka", list);
+    expect(l2.calls).toContain("setList");
+
+    // A cold L1 is backfilled from L2 rather than going to the network.
+    const cold = listOnlyTiered(createEngineCache(), l2.cache);
+    expect(await cold.getList("en", "Quokka")).toEqual(list);
   });
 });

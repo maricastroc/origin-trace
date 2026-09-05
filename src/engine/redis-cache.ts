@@ -22,38 +22,21 @@ function unpack<T>(raw: string): T {
   return (JSON.parse(json) as Wrapped<T>).v;
 }
 
-let warned = false;
-function swallow(err: unknown): void {
-  if (!warned) {
-    warned = true;
-    console.warn(
-      "[origin-trace] Redis cache unavailable, falling back to network:",
-      err,
-    );
-  }
-}
-
-/** A persistent {@link EngineCache} backed by Upstash Redis (HTTP/REST, so it
- *  survives the serverless cold starts that evaporate the in-process cache). Values
- *  are gzipped to fit request limits and cut storage. Every operation is best-effort:
- *  a Redis error degrades to a cache miss / no-op and the trace still completes
- *  against the live Wikipedia API. */
 export class RedisEngineCache implements EngineCache {
-  constructor(private readonly redis: Redis) {}
+  private readonly redis: Redis;
+
+  constructor(redis: Redis) {
+    this.redis = redis;
+  }
 
   async getContent(
     lang: string,
     revid: number,
   ): Promise<string | null | undefined> {
-    try {
-      const raw = await this.redis.get<string>(
-        `${CONTENT_PREFIX}:${lang}:${revid}`,
-      );
-      return raw == null ? undefined : unpack<string | null>(raw);
-    } catch (err) {
-      swallow(err);
-      return undefined;
-    }
+    const raw = await this.redis.get<string>(
+      `${CONTENT_PREFIX}:${lang}:${revid}`,
+    );
+    return raw == null ? undefined : unpack<string | null>(raw);
   }
 
   async setContent(
@@ -61,28 +44,17 @@ export class RedisEngineCache implements EngineCache {
     revid: number,
     value: string | null,
   ): Promise<void> {
-    try {
-      await this.redis.set(`${CONTENT_PREFIX}:${lang}:${revid}`, pack(value), {
-        ex: CONTENT_TTL_SECONDS,
-      });
-    } catch (err) {
-      swallow(err);
-    }
+    await this.redis.set(`${CONTENT_PREFIX}:${lang}:${revid}`, pack(value), {
+      ex: CONTENT_TTL_SECONDS,
+    });
   }
 
   async getList(
     lang: string,
     title: string,
   ): Promise<RevisionList | undefined> {
-    try {
-      const raw = await this.redis.get<string>(
-        `${LIST_PREFIX}:${lang}:${title}`,
-      );
-      return raw == null ? undefined : unpack<RevisionList>(raw);
-    } catch (err) {
-      swallow(err);
-      return undefined;
-    }
+    const raw = await this.redis.get<string>(`${LIST_PREFIX}:${lang}:${title}`);
+    return raw == null ? undefined : unpack<RevisionList>(raw);
   }
 
   async setList(
@@ -90,23 +62,22 @@ export class RedisEngineCache implements EngineCache {
     title: string,
     value: RevisionList,
   ): Promise<void> {
-    try {
-      await this.redis.set(`${LIST_PREFIX}:${lang}:${title}`, pack(value), {
-        ex: LIST_TTL_SECONDS,
-      });
-    } catch (err) {
-      swallow(err);
-    }
+    await this.redis.set(`${LIST_PREFIX}:${lang}:${title}`, pack(value), {
+      ex: LIST_TTL_SECONDS,
+    });
   }
 }
 
-/** Build a Redis-backed cache from the environment, or `null` when no store is
- *  configured. Reads both the Upstash and Vercel KV env conventions so the same
- *  code works on either host without a shim. */
-export function redisCacheFromEnv(): RedisEngineCache | null {
+export function redisFromEnv(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
   const token =
     process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
   if (!url || !token) return null;
-  return new RedisEngineCache(new Redis({ url, token }));
+
+  return new Redis({ url, token, retry: false });
+}
+
+export function redisCacheFromEnv(): RedisEngineCache | null {
+  const redis = redisFromEnv();
+  return redis ? new RedisEngineCache(redis) : null;
 }

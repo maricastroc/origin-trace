@@ -7,30 +7,21 @@ const INLINE_TEMPLATE =
   /\{\{\s*(?:convert|cvt|lang(?:-[a-z-]+)?|transl|transliteration|nbsp|spaces?|thinsp|hairsp|nowrap|nobr|nowraplinks|sic|typo|em|strong)\b[^{}]*\}\}/gi;
 
 export function normalize(text: string): string {
-  return (
-    text
-      .toLowerCase()
-      .replace(/<ref[^>]*\/>/g, " ")
-      .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\[\[(?:[^\]]*\|)?([^\]|]*)\]\]/g, "$1")
-      .replace(/\[https?:\/\/\S+\s+([^\]]*)\]/g, "$1")
-      .replace(INLINE_TEMPLATE, (m) => ` ${unwrapTemplate(m)} `)
-      .replace(/[’‘`]/g, "'")
-      .replace(/'{2,}/g, "")
-      .replace(/[^a-z0-9']+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-  );
+  return text
+    .toLowerCase()
+    .replace(/<ref[^>]*\/>/g, " ")
+    .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\[\[(?:[^\]]*\|)?([^\]|]*)\]\]/g, "$1")
+    .replace(/\[https?:\/\/\S+\s+([^\]]*)\]/g, "$1")
+    .replace(INLINE_TEMPLATE, (m) => ` ${unwrapTemplate(m)} `)
+    .replace(/[’‘`]/g, "'")
+    .replace(/'{2,}/g, "")
+    .replace(/[^a-z0-9']+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-/**
- * Render an inline wikitext template to the text it displays as. Shared by
- * {@link normalize} here and `cleanProse` in the audit so the two never disagree
- * on how a template renders — any divergence produces a phrase the trace can't
- * find in its own source. Anything that isn't inline display text (citations,
- * layout helpers, …) renders as "" and drops out.
- */
 export function unwrapTemplate(tpl: string): string {
   const inner = tpl.slice(2, -2);
 
@@ -96,24 +87,34 @@ export type ContentReader = ((revid: number) => Promise<string | null>) & {
   prefetch?: (revids: number[]) => Promise<void>;
 };
 
+export type SearchStopReason = "complete" | "budget-exhausted";
+
+export interface SearchBudget {
+  expired(): boolean;
+}
+
+export function searchBudget(
+  ms: number,
+  now: () => number = () => Date.now(),
+): SearchBudget {
+  const deadline = now() + ms;
+  return { expired: () => now() >= deadline };
+}
+
 export interface IntroductionResult {
   index: number;
   revision: RevisionMeta;
   priorRevision: RevisionMeta | null;
   removedSince: boolean;
   assumptionViolated: boolean;
-  /** True only if every revision below the located origin was actually read and
-   *  found absent — so the origin is the *proven* first occurrence. False when
-   *  the sub-origin range was sampled, not exhaustively read: a valid occurrence
-   *  was found, but a sparse earlier one there cannot be ruled out. */
   earliestProven: boolean;
   contentFetches: number;
+  searchTruncated: boolean;
+  stopReason: SearchStopReason;
+  searchedRevisions: number;
+  totalCandidateRevisions: number;
 }
 
-/** A single evaluation the search made, reported as it happens. `index` is a
- *  corpus position; the caller enriches it into a {@link SearchProbe} with the
- *  revision's id and timestamp. Optional — with no sink the search is unchanged
- *  and allocates nothing extra. */
 type ProbeSink = (
   index: number,
   hit: boolean,
@@ -127,6 +128,7 @@ export async function findIntroduction(
   phrase: string,
   getContent: ContentReader,
   onProbe?: (probe: SearchProbe) => void,
+  budget?: SearchBudget,
 ): Promise<IntroductionResult | null> {
   if (revisions.length === 0) return null;
   const norm = normalize(phrase);
@@ -177,7 +179,9 @@ export async function findIntroduction(
 
   const n = revisions.length;
 
-  const first = await earliestContaining(n, contains, prefetch, record);
+  const first = await earliestContaining(n, contains, prefetch, record, budget);
+
+  const truncated = budget?.expired() ?? false;
 
   if (first < 0) return null;
 
@@ -201,8 +205,12 @@ export async function findIntroduction(
     priorRevision: first > 0 ? revisions[first - 1] : null,
     removedSince: !presentNow,
     assumptionViolated: !foundContains || priorContains,
-    earliestProven,
+    earliestProven: earliestProven && !truncated,
     contentFetches: fetches,
+    searchTruncated: truncated,
+    stopReason: truncated ? "budget-exhausted" : "complete",
+    searchedRevisions: seen.size,
+    totalCandidateRevisions: n,
   };
 }
 
@@ -211,15 +219,24 @@ async function earliestContaining(
   contains: (i: number) => Promise<boolean>,
   prefetch?: (indices: number[]) => Promise<void>,
   onProbe?: ProbeSink,
+  budget?: SearchBudget,
 ): Promise<number> {
   let earliest = -1;
 
   let bound = n;
 
   while (bound > 0) {
-    const hit = await sampleTrue(0, bound, contains, prefetch, onProbe);
+    if (budget?.expired()) break;
+    const hit = await sampleTrue(0, bound, contains, prefetch, onProbe, budget);
     if (hit < 0) break;
-    const edge = await lowerBoundTrue(0, hit, contains, prefetch, onProbe);
+    const edge = await lowerBoundTrue(
+      0,
+      hit,
+      contains,
+      prefetch,
+      onProbe,
+      budget,
+    );
     earliest = edge;
     if (edge === 0) break;
     bound = edge;
@@ -252,8 +269,11 @@ async function lowerBoundTrue(
   pred: (i: number) => Promise<boolean>,
   prefetch?: (indices: number[]) => Promise<void>,
   onProbe?: ProbeSink,
+  budget?: SearchBudget,
 ): Promise<number> {
   while (lo < hi) {
+    if (budget?.expired()) return hi;
+
     if (prefetch && hi - lo > PREFETCH_MIN_SPAN) {
       await prefetch(bisectionProbes(lo, hi, PREFETCH_DEPTH));
     }
@@ -261,6 +281,7 @@ async function lowerBoundTrue(
     let steps = prefetch ? PREFETCH_DEPTH : Number.POSITIVE_INFINITY;
 
     while (lo < hi && steps-- > 0) {
+      if (budget?.expired()) return hi;
       const mid = (lo + hi) >> 1;
       const hit = await pred(mid);
       onProbe?.(mid, hit, lo, hi, "bisect");
@@ -277,6 +298,7 @@ async function sampleTrue(
   pred: (i: number) => Promise<boolean>,
   prefetch?: (indices: number[]) => Promise<void>,
   onProbe?: ProbeSink,
+  budget?: SearchBudget,
 ): Promise<number> {
   const span = hi - lo;
 
@@ -300,6 +322,7 @@ async function sampleTrue(
   if (prefetch) await prefetch(indices);
 
   for (const i of indices) {
+    if (budget?.expired()) return -1;
     const hit = await pred(i);
     onProbe?.(i, hit, lo, hi, "sample");
     if (hit) return i;

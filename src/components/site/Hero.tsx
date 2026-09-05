@@ -48,12 +48,6 @@ export function Hero() {
             <span className="text-ink-muted">never an LLM</span>
           </p>
 
-          {/* Primary CTA runs a real trace on the flagship citogenesis case the
-              instant it's clicked — the product's "aha" before any of the theory
-              below. It deep-links into the live tool (?trace=…&article=…), which
-              bootstraps from the URL, scrolls to #live, and auto-runs the trace.
-              Browsing cases is the outline secondary; the method is a tertiary
-              text link. */}
           <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3">
             <a
               href={"/?trace=Brazilian%20aardvark&article=Coati"}

@@ -1,8 +1,5 @@
 import type { RevisionList } from "./wikipedia.ts";
 
-/** Async so a backend can be a network store (Redis/KV) as well as an in-process
- *  Map. A miss resolves to `undefined`; a deliberately cached "no content" resolves
- *  to `null` — the two must stay distinct so a known-empty revision isn't refetched. */
 export interface EngineCache {
   getContent(lang: string, revid: number): Promise<string | null | undefined>;
   setContent(lang: string, revid: number, value: string | null): Promise<void>;
@@ -17,10 +14,13 @@ class LruEngineCache implements EngineCache {
     { at: number; value: RevisionList }
   >();
 
-  constructor(
-    private readonly maxContent = 4000,
-    private readonly listTtlMs = 10 * 60_000,
-  ) {}
+  private readonly maxContent: number;
+  private readonly listTtlMs: number;
+
+  constructor(maxContent = 4000, listTtlMs = 10 * 60_000) {
+    this.maxContent = maxContent;
+    this.listTtlMs = listTtlMs;
+  }
 
   async getContent(
     lang: string,
@@ -78,10 +78,6 @@ export function createEngineCache(
   return new LruEngineCache(maxContent, listTtlMs);
 }
 
-/** Compose an in-process L1 in front of a persistent L2 (e.g. Redis). Reads try
- *  L1, fall through to L2, and backfill L1 on an L2 hit so a warm instance never
- *  round-trips twice for the same revision. Writes fan out to both. An L2 that
- *  throws is the backend's problem to swallow — this layer stays oblivious. */
 export function tieredCache(l1: EngineCache, l2: EngineCache): EngineCache {
   return {
     async getContent(lang, revid) {
@@ -97,6 +93,26 @@ export function tieredCache(l1: EngineCache, l2: EngineCache): EngineCache {
         l2.setContent(lang, revid, value),
       ]);
     },
+    async getList(lang, title) {
+      const near = await l1.getList(lang, title);
+      if (near !== undefined) return near;
+      const far = await l2.getList(lang, title);
+      if (far !== undefined) await l1.setList(lang, title, far);
+      return far;
+    },
+    async setList(lang, title, value) {
+      await Promise.all([
+        l1.setList(lang, title, value),
+        l2.setList(lang, title, value),
+      ]);
+    },
+  };
+}
+
+export function listOnlyTiered(l1: EngineCache, l2: EngineCache): EngineCache {
+  return {
+    getContent: (lang, revid) => l1.getContent(lang, revid),
+    setContent: (lang, revid, value) => l1.setContent(lang, revid, value),
     async getList(lang, title) {
       const near = await l1.getList(lang, title);
       if (near !== undefined) return near;

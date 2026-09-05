@@ -39,7 +39,6 @@ describe("wordDiff", () => {
   it("ignores casing and punctuation when matching", () => {
     const d = wordDiff("The Prize.", "the prize");
     expect(d.every((t) => t.op === "same")).toBe(true);
-    // renders the NEW side's text for kept tokens
     expect(d.map((t) => t.text)).toEqual(["the", "prize"]);
   });
 

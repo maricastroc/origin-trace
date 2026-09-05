@@ -1,23 +1,66 @@
+import type { Redis } from "@upstash/redis";
 import {
   createEngineCache,
+  listOnlyTiered,
   sharedEngineCache,
-  tieredCache,
   type EngineCache,
 } from "./cache.ts";
-import { redisCacheFromEnv } from "./redis-cache.ts";
+import {
+  createBreaker,
+  guardedCache,
+  type Breaker,
+  type CacheHealth,
+  type CacheObserver,
+} from "./cache-guard.ts";
+import { RedisEngineCache, redisFromEnv } from "./redis-cache.ts";
+import {
+  guardedResultStore,
+  redisResultStore,
+  type ResultStore,
+} from "./result-cache.ts";
 
-let resolved: EngineCache | undefined;
+interface Backend {
+  l1: EngineCache;
+  redis: Redis | null;
+  breaker: Breaker | null;
+}
 
-/** The cache the API routes should use. When a Redis/KV store is configured it
- *  returns an in-process L1 fronting the persistent L2, so a warm instance stays
- *  fast and a cold one still reuses revisions cached by earlier requests. With no
- *  store configured it degrades to the shared in-memory cache — dev, CLI, and
- *  tests need zero setup. Resolved once and memoized for the process lifetime. */
+let backend: Backend | undefined;
+
+function getBackend(): Backend {
+  if (backend) return backend;
+  const redis = redisFromEnv();
+  backend = {
+    l1: redis ? createEngineCache() : sharedEngineCache,
+    redis,
+    breaker: redis ? createBreaker() : null,
+  };
+  return backend;
+}
+
+export interface RequestCaches {
+  engine: EngineCache;
+  results: ResultStore | null;
+  health: (() => CacheHealth) | null;
+}
+
+export function requestCaches(observe?: CacheObserver): RequestCaches {
+  const { l1, redis, breaker } = getBackend();
+
+  if (!redis || !breaker) {
+    return { engine: l1, results: null, health: null };
+  }
+
+  return {
+    engine: listOnlyTiered(
+      l1,
+      guardedCache(new RedisEngineCache(redis), breaker, observe),
+    ),
+    results: guardedResultStore(redisResultStore(redis), breaker, observe),
+    health: breaker.health,
+  };
+}
+
 export function getEngineCache(): EngineCache {
-  if (resolved) return resolved;
-  const redis = redisCacheFromEnv();
-  resolved = redis
-    ? tieredCache(createEngineCache(), redis)
-    : sharedEngineCache;
-  return resolved;
+  return requestCaches().engine;
 }

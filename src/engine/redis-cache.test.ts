@@ -48,7 +48,7 @@ describe("RedisEngineCache", () => {
     const cache = new RedisEngineCache(redis);
     expect(await cache.getContent("en", 99)).toBeUndefined();
     await cache.setContent("en", 99, null);
-    expect(await cache.getContent("en", 99)).toBeNull(); 
+    expect(await cache.getContent("en", 99)).toBeNull();
   });
 
   it("round-trips a revision list", async () => {
@@ -67,7 +67,12 @@ describe("RedisEngineCache", () => {
     expect(contentTtl).toBeGreaterThan(listTtl!);
   });
 
-  it("degrades to a miss / no-op when Redis throws", async () => {
+  it("surfaces a failure instead of swallowing it", async () => {
+    // This adapter used to catch and warn once, which is how a completely
+    // unreachable store passed for a permanently-cold one in production: every
+    // operation quietly paid the client's 4,289.6ms retry ladder and was then
+    // recorded as an ordinary miss. Degrading is now `guardedCache`'s job, and
+    // it can only do that job if the failure actually reaches it.
     const boom = {
       async get() {
         throw new Error("redis down");
@@ -77,8 +82,9 @@ describe("RedisEngineCache", () => {
       },
     } as unknown as Redis;
     const cache = new RedisEngineCache(boom);
-    await expect(cache.setContent("en", 1, "x")).resolves.toBeUndefined();
-    expect(await cache.getContent("en", 1)).toBeUndefined();
-    expect(await cache.getList("en", "T")).toBeUndefined();
+
+    await expect(cache.setContent("en", 1, "x")).rejects.toThrow("redis down");
+    await expect(cache.getContent("en", 1)).rejects.toThrow("redis down");
+    await expect(cache.getList("en", "T")).rejects.toThrow("redis down");
   });
 });

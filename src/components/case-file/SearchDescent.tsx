@@ -1,10 +1,5 @@
 import type { SearchProbe } from "@/types/SearchProbe";
 
-/**
- * Presentational and deterministic — the same {@link SearchProbe}s render the
- * same picture, live during the trace or replayed on a finished case file.
- */
-
 const PAD = 2;
 const SPAN = 96;
 
@@ -19,6 +14,7 @@ export function SearchDescent({
   probes,
   originIndex,
   originProven,
+  searchTruncated,
   reads,
   span,
   live = false,
@@ -27,6 +23,7 @@ export function SearchDescent({
   probes: SearchProbe[];
   originIndex?: number;
   originProven?: boolean;
+  searchTruncated?: boolean;
   reads?: number;
   span?: { from: string; to: string };
   live?: boolean;
@@ -59,13 +56,11 @@ export function SearchDescent({
           : "Each row is one revision the search read — filled when the claim was present, hollow when absent. The window collapses onto the first occurrence."}
       </p>
 
-      {/* Oldest → newest axis */}
       <div className="mt-4 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-ink-ghost">
         <span>← oldest{span ? ` · ${span.from}` : ""}</span>
         <span>newest{span ? ` · ${span.to}` : ""} →</span>
       </div>
 
-      {/* Waterfall — guide and rows share this box, so `left: %` aligns */}
       <div className="relative mt-2">
         {originPct != null && (
           <div
@@ -86,9 +81,7 @@ export function SearchDescent({
             const width = Math.max(0.8, right - left);
             const dotLeft = pos(p.index, corpusSize);
             const isSample = p.kind === "sample";
-            const shape = isSample
-              ? "rotate-45 rounded-[1px]"
-              : "rounded-full";
+            const shape = isSample ? "rotate-45 rounded-[1px]" : "rounded-full";
             const fill = p.hit
               ? "bg-accent border border-accent"
               : "bg-surface-2 border border-ink-ghost";
@@ -107,7 +100,6 @@ export function SearchDescent({
                   style={{ left: `${left}%`, width: `${width}%` }}
                   aria-hidden="true"
                 />
-                {/* the revision the search read */}
                 <span
                   className={`absolute top-1/2 h-1.75 w-1.75 -translate-x-1/2 -translate-y-1/2 ${shape} ${fill}`}
                   style={{ left: `${dotLeft}%` }}
@@ -129,7 +121,11 @@ export function SearchDescent({
         bisect
         {!live && (
           <span className="ml-auto text-ink-ghost">
-            {originProven ? "origin proven" : "earliest sampled"}
+            {searchTruncated
+              ? "stopped on budget"
+              : originProven
+                ? "origin proven"
+                : "earliest sampled"}
           </span>
         )}
       </div>

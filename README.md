@@ -268,7 +268,7 @@ Three real Wikipedia claims that each tell a different story about their evidenc
 
 Released under the MIT License. You're free to use, study, fork and build on this code — **as long as the original copyright and license notice are kept**. Reuse it and learn from it; don't strip the attribution and present it as your own.
 
-© 2025–2026 Mariana Castro
+© 2025–2026 [**Mariana Castro**](https://marianacastro.dev) · [Live demo](https://origin-trace.marianacastro.dev/)
 
 <br/>
 

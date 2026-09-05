@@ -44,8 +44,6 @@ describe("streamTrace", () => {
   });
 
   it("maps an incomplete frame to its own type, not a generic failure", async () => {
-    // This is the seam the UI branches on: an incomplete search must not reach
-    // the "couldn't trace" card, which would tell the reader the claim is absent.
     stubStream([
       {
         type: "incomplete",

@@ -134,9 +134,6 @@ export function LiveTrace() {
       });
       updateUrl(params);
     } catch (err) {
-      // An incomplete search is not a failed one. Collapsing it into the error
-      // card would tell the reader the claim is not in the history, which is
-      // exactly what the engine refused to conclude.
       if (err instanceof SearchIncomplete) {
         setState({
           status: "incomplete",

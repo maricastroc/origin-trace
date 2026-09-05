@@ -68,11 +68,6 @@ describe("RedisEngineCache", () => {
   });
 
   it("surfaces a failure instead of swallowing it", async () => {
-    // This adapter used to catch and warn once, which is how a completely
-    // unreachable store passed for a permanently-cold one in production: every
-    // operation quietly paid the client's 4,289.6ms retry ladder and was then
-    // recorded as an ordinary miss. Degrading is now `guardedCache`'s job, and
-    // it can only do that job if the failure actually reaches it.
     const boom = {
       async get() {
         throw new Error("redis down");

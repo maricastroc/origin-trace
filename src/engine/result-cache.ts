@@ -97,7 +97,7 @@ export function guardedResultStore(
         "write",
         () => inner.set(key, value),
         undefined,
-        () => "hit",
+        () => "ok",
         observe,
       );
     },

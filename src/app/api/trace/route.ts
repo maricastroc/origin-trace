@@ -58,10 +58,6 @@ export async function GET(request: Request): Promise<Response> {
       const cache = profiler.instrumentCache(caches.engine);
 
       try {
-        // The whole-trace cache, keyed by the article's head revision. One tiny
-        // request buys the key; a hit then skips listing, search and genealogy
-        // entirely. A miss costs that one request, which is the honest price of
-        // an invalidation token that can never go stale.
         let key: string | null = null;
         if (caches.results) {
           const head = await new WikipediaClient({ lang, fetchJson, cache })
@@ -79,9 +75,6 @@ export async function GET(request: Request): Promise<Response> {
             if (hit) {
               send({
                 type: "result",
-                // The stored trace was computed for a phrase that normalises to
-                // the same thing, not necessarily the same keystrokes. Echo back
-                // what this caller actually asked.
                 data: { ...hit, claim: { ...hit.claim, text: phrase } },
                 metrics: profiler.snapshot(),
                 cached: true,
@@ -101,9 +94,6 @@ export async function GET(request: Request): Promise<Response> {
           onStage: profiler.onStage,
         });
 
-        // A truncated trace is a degraded answer produced under time pressure.
-        // Storing it would freeze that degradation for the life of the entry, so
-        // it is returned but never cached — the next caller gets a fresh attempt.
         if (key && caches.results && !provenance.search?.searchTruncated) {
           await caches.results.set(key, provenance);
         }
@@ -116,8 +106,6 @@ export async function GET(request: Request): Promise<Response> {
         });
       } catch (err) {
         if (err instanceof SearchIncompleteError) {
-          // Deliberately not an error frame: "we ran out of time" is a different
-          // claim from "it isn't there", and the UI must not collapse the two.
           send({
             type: "incomplete",
             searchedRevisions: err.searchedRevisions,

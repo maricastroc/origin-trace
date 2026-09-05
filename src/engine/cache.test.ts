@@ -137,9 +137,6 @@ describe("listOnlyTiered", () => {
   }
 
   it("never sends revision content to the persistent store", async () => {
-    // Wikipedia returns up to 50 revisions per round-trip; a REST key-value store
-    // answers one key per round-trip. Caching content per revision trades the
-    // batch away, so L2 must never see it.
     const l2 = spyCache();
     const cache = listOnlyTiered(createEngineCache(), l2.cache);
 
@@ -158,7 +155,6 @@ describe("listOnlyTiered", () => {
     await cache.setList("en", "Quokka", list);
     expect(l2.calls).toContain("setList");
 
-    // A cold L1 is backfilled from L2 rather than going to the network.
     const cold = listOnlyTiered(createEngineCache(), l2.cache);
     expect(await cold.getList("en", "Quokka")).toEqual(list);
   });

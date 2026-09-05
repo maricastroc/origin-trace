@@ -1,7 +1,10 @@
 import type { EngineCache } from "./cache.ts";
 import type { RevisionList } from "./wikipedia.ts";
 
-export type CacheOutcome = "hit" | "miss" | "timeout" | "error" | "bypass";
+/** `hit`/`miss` are read outcomes; `ok` is a successful write, which has no
+ *  hit/miss semantics and must not inflate the hit count. */
+export type CacheOutcome =
+  "hit" | "miss" | "ok" | "timeout" | "error" | "bypass";
 
 export type CacheChannel = "content" | "list" | "result";
 
@@ -80,6 +83,7 @@ export function createBreaker(opts: GuardOptions = {}): Breaker {
   const outcomes: Record<CacheOutcome, number> = {
     hit: 0,
     miss: 0,
+    ok: 0,
     timeout: 0,
     error: 0,
     bypass: 0,
@@ -197,7 +201,7 @@ export function createBreaker(opts: GuardOptions = {}): Breaker {
 export const readOutcome = (v: unknown): CacheOutcome =>
   v === undefined ? "miss" : "hit";
 
-const writeOutcome = (): CacheOutcome => "hit";
+const writeOutcome = (): CacheOutcome => "ok";
 
 export function guardedCache(
   inner: EngineCache,

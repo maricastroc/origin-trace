@@ -144,7 +144,6 @@ describe("guardedCache", () => {
 
     for (let i = 0; i < 20; i++) await cache.getContent("en", 100 + i);
 
-    // The point of the whole exercise: the store is not consulted again.
     expect(store.calls).toBe(2);
     expect(cache.health().outcomes.bypass).toBe(20);
     expect(cache.health().trips).toBe(1);
@@ -155,8 +154,8 @@ describe("guardedCache", () => {
     const { events, observe } = recorder();
     const cache = guardedCache(store.cache, { failureThreshold: 1 }, observe);
 
-    await cache.getContent("en", 1); // error -> trips
-    await cache.getContent("en", 2); // bypassed
+    await cache.getContent("en", 1);
+    await cache.getContent("en", 2);
 
     expect(events).toEqual([
       ["content", "read", "error"],
@@ -172,7 +171,7 @@ describe("guardedCache", () => {
     const store = failingStore(50);
     const cache = guardedCache(store.cache, { failureThreshold: 1 });
 
-    await cache.getContent("en", 1); // pays the 50ms once
+    await cache.getContent("en", 1);
     const before = cache.health().waitedMs;
 
     for (let i = 0; i < 10; i++) await cache.getContent("en", 100 + i);
@@ -233,11 +232,11 @@ describe("guardedCache", () => {
     await cache.getContent("en", 1);
     expect(cache.health().state).toBe("open");
 
-    clock = 500; // still cooling down
+    clock = 500;
     await cache.getContent("en", 2);
     expect(calls).toBe(1);
 
-    clock = 1_500; // cooldown elapsed: one trial is admitted
+    clock = 1_500;
     failing = false;
     expect(await cache.getContent("en", 3)).toBe("recovered");
     expect(calls).toBe(2);
@@ -256,11 +255,11 @@ describe("guardedCache", () => {
 
     await cache.getContent("en", 1);
     clock = 2_000;
-    await cache.getContent("en", 2); // the trial, which fails
+    await cache.getContent("en", 2);
     expect(store.calls).toBe(2);
     expect(cache.health().state).toBe("open");
 
-    clock = 2_100; // fresh cooldown, so back to bypassing
+    clock = 2_100;
     await cache.getContent("en", 3);
     expect(store.calls).toBe(2);
   });
@@ -272,8 +271,8 @@ describe("guardedCache", () => {
     const a = guardedCache(store.cache, breaker);
     const b = guardedCache(store.cache, breaker);
 
-    await a.getContent("en", 1); // a trips the breaker
-    await b.getList("en", "T"); // b must already be bypassing
+    await a.getContent("en", 1);
+    await b.getList("en", "T");
 
     expect(store.calls).toBe(1);
     expect(b.health().outcomes.bypass).toBe(1);

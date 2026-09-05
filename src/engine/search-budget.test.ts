@@ -55,9 +55,6 @@ describe("search budget", () => {
     expect(result.search?.stopReason).toBe("complete");
     expect(result.search?.originRevId).toBe(1032);
     expect(result.meta.corpus?.searchTruncated).toBe(false);
-    // A complete descent is not automatically a *proven* one — sample-and-bisect
-    // still only reads O(log n) of the range below the origin. What it must not
-    // do is blame the budget for that.
     expect(result.verdict.confidenceReasons ?? []).not.toContain(
       "the search stopped on its time budget before finishing the descent — the origin shown is confirmed, but the range below it is only partly examined",
     );
@@ -110,8 +107,6 @@ describe("search budget", () => {
     });
 
     const index = result.search!.originIndex;
-    // Everything at or above index 32 contains the phrase. A truncated descent
-    // may stop short of the true origin, but it must never point below it.
     expect(index).toBeGreaterThanOrEqual(32);
     expect(result.search!.originRevId).toBe(revisions[index].revid);
     expect(result.search!.searchedRevisions).toBeGreaterThan(0);
@@ -139,8 +134,6 @@ describe("search budget", () => {
   it("refuses to call an unfinished search a not-found", async () => {
     const { fetchJson, now } = clockedWiki(revisions, 1_000);
 
-    // A budget of zero is spent before the first probe: nothing was examined, so
-    // nothing can be concluded — least of all that the claim is absent.
     const err = await traceClaim({
       article: "Subject",
       phrase: PHRASE,

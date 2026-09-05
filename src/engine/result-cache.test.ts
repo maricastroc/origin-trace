@@ -49,12 +49,10 @@ describe("normalizeTitle", () => {
   });
 
   it("capitalises the first character, as the wiki itself does", () => {
-    // MediaWiki runs with $wgCapitalLinks, so "pH" and "PH" are one page.
     expect(normalizeTitle("pH")).toBe(normalizeTitle("PH"));
   });
 
   it("does not fold case beyond the first character", () => {
-    // Past character one the wiki is case-sensitive, and so is the key.
     expect(normalizeTitle("NaN party")).not.toBe(normalizeTitle("Nan party"));
   });
 });
@@ -69,13 +67,9 @@ describe("traceCacheKey", () => {
   });
 
   it("folds accented text only as far as the engine folds it", () => {
-    // Case folds across accented characters...
     expect(traceCacheKey({ ...BASE, phrase: "SÃO PAULO" })).toBe(
       traceCacheKey({ ...BASE, phrase: "São Paulo" }),
     );
-    // ...but an accented spelling is never equated with its ASCII one, because
-    // `normalize` drops accented characters instead of transliterating them.
-    // The engine traces these two differently, so the key must separate them.
     expect(traceCacheKey({ ...BASE, phrase: "Sao Paulo" })).not.toBe(
       traceCacheKey({ ...BASE, phrase: "São Paulo" }),
     );
@@ -167,7 +161,7 @@ describe("guardedResultStore", () => {
 
     expect(seen).toEqual([
       "result:read:miss",
-      "result:write:hit",
+      "result:write:ok",
       "result:read:hit",
     ]);
   });

@@ -56,7 +56,7 @@ export interface Breaker {
   health(): CacheHealth;
 }
 
-export const DEFAULT_TIMEOUT_MS = 250;
+export const DEFAULT_TIMEOUT_MS = 500;
 export const DEFAULT_FAILURE_THRESHOLD = 2;
 export const DEFAULT_COOLDOWN_MS = 30_000;
 

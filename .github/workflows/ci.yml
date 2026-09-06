@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint · typecheck · tests · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # 278 tests in about a second: the engine takes its HTTP client as a seam, so
+      # the suite drives fakes and never touches the live Wikipedia API. That is what
+      # makes it deterministic here instead of flaky.
+      - name: Unit tests
+        run: npm run test
+
+      # UPSTASH_* are read at request time by the cache, not during compilation.
+      - name: Production build
+        run: npm run build

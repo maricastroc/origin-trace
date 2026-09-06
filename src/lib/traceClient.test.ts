@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SearchIncomplete, streamTrace } from "@/lib/traceClient";
 
-/** Serve a canned SSE stream in place of the network, so the client's framing
- *  and error mapping can be tested without a route or a wiki. */
 function stubStream(frames: unknown[]) {
   const body = frames.map((f) => `data: ${JSON.stringify(f)}\n\n`).join("");
   vi.stubGlobal("fetch", async () => {

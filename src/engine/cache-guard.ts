@@ -1,8 +1,6 @@
 import type { EngineCache } from "./cache.ts";
 import type { RevisionList } from "./wikipedia.ts";
 
-/** `hit`/`miss` are read outcomes; `ok` is a successful write, which has no
- *  hit/miss semantics and must not inflate the hit count. */
 export type CacheOutcome =
   "hit" | "miss" | "ok" | "timeout" | "error" | "bypass";
 

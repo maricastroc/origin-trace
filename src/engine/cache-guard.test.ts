@@ -18,9 +18,6 @@ const LIST: RevisionList = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** A store whose every operation behaves the way the dead Upstash instance did:
- *  it takes `ms` and then throws. Counts calls so a test can prove the breaker
- *  stopped reaching it. */
 function failingStore(ms = 0) {
   let calls = 0;
   const boom = async (): Promise<never> => {

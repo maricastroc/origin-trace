@@ -11,7 +11,6 @@ const PHRASE = "happiest animal";
 const WITH = `The quokka is known as the ${PHRASE} in the world.`;
 const WITHOUT = "The quokka is a small macropod found in Western Australia.";
 
-/** `count` revisions, the phrase present from `from` onward. */
 function history(count: number, from: number): FakeRevision[] {
   return Array.from({ length: count }, (_, i) => ({
     revid: 1000 + i,
@@ -22,11 +21,6 @@ function history(count: number, from: number): FakeRevision[] {
   }));
 }
 
-/**
- * A fake wiki whose clock advances only when content is fetched — so "time"
- * passes in proportion to the round-trips the search actually makes, and a test
- * can exhaust a budget deterministically without sleeping.
- */
 function clockedWiki(revisions: FakeRevision[], msPerContentCall: number) {
   const base = fakeWiki({ title: "Subject", revisions }).fetchJson;
   let t = 0;

@@ -1,20 +1,3 @@
-/**
- * A reproducible latency bench for the trace pipeline, run against the live
- * Wikipedia API with a *simulated* L2 so the cache's contribution is
- * deterministic rather than dependent on whatever a real Redis is doing today.
- *
- * The "dead" mode reproduces the production incident exactly: an Upstash client
- * whose host never answers retries 6 times with the library's default
- * `Math.exp(i) * 50` backoff before throwing — 4,289.6ms per operation, every
- * operation, reads and writes alike — and the old adapter then swallowed the
- * error, so it presented as an ordinary miss.
- *
- *   npm run engine:bench -- --mode dead         # the incident, as shipped
- *   npm run engine:bench -- --mode fixed-dead   # the same dead store, guarded
- *   npm run engine:bench -- --mode none         # no L2 at all
- *   npm run engine:bench -- --mode live         # a healthy, fast L2, old wiring
- *   npm run engine:bench -- --mode fixed-live   # a healthy store, new wiring
- */
 import {
   createEngineCache,
   listOnlyTiered,
@@ -36,8 +19,6 @@ import {
 import { traceCacheKey } from "./result-cache.ts";
 import type { ClaimProvenance } from "@/types/ClaimProvenance";
 
-/** The exact ladder @upstash/redis walks before giving up on an unreachable
- *  host: 6 attempts, sleeping `Math.exp(i) * 50`ms between them. */
 export const UPSTASH_DEAD_OP_MS = [0, 1, 2, 3, 4].reduce(
   (sum, i) => sum + Math.exp(i) * 50,
   0,
@@ -45,9 +26,6 @@ export const UPSTASH_DEAD_OP_MS = [0, 1, 2, 3, 4].reduce(
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** The dead Upstash instance as production actually experienced it: every call
- *  burns the full retry ladder, throws — and is then swallowed by the adapter.
- *  The swallow is why a 4.3-second hard failure presented as a silent tax. */
 function deadRedis(opMs = UPSTASH_DEAD_OP_MS): EngineCache {
   return {
     async getContent() {
@@ -67,8 +45,6 @@ function deadRedis(opMs = UPSTASH_DEAD_OP_MS): EngineCache {
   };
 }
 
-/** The same unreachable store, throwing rather than swallowing — which is what
- *  the adapter now does. Still slow, so the breaker has a real cost to cut off. */
 function deadThrowingRedis(opMs = UPSTASH_DEAD_OP_MS): EngineCache {
   const fail = async (): Promise<never> => {
     await sleep(opMs);
@@ -77,7 +53,6 @@ function deadThrowingRedis(opMs = UPSTASH_DEAD_OP_MS): EngineCache {
   return { getContent: fail, setContent: fail, getList: fail, setList: fail };
 }
 
-/** A healthy regional Redis: a real round-trip, no more. */
 function liveRedis(rttMs = 25): EngineCache {
   const content = new Map<string, string | null>();
   const list = new Map<string, unknown>();
@@ -146,11 +121,6 @@ function wire(mode: Mode): {
   }
 }
 
-/**
- * What a repeat visitor actually pays once the whole-trace cache is warm: one
- * tiny `latestRevision` request for the invalidation token, one store read, and
- * a JSON parse. No listing, no search, no genealogy.
- */
 async function measureResultHit(c: {
   name: string;
   article: string;

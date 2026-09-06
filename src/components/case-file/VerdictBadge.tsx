@@ -28,8 +28,8 @@ export function VerdictBadge({
           className="opacity-70"
           title={
             confidenceReasons?.length
-              ? `Confidence ${confidence} — ${confidenceReasons.join("; ")}`
-              : `Confidence ${confidence} — traced to a clean origin with no caveats`
+              ? `Confidence ${confidence}: ${confidenceReasons.join("; ")}`
+              : `Confidence ${confidence}: traced to a clean origin with no caveats`
           }
         >
           · {confidenceLabel[confidence]}

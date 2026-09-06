@@ -29,7 +29,7 @@ function readProgress(p: TraceProgress | null): {
         label: `${p.revisions.toLocaleString()} revisions in scope`,
         fraction: 0.18,
         detail: p.truncated
-          ? "History truncated by the page cap — closure unproven."
+          ? "History truncated by the page cap: closure unproven."
           : "Full history enumerated.",
       };
     case "searching": {
@@ -45,7 +45,7 @@ function readProgress(p: TraceProgress | null): {
         label: `Introduction located · ${p.year}`,
         fraction: 0.86,
         detail: p.removed
-          ? "The claim was later removed — tracing its window."
+          ? "The claim was later removed. Tracing its window."
           : "Reading the current revision to compare.",
       };
     case "reading":

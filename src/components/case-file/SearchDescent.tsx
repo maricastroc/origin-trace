@@ -53,7 +53,7 @@ export function SearchDescent({
       <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-ink-muted">
         {live
           ? "Each row is a revision the search reads; the band is the window it’s narrowing. Watch it converge."
-          : "Each row is one revision the search read — filled when the claim was present, hollow when absent. The window collapses onto the first occurrence."}
+          : "Each row is one revision the search read: filled when the claim was present, hollow when absent. The window collapses onto the first occurrence."}
       </p>
 
       <div className="mt-4 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-ink-ghost">

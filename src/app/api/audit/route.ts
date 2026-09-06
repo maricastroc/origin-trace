@@ -50,7 +50,7 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json(
       {
         error:
-          "Couldn't finish the audit — Wikipedia may be unreachable. Please try again.",
+          "Couldn't finish the audit: Wikipedia may be unreachable. Please try again.",
       },
       { status: 500 },
     );

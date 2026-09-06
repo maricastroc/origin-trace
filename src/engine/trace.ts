@@ -267,7 +267,7 @@ export async function traceClaim(input: TraceInput): Promise<ClaimProvenance> {
 
   const absentNote = originProven
     ? "the claim does not exist in the article yet"
-    : "not present in the revision just before this one — an earlier sparse occurrence below the searched range isn't ruled out";
+    : "not present in the revision just before this one: an earlier sparse occurrence below the searched range isn't ruled out";
 
   let timeline: TimelineEvent[];
   if (moved) {
@@ -596,7 +596,7 @@ function readingReason(
   if (v === "retrofit")
     return `The current wording first appears in ${introYear} unsourced; the citation${currentLabel ? ` (${currentLabel})` : ""} attached later.`;
   if (v === "source-lost")
-    return `The current wording first appears in ${introYear} cited, but the citation was later removed — it now stands uncited.`;
+    return `The current wording first appears in ${introYear} cited, but the citation was later removed: it now stands uncited.`;
   return `The current wording first appears in ${introYear} and is still uncited.`;
 }
 
@@ -613,7 +613,7 @@ function genealogyReason(
   if (v === "born-sourced")
     return `The idea traces back to ${originYear}${via}, cited then too.`;
   if (v === "retrofit")
-    return `The idea traces back to ${originYear}${via}, where it stood uncited — the citation${currentLabel ? ` (${currentLabel})` : ""} is retroactive.`;
+    return `The idea traces back to ${originYear}${via}, where it stood uncited: the citation${currentLabel ? ` (${currentLabel})` : ""} is retroactive.`;
   if (v === "source-lost")
     return `The idea traces back to ${originYear}${via}, cited then; the citation was later stripped, so it now stands uncited.`;
   return `The idea traces back to ${originYear}${via}, where it stood uncited.`;
@@ -624,7 +624,7 @@ function correctedSummary(
   genealogy: Verdict,
   originYear: number,
 ): string {
-  return `Reads ${VERDICT_PHRASE[lexical]} by the current wording, but the idea traces back to ${originYear} — ${VERDICT_PHRASE[genealogy]}. The two readings disagree; both are shown.`;
+  return `Reads ${VERDICT_PHRASE[lexical]} by the current wording, but the idea traces back to ${originYear}: ${VERDICT_PHRASE[genealogy]}. The two readings disagree; both are shown.`;
 }
 
 function citogenesisLoop(
@@ -643,7 +643,7 @@ function citogenesisLoop(
       {
         actor: source.label,
         year: source.year!,
-        action: "publishes it — after Wikipedia",
+        action: "publishes it, after Wikipedia",
       },
       {
         actor: "Wikipedia",
@@ -651,7 +651,7 @@ function citogenesisLoop(
         action: `cites ${source.label} as backing`,
       },
     ],
-    note: `The cited source (${source.label}, ${source.year}) postdates the claim's unsourced appearance on Wikipedia (${introYear}). A source published after the claim was already here cannot be its origin — the backing may be circular. The exact revision that attached the citation isn't pinned in this pass.`,
+    note: `The cited source (${source.label}, ${source.year}) postdates the claim's unsourced appearance on Wikipedia (${introYear}). A source published after the claim was already here cannot be its origin: the backing may be circular. The exact revision that attached the citation isn't pinned in this pass.`,
   };
 }
 
@@ -667,7 +667,7 @@ function summarize(
       return "Claim and citation entered together at introduction.";
     case "retrofit":
       return circular
-        ? "Born unsourced; the citation attached later was published after the claim — the backing may be circular."
+        ? "Born unsourced; the citation attached later was published after the claim: the backing may be circular."
         : "Born unsourced; the citation was attached later.";
     case "source-lost":
       return "Born with a citation that was later removed; the claim now stands unsourced.";
@@ -693,17 +693,17 @@ function credibilityRead(
   }
   switch (primary) {
     case "born-sourced":
-      return `Born with a source (${ctx.introRef?.label ?? "citation"}) in the same revision that introduced the claim — the backing precedes or accompanies the assertion.`;
+      return `Born with a source (${ctx.introRef?.label ?? "citation"}) in the same revision that introduced the claim: the backing precedes or accompanies the assertion.`;
     case "retrofit":
       return ctx.circular
-        ? `Presented as fact with no source at introduction; the citation that later stuck (${ctx.currentRef?.label ?? "current"}) was published after the claim already lived here, so it cannot be the origin — the backing may trace back to this article itself.`
+        ? `Presented as fact with no source at introduction; the citation that later stuck (${ctx.currentRef?.label ?? "current"}) was published after the claim already lived here, so it cannot be the origin: the backing may trace back to this article itself.`
         : `Presented as fact with no source at introduction; the citation (${ctx.currentRef?.label ?? "current"}) only stuck on later. The backing is retroactive.`;
     case "source-lost":
-      return `Born with a source (${ctx.introRef?.label ?? "citation"}) at introduction, but the citation was later removed — the claim now stands unsourced in the current revision. Its backing was there and is gone.`;
+      return `Born with a source (${ctx.introRef?.label ?? "citation"}) at introduction, but the citation was later removed: the claim now stands unsourced in the current revision. Its backing was there and is gone.`;
     case "unsourced-stable":
       return ctx.noteOnly
-        ? "Introduced unsourced and still unsourced. It carries an explanatory footnote — the “[α]”-style marker that reads like a reference — but that note only adds context; it cites no source."
-        : "Introduced unsourced and still unsourced in the current revision — never backed, never removed.";
+        ? "Introduced unsourced and still unsourced. It carries an explanatory footnote (the “[α]”-style marker that reads like a reference), but that note only adds context; it cites no source."
+        : "Introduced unsourced and still unsourced in the current revision: never backed, never removed.";
     default:
       return "";
   }
@@ -729,7 +729,7 @@ function buildNotes(intro: {
   assumptionViolated: boolean;
 }): string | undefined {
   if (!intro.assumptionViolated) return undefined;
-  return "non-monotonic presence at the boundary — the window may not be the first occurrence; verify.";
+  return "non-monotonic presence at the boundary: the window may not be the first occurrence; verify.";
 }
 
 function year(timestamp: string): string {

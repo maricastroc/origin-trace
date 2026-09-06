@@ -56,14 +56,14 @@ export function CorpusReceipt({
       <p className="mt-4 max-w-xl text-[13px] leading-relaxed text-ink-muted">
         {manual ? (
           <>
-            Wikipedia&rsquo;s revision history is finite and enumerable — a
+            Wikipedia&rsquo;s revision history is finite and enumerable, a
             closed corpus. This case was traced by hand across it, down to the
             revisions pinned below.
           </>
         ) : truncated ? (
           <>
             The history ran past the page cap, so closure isn&rsquo;t proven for
-            this trace — the search pinned the origin from the{" "}
+            this trace: the search pinned the origin from the{" "}
             {read!.toLocaleString()} revisions it read, but earlier occurrences
             can&rsquo;t be ruled out.
           </>
@@ -81,14 +81,14 @@ export function CorpusReceipt({
           <>
             The full history is finite and enumerable, and the search read every
             revision below the origin ({read!.toLocaleString()} of{" "}
-            {total.toLocaleString()} in all) — so this is the proven first
+            {total.toLocaleString()} in all), so this is the proven first
             occurrence: everything earlier is confirmed absent, not merely
             unsampled.
           </>
         ) : (
           <>
             All {total.toLocaleString()} revisions were enumerated, but the
-            search read only {read!.toLocaleString()} of them — sampling the
+            search read only {read!.toLocaleString()} of them, sampling the
             range below the origin rather than reading it exhaustively. So the
             origin shown is a confirmed occurrence, with its immediate
             predecessor absent, yet a sparse earlier occurrence in an unread gap

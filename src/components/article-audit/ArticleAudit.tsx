@@ -144,7 +144,7 @@ export function ArticleAudit() {
               value={input}
               onChange={setInput}
               onClear={() => setInput("")}
-              placeholder="Quokka — or paste a Wikipedia URL"
+              placeholder="Quokka, or paste a Wikipedia URL"
             />
           </label>
         </div>
@@ -202,7 +202,7 @@ export function ArticleAudit() {
               </p>
             </div>
             <p className="mt-2.5 text-[12.5px] leading-relaxed text-ink-faint">
-              One fetch, then a structural read of every sentence — no history
+              One fetch, then a structural read of every sentence. No history
               walk.
             </p>
           </div>

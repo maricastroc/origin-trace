@@ -104,7 +104,7 @@ export function enforceRateLimit(
   const retryAfterSec = Math.max(1, Math.ceil(decision.retryAfterMs / 1000));
   return Response.json(
     {
-      error: `Too many requests — this endpoint is deliberately rate-limited. Retry in ${retryAfterSec}s.`,
+      error: `Too many requests. This endpoint is deliberately rate-limited. Retry in ${retryAfterSec}s.`,
     },
     {
       status: 429,

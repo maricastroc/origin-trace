@@ -114,7 +114,7 @@ export async function GET(request: Request): Promise<Response> {
             message:
               `The search ran out of time after examining ${err.searchedRevisions.toLocaleString()} of ` +
               `${err.totalCandidateRevisions.toLocaleString()} revisions. That is not the same as the claim ` +
-              `being absent — it was not found in the part of the history that was read.`,
+              `being absent: it was not found in the part of the history that was read.`,
             metrics: profiler.snapshot(),
           });
           return;
@@ -124,7 +124,7 @@ export async function GET(request: Request): Promise<Response> {
         const message =
           err instanceof ClaimNotFoundError
             ? `The phrase wasn't found in the history of "${article}". Try a shorter, more literal excerpt.`
-            : "Couldn't finish the trace — Wikipedia may be unreachable or rate-limiting. Please try again.";
+            : "Couldn't finish the trace: Wikipedia may be unreachable or rate-limiting. Please try again.";
         send({ type: "error", message, metrics: profiler.snapshot() });
       } finally {
         if (!closed) controller.close();

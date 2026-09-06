@@ -101,12 +101,12 @@ export function EngineReceipt({ metrics }: { metrics?: TraceMetrics }) {
         {networkShare > 0.6 ? (
           <>
             {Math.round(networkShare * 100)}% of the wall-clock is Wikipedia
-            latency — the search is round-trip bound, not compute bound, so the
+            latency: the search is round-trip bound, not compute bound, so the
             engine&rsquo;s own work is a rounding error.
           </>
         ) : hitRate === 1 ? (
           <>
-            Every revision was already resident in the cache — this repeat trace
+            Every revision was already resident in the cache: this repeat trace
             skipped the network almost entirely.
           </>
         ) : (

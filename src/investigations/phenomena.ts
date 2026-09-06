@@ -11,7 +11,7 @@ export const PHENOMENA: Phenomenon[] = [
     id: "citogenesis",
     label: "Citogenesis",
     blurb:
-      "The cited source postdates the claim — Wikipedia asserted it first, the reference caught up later. Circular by construction.",
+      "The cited source postdates the claim: Wikipedia asserted it first, the reference caught up later. Circular by construction.",
   },
   {
     id: "unsourced-stable",
@@ -29,25 +29,25 @@ export const PHENOMENA: Phenomenon[] = [
     id: "note-not-source",
     label: "Note, not source",
     blurb:
-      "Wears a footnote marker that looks like a reference but cites nothing — an explanatory note, not evidence.",
+      "Wears a footnote marker that looks like a reference but cites nothing: an explanatory note, not evidence.",
   },
   {
     id: "ambiguous",
     label: "Ambiguous",
     blurb:
-      "The verdict depends on where you draw the claim boundary — the same sentence reads two ways.",
+      "The verdict depends on where you draw the claim boundary: the same sentence reads two ways.",
   },
   {
     id: "born-sourced",
     label: "Born sourced",
     blurb:
-      "Claim and citation entered together — its evidence is as old as the assertion. The clean case.",
+      "Claim and citation entered together: its evidence is as old as the assertion. The clean case.",
   },
   {
     id: "coverage",
     label: "Coverage map",
     blurb:
-      "The other engine mode: one read of an article maps every sentence to its evidence. Uncited is descriptive, not a verdict — citations cluster at paragraph ends.",
+      "The other engine mode: one read of an article maps every sentence to its evidence. Uncited is descriptive, not a verdict: citations cluster at paragraph ends.",
   },
 ];
 

@@ -21,7 +21,7 @@ export function Taxonomy() {
           <span className="text-accent">classifies</span> the evidence history.
         </h2>
         <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-muted">
-          Every claim resolves to one of these patterns — a read on the life of
+          Every claim resolves to one of these patterns: a read on the life of
           its evidence, not a fact-check of its content.
         </p>
 

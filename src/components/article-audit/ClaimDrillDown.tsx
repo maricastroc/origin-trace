@@ -114,7 +114,7 @@ export function ClaimDrillDown({
             {state.message}
           </p>
           <p className="mt-2 text-[12px] leading-relaxed text-ink-faint">
-            The sentence may have been reworded since it was introduced — the
+            The sentence may have been reworded since it was introduced: the
             exact phrasing isn&rsquo;t in the older history.
           </p>
         </div>

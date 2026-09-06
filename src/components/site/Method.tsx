@@ -15,26 +15,26 @@ const PIPELINE: {
     n: "02",
     title: "Resolve the article",
     detail:
-      "Which page carries it — or, when it’s ambiguous, the candidates to choose from.",
+      "Which page carries it, or (when it’s ambiguous) the candidates to choose from.",
   },
   {
     n: "03",
     title: "Enumerate the history",
     detail:
-      "List every revision, oldest to newest — finite and enumerable, a closed corpus. That closure is what makes silence provable.",
+      "List every revision, oldest to newest: finite and enumerable, a closed corpus. That closure is what makes silence provable.",
     stat: { value: "1,690", unit: "revisions · Quokka, enumerated" },
   },
   {
     n: "04",
     title: "Locate the origin",
     detail:
-      "Sample, then bisect — reading only what it needs — to the earliest occurrence it can confirm, and it flags when a sparse earlier one can't be ruled out.",
+      "Sample, then bisect (reading only what it needs) to the earliest occurrence it can confirm, and it flags when a sparse earlier one can't be ruled out.",
   },
   {
     n: "05",
     title: "Classify the evidence",
     detail:
-      "Born-sourced, retrofit, unsourced — each verdict pinned to revision ids.",
+      "Born-sourced, retrofit, unsourced: each verdict pinned to revision ids.",
   },
 ];
 
@@ -43,19 +43,19 @@ const PILLARS = [
     n: "01",
     kicker: "genealogy",
     title: "Genealogy, not parallel",
-    body: "An LLM summarizes evidence by treating sources as independent. But belief doesn't spread in parallel — it spreads genetically. Origin Trace reconstructs the chain: who cited whom, and where the root is weak.",
+    body: "An LLM summarizes evidence by treating sources as independent. But belief doesn't spread in parallel. It spreads genetically. Origin Trace reconstructs the chain: who cited whom, and where the root is weak.",
   },
   {
     n: "02",
     kicker: "closed corpus",
     title: "Silence is provable",
-    body: "An article's revision history is finite and enumerable — a closed corpus. When the search reads every revision below an origin, “unsourced until 2019” is a proof about the whole history, not an “I didn't find it” — and when it only samples that range, it says so rather than overclaiming. Abstention becomes trustworthy.",
+    body: "An article's revision history is finite and enumerable, a closed corpus. When the search reads every revision below an origin, “unsourced until 2019” is a proof about the whole history, not an “I didn't find it”. When it only samples that range, it says so rather than overclaiming. Abstention becomes trustworthy.",
   },
   {
     n: "03",
     kicker: "honesty",
     title: "It admits when the record is silent",
-    body: "When the wording shifts and the verdict depends on where you draw the line, the tool shows both readings and hands the judgment back to you — instead of inventing a certainty the history doesn't support.",
+    body: "When the wording shifts and the verdict depends on where you draw the line, the tool shows both readings and hands the judgment back to you, instead of inventing a certainty the history doesn't support.",
   },
 ];
 
@@ -76,7 +76,7 @@ export function Method() {
           </p>
           <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">
             The citation you see today says nothing about whether the claim was
-            born with it — or whether a source was bolted on, years later, to
+            born with it, or whether a source was bolted on, years later, to
             launder an assertion that was never backed. That story lives only in
             the revision history. So Origin Trace reads the revision history.
           </p>
@@ -85,9 +85,9 @@ export function Method() {
         <div className="mt-14">
           <p className="max-w-2xl text-[15px] leading-relaxed text-ink-muted">
             Every verdict is reconstructed from the article&rsquo;s{" "}
-            <span className="text-ink">revision history</span> — read as
-            wikitext and diffed revision to revision. Deterministic string work,
-            not a model&rsquo;s guess.
+            <span className="text-ink">revision history</span>, read as wikitext
+            and diffed revision to revision. Deterministic string work, not a
+            model&rsquo;s guess.
           </p>
 
           <ol className="mt-8 grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-5">
@@ -150,12 +150,12 @@ export function Method() {
             can be added, removed, and re-added across an article&rsquo;s life.
           </p>
           <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">
-            A plain binary search would cave here — landing on whichever
+            A plain binary search would cave here, landing on whichever
             add-or-remove edge it happened to hit. So the search never trusts
             the first occurrence it finds: it re-scans earlier revisions for an
             older origin, and when the true birth may predate what it actually
-            read — a re-addition, or a sparse island below the sampled range —
-            it lowers its own confidence and says so, instead of pinning a false
+            read (a re-addition, or a sparse island below the sampled range), it
+            lowers its own confidence and says so, instead of pinning a false
             date.
           </p>
         </div>
@@ -165,7 +165,7 @@ export function Method() {
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-muted">
             It&rsquo;s not a fact-checker: it doesn&rsquo;t say “true” or
             “false.” It says where a claim&rsquo;s backing came from, and how
-            solid it is — all auditable down to the exact revision.
+            solid it is, all auditable down to the exact revision.
           </p>
           <div className="mt-10 grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-3">
             {PILLARS.map((s) => (

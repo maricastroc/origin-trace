@@ -69,7 +69,7 @@ export async function auditArticle(input: AuditInput): Promise<ArticleAudit> {
       generatedBy: "wikiblame-audit",
       fetchedAt: new Date().toISOString(),
       notes:
-        "Sentence boundaries are inferred structurally (heuristic). “Unsourced” means no inline citation sits on the sentence — descriptive, not a verdict: some sentences legitimately need none, and lead-section claims are conventionally cited in the body.",
+        "Sentence boundaries are inferred structurally (heuristic). “Unsourced” means no inline citation sits on the sentence (descriptive, not a verdict): some sentences legitimately need none, and lead-section claims are conventionally cited in the body.",
     },
   };
 }

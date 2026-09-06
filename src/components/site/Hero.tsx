@@ -26,8 +26,8 @@ export function Hero() {
             <span className="text-ink">
               genealogy of a claim&rsquo;s credibility
             </span>{" "}
-            — when it entered, whether it was born with a source, when the
-            evidence changed — down to the exact revision. When the record
+            (when it entered, whether it was born with a source, when the
+            evidence changed), down to the exact revision. When the record
             doesn&rsquo;t back it up, it{" "}
             <span className="text-ink">says so</span>, instead of inventing a
             provenance.

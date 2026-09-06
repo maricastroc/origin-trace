@@ -16,7 +16,7 @@ const RESIDUAL: Record<
     label: "structured genesis",
     tone: "text-warn",
     gloss:
-      "The trail runs into a table or template — reachable with more determinism, not guessed at.",
+      "The trail runs into a table or template: reachable with more determinism, not guessed at.",
   },
   semantic: {
     label: "semantic wall",
@@ -59,10 +59,10 @@ export function GenealogyChain({ genealogy }: { genealogy: GenealogyTrace }) {
         {origin.date === latest.date
           ? `In ${origin.date} the wording changed ${rewordings}×.`
           : `Between ${origin.date} and ${latest.date} the wording changed ${rewordings}×.`}{" "}
-        The <Anchor>highlighted</Anchor> words are the anchors — numbers and
-        proper names — that carried across each rewording; they are the
-        invariant the trace followed back, past paraphrases a plain string
-        search would have lost.
+        The <Anchor>highlighted</Anchor> words are the anchors (numbers and
+        proper names) that carried across each rewording; they are the invariant
+        the trace followed back, past paraphrases a plain string search would
+        have lost.
       </p>
 
       <ol className="mt-5 space-y-1">

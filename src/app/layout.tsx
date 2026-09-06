@@ -28,9 +28,9 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "Origin Trace — the provenance of a claim",
+  title: "Origin Trace: the provenance of a claim",
   description:
-    "Reconstructs the genealogy of a claim's credibility on Wikipedia — when it entered, whether it was born with a source, down to the exact revision. Deterministic grounding, not summary.",
+    "Reconstructs the genealogy of a claim's credibility on Wikipedia: when it entered, whether it was born with a source, down to the exact revision. Deterministic grounding, not summary.",
 };
 
 export default function RootLayout({

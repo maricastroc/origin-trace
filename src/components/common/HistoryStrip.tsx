@@ -41,7 +41,7 @@ export function HistoryStrip({
                 className="inline-flex max-w-[16rem] items-center gap-1.5 py-0.5 pl-2.5 pr-1.5 transition-colors hover:text-ink"
                 title={
                   entry.subtitle
-                    ? `${entry.title} — ${entry.subtitle}`
+                    ? `${entry.title}: ${entry.subtitle}`
                     : entry.title
                 }
               >

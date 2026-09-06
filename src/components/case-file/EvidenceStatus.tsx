@@ -138,7 +138,7 @@ function ConfidenceNote({
         </ul>
       ) : (
         <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
-          Traced to a clean origin with both readings in agreement — nothing
+          Traced to a clean origin with both readings in agreement: nothing
           undermines this verdict.
         </p>
       )}

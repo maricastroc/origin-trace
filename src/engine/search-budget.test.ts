@@ -50,7 +50,7 @@ describe("search budget", () => {
     expect(result.search?.originRevId).toBe(1032);
     expect(result.meta.corpus?.searchTruncated).toBe(false);
     expect(result.verdict.confidenceReasons ?? []).not.toContain(
-      "the search stopped on its time budget before finishing the descent — the origin shown is confirmed, but the range below it is only partly examined",
+      "the search stopped on its time budget before finishing the descent: the origin shown is confirmed, but the range below it is only partly examined",
     );
   });
 
@@ -121,7 +121,7 @@ describe("search budget", () => {
     expect(result.search?.originProven).toBe(false);
     expect(result.meta.corpus?.originProven).toBe(false);
     expect(result.verdict.confidenceReasons).toContain(
-      "the search stopped on its time budget before finishing the descent — the origin shown is confirmed, but the range below it is only partly examined",
+      "the search stopped on its time budget before finishing the descent: the origin shown is confirmed, but the range below it is only partly examined",
     );
   });
 

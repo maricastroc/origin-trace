@@ -57,7 +57,7 @@ export const verdictStyle: Record<Verdict, VerdictStyle> = {
     health: "sourced",
     gloss: "claim and citation entered together",
     meaning:
-      "Entered the article already backed by a citation — its evidence is as old as the claim.",
+      "Entered the article already backed by a citation: its evidence is as old as the claim.",
     severity: "good",
     rank: 1,
     ...PALETTE.good,
@@ -77,7 +77,7 @@ export const verdictStyle: Record<Verdict, VerdictStyle> = {
     health: "unsourced",
     gloss: "born cited, since stripped of its source",
     meaning:
-      "Entered the article with a citation, but that citation was later removed — the claim now stands unsourced. Its evidence was there and is gone.",
+      "Entered the article with a citation, but that citation was later removed: the claim now stands unsourced. Its evidence was there and is gone.",
     severity: "warn",
     rank: 4,
     ...PALETTE.warn,
@@ -87,7 +87,7 @@ export const verdictStyle: Record<Verdict, VerdictStyle> = {
     health: "unsourced",
     gloss: "never sourced, never removed",
     meaning:
-      "Has carried no citation in its entire history, yet no one has removed it — presented as fact, never backed.",
+      "Has carried no citation in its entire history, yet no one has removed it: presented as fact, never backed.",
     severity: "alert",
     rank: 6,
     ...PALETTE.alert,
@@ -97,7 +97,7 @@ export const verdictStyle: Record<Verdict, VerdictStyle> = {
     health: "ambiguous",
     gloss: "the verdict depends on what counts as the claim",
     meaning:
-      "The verdict flips depending on where you draw the line around “the same claim” — so both readings are shown.",
+      "The verdict flips depending on where you draw the line around “the same claim”, so both readings are shown.",
     severity: "neutral",
     rank: 7,
     ...PALETTE.neutral,
@@ -107,7 +107,7 @@ export const verdictStyle: Record<Verdict, VerdictStyle> = {
     health: "removed",
     gloss: "introduced, then taken out",
     meaning:
-      "Existed in the article and was later removed. Its window of presence is traced down to the revision that introduced it — the current revision carries no such claim to source.",
+      "Existed in the article and was later removed. Its window of presence is traced down to the revision that introduced it: the current revision carries no such claim to source.",
     severity: "neutral",
     rank: 2,
     ...PALETTE.neutral,

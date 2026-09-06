@@ -18,7 +18,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
           "a probable earlier wording exists but couldn't be verified",
         ],
         summary:
-          "Born unsourced; the citation attached later was published after the claim — the backing may be circular.",
+          "Born unsourced; the citation attached later was published after the claim: the backing may be circular.",
       },
       timeline: [
         {
@@ -68,7 +68,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
             {
               actor: "The West Australian",
               year: 2019,
-              action: "publishes it — after Wikipedia",
+              action: "publishes it, after Wikipedia",
             },
             {
               actor: "Wikipedia",
@@ -76,11 +76,11 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
               action: "cites The West Australian as backing",
             },
           ],
-          note: "The cited source (The West Australian, 2019) postdates the claim's unsourced appearance on Wikipedia (2014). A source published after the claim was already here cannot be its origin — the backing may be circular. The exact revision that attached the citation isn't pinned in this pass.",
+          note: "The cited source (The West Australian, 2019) postdates the claim's unsourced appearance on Wikipedia (2014). A source published after the claim was already here cannot be its origin: the backing may be circular. The exact revision that attached the citation isn't pinned in this pass.",
         },
       },
       credibilityRead:
-        "Presented as fact with no source at introduction; the citation that later stuck (The West Australian) was published after the claim already lived here, so it cannot be the origin — the backing may trace back to this article itself.",
+        "Presented as fact with no source at introduction; the citation that later stuck (The West Australian) was published after the claim already lived here, so it cannot be the origin: the backing may trace back to this article itself.",
       sourceQuality: {
         note: "no primary or peer-reviewed source detected in this pass",
         flags: ["no-primary-source"],
@@ -149,7 +149,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
         },
       ],
       credibilityRead:
-        "Introduced unsourced and still unsourced in the current revision — never backed, never removed.",
+        "Introduced unsourced and still unsourced in the current revision: never backed, never removed.",
       meta: {
         generatedBy: "wikiblame-pipeline",
         fetchedAt: "2026-07-09T13:07:47.808Z",
@@ -177,7 +177,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
           "the claim carries no stable anchor to trace its history on",
         ],
         summary:
-          "Born unsourced; the citation attached later was published after the claim — the backing may be circular.",
+          "Born unsourced; the citation attached later was published after the claim: the backing may be circular.",
       },
       timeline: [
         {
@@ -225,7 +225,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
             {
               actor: "Headache",
               year: 2011,
-              action: "publishes it — after Wikipedia",
+              action: "publishes it, after Wikipedia",
             },
             {
               actor: "Wikipedia",
@@ -233,11 +233,11 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
               action: "cites Headache as backing",
             },
           ],
-          note: "The cited source (Headache, 2011) postdates the claim's unsourced appearance on Wikipedia (2007). A source published after the claim was already here cannot be its origin — the backing may be circular. The exact revision that attached the citation isn't pinned in this pass.",
+          note: "The cited source (Headache, 2011) postdates the claim's unsourced appearance on Wikipedia (2007). A source published after the claim was already here cannot be its origin: the backing may be circular. The exact revision that attached the citation isn't pinned in this pass.",
         },
       },
       credibilityRead:
-        "Presented as fact with no source at introduction; the citation that later stuck (Headache) was published after the claim already lived here, so it cannot be the origin — the backing may trace back to this article itself.",
+        "Presented as fact with no source at introduction; the citation that later stuck (Headache) was published after the claim already lived here, so it cannot be the origin: the backing may trace back to this article itself.",
       meta: {
         generatedBy: "wikiblame-pipeline",
         fetchedAt: "2026-07-09T13:08:02.106Z",
@@ -294,7 +294,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
         },
       ],
       credibilityRead:
-        "Introduced unsourced and still unsourced. It carries an explanatory footnote — the “[α]”-style marker that reads like a reference — but that note only adds context; it cites no source.",
+        "Introduced unsourced and still unsourced. It carries an explanatory footnote (the “[α]”-style marker that reads like a reference), but that note only adds context; it cites no source.",
       meta: {
         generatedBy: "wikiblame-pipeline",
         fetchedAt: "2026-07-09T13:09:31.304Z",
@@ -1019,7 +1019,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
         generatedBy: "wikiblame-audit",
         fetchedAt: "2026-07-09T13:09:31.757Z",
         notes:
-          "Sentence boundaries are inferred structurally (heuristic). “Unsourced” means no inline citation sits on the sentence — descriptive, not a verdict: some sentences legitimately need none, and lead-section claims are conventionally cited in the body.",
+          "Sentence boundaries are inferred structurally (heuristic). “Unsourced” means no inline citation sits on the sentence (descriptive, not a verdict): some sentences legitimately need none, and lead-section claims are conventionally cited in the body.",
       },
     },
   },
@@ -5767,7 +5767,7 @@ export const SNAPSHOTS: Record<string, Snapshot> = {
         generatedBy: "wikiblame-audit",
         fetchedAt: "2026-07-09T13:09:32.773Z",
         notes:
-          "Sentence boundaries are inferred structurally (heuristic). “Unsourced” means no inline citation sits on the sentence — descriptive, not a verdict: some sentences legitimately need none, and lead-section claims are conventionally cited in the body.",
+          "Sentence boundaries are inferred structurally (heuristic). “Unsourced” means no inline citation sits on the sentence (descriptive, not a verdict): some sentences legitimately need none, and lead-section claims are conventionally cited in the body.",
       },
     },
   },

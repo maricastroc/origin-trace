@@ -73,7 +73,7 @@ export async function resolveArticles(
       scope: "not-found",
       resolved: null,
       candidates,
-      note: "Not found verbatim or by relevance in any article. The phrase may be reworded, since removed, or not on Wikipedia — name the article to scope it.",
+      note: "Not found verbatim or by relevance in any article. The phrase may be reworded, since removed, or not on Wikipedia. Name the article to scope it.",
     };
   }
 
@@ -83,7 +83,7 @@ export async function resolveArticles(
       scope: "unambiguous",
       resolved: strong[0].title,
       candidates,
-      note: `The phrase appears verbatim in exactly one article — “${strong[0].title}”. Scope resolved.`,
+      note: `The phrase appears verbatim in exactly one article, “${strong[0].title}”. Scope resolved.`,
     };
   }
 
@@ -93,7 +93,7 @@ export async function resolveArticles(
       scope: "ambiguous",
       resolved: null,
       candidates,
-      note: `The phrase appears verbatim in ${strong.length} articles — itself a propagation signal. Pick the one to trace.`,
+      note: `The phrase appears verbatim in ${strong.length} articles, itself a propagation signal. Pick the one to trace.`,
     };
   }
 
@@ -102,6 +102,6 @@ export async function resolveArticles(
     scope: "ambiguous",
     resolved: null,
     candidates,
-    note: "No article contains the phrase verbatim — the wording may have drifted. These are the closest by relevance; pick a scope or refine the phrase.",
+    note: "No article contains the phrase verbatim: the wording may have drifted. These are the closest by relevance; pick a scope or refine the phrase.",
   };
 }

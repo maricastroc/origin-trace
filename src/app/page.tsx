@@ -29,7 +29,7 @@ export default function Home() {
                 </h2>
               </div>
               <p className="max-w-sm text-[14px] leading-relaxed text-ink-muted">
-                A curated file of what the engine can catch — citogenesis,
+                A curated file of what the engine can catch: citogenesis,
                 retrofit, unsourced-stable claims. Every verdict is real engine
                 output, pinned and reproducible. Hit{" "}
                 <span className="text-ink">verify live</span> on any of them.
@@ -49,7 +49,7 @@ export default function Home() {
             </h2>
             <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-muted">
               Paste a claim. Origin Trace tries to resolve which article it
-              belongs to — and when the scope is ambiguous, it shows you the
+              belongs to, and when the scope is ambiguous, it shows you the
               candidates instead of guessing. Then it samples and bisects that
               article&rsquo;s real history down to the revision that introduced
               the claim.
@@ -73,8 +73,8 @@ export default function Home() {
               One read of the current revision maps every sentence to its
               evidence: which carry an inline citation, which assert without
               one. The claim boundary comes free from Wikipedia&rsquo;s own
-              structure — no NLP. Then click any uncited sentence to trace its
-              history — down to the revision that introduced it, or an honest
+              structure. No NLP. Then click any uncited sentence to trace its
+              history, down to the revision that introduced it, or an honest
               &ldquo;not found&rdquo; when the wording has drifted too far back
               to match.
             </p>

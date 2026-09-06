@@ -7,7 +7,7 @@ export function SiteFooter() {
         <div className="flex items-center gap-2.5">
           <Mark className="h-4.5 w-auto" />
           <span className="font-mono text-[12px] text-ink-muted">
-            origin-trace — project by Mariana Castro
+            origin-trace · project by Mariana Castro
           </span>
         </div>
         <span className="font-mono text-[12px] tracking-wide text-ink-faint">

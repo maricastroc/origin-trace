@@ -48,8 +48,8 @@ export function CaseFile({
         label={isAmbiguous ? "Chain of rewording" : "Credibility timeline"}
         subtitle={
           isAmbiguous
-            ? "the evidence for the verdict — how the wording and evidence changed; between them, the kind of change"
-            : "the evidence for the verdict — each node is an auditable revision; between them, what changed"
+            ? "the evidence for the verdict: how the wording and evidence changed; between them, the kind of change"
+            : "the evidence for the verdict: each node is an auditable revision; between them, what changed"
         }
       />
       {data.genealogy && <GenealogyChain genealogy={data.genealogy} />}

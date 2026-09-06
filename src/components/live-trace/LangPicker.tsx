@@ -29,7 +29,7 @@ export function LangPicker({
             type="button"
             onClick={() => onChange(l.code)}
             aria-pressed={active}
-            title={`${l.name} — ${l.code}.wikipedia`}
+            title={`${l.name}: ${l.code}.wikipedia`}
             className={`px-3 py-1 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors ${
               active
                 ? "bg-accent text-surface-2"

@@ -85,7 +85,7 @@ export function TimelineRow({
         <div className="mt-3">
           <span
             className="inline-flex items-center gap-2 rounded-md border border-line-strong bg-surface-2 px-2.5 py-1.5 text-[12.5px] font-medium text-ink-muted"
-            title="A citation (<ref>) is attached here, but it couldn't be parsed into an attributable source — a bare URL, an unknown template, or a reuse pointer. The claim is cited; there's just nothing structured to display."
+            title="A citation (<ref>) is attached here, but it couldn't be parsed into an attributable source: a bare URL, an unknown template, or a reuse pointer. The claim is cited; there's just nothing structured to display."
           >
             <UnreadableRefIcon className="h-4 w-4" />
             cited &middot; source unreadable

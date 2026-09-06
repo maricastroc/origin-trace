@@ -24,27 +24,27 @@ export interface ConfidenceResult {
 }
 
 const REASONS = {
-  corrected: "the two readings disagree — no single verdict is asserted",
+  corrected: "the two readings disagree: no single verdict is asserted",
   lexicalOnly:
-    "no lineage was reconstructed — this rests on the lexical trace alone",
+    "no lineage was reconstructed: this rests on the lexical trace alone",
   bornAtOldest:
     "the claim already exists in the oldest revision fetched, so its birth may predate the trace",
   bulkInsertion:
-    "the origin is a large batch edit — the idea may have been pasted in from elsewhere",
+    "the origin is a large batch edit: the idea may have been pasted in from elsewhere",
   moreDeterminism:
     "the lineage broke on a structural seam (infobox, table, or a cross-article merge)",
   semantic:
     "the lineage broke on a reword that couldn't be confirmed without judgment",
   unrecoverable: "the claim carries no stable anchor to trace its history on",
   nonMonotonic:
-    "part of the chain crosses a non-monotonic edit — it's suggestive, not proven",
+    "part of the chain crosses a non-monotonic edit: it's suggestive, not proven",
   abstained: "a probable earlier wording exists but couldn't be verified",
   removedSince:
     "the removal revision wasn't located, so the timeline is incomplete",
   earliestUnproven:
-    "the revisions below the origin were sampled, not all read — a sparse earlier occurrence can't be ruled out, so the exact first appearance isn't proven",
+    "the revisions below the origin were sampled, not all read: a sparse earlier occurrence can't be ruled out, so the exact first appearance isn't proven",
   searchTruncated:
-    "the search stopped on its time budget before finishing the descent — the origin shown is confirmed, but the range below it is only partly examined",
+    "the search stopped on its time budget before finishing the descent: the origin shown is confirmed, but the range below it is only partly examined",
 } as const;
 
 export function verdictConfidence(s: ConfidenceSignals): ConfidenceResult {

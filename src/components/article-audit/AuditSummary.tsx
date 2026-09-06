@@ -108,7 +108,7 @@ export function AuditSummary({
       <div className="mt-4 flex flex-col gap-2 text-[12.5px] leading-relaxed text-ink-faint">
         <p>
           <span className="text-ink-muted">
-            Coverage counts whether a sentence carries an inline citation — not
+            Coverage counts whether a sentence carries an inline citation, not
             whether that citation supports it.
           </span>{" "}
           The gap between &ldquo;has a source&rdquo; and &ldquo;the source
@@ -118,7 +118,7 @@ export function AuditSummary({
         {lead.total > 0 && (
           <p>
             <span className="text-ink-muted">Lead:</span> {lead.sourced} of{" "}
-            {lead.total} sentences cited inline — the rest are conventionally
+            {lead.total} sentences cited inline. The rest are conventionally
             sourced in the body (WP:LEADCITE), so they&rsquo;re counted apart
             and kept out of the section ranking.
           </p>

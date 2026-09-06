@@ -32,8 +32,8 @@ export function HighImpactBand({
         </span>
       </div>
       <p className="mt-1.5 max-w-2xl text-[12.5px] leading-relaxed text-ink-muted">
-        Evaluative or record-setting statements — flagged by phrasing — that
-        stand without an inline citation. The claims a reader is most likely to
+        Evaluative or record-setting statements (flagged by phrasing) that stand
+        without an inline citation. The claims a reader is most likely to
         repeat, so the ones worth tracing first.
       </p>
 

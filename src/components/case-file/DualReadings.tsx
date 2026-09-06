@@ -5,7 +5,7 @@ export function DualReadings({ readings }: { readings: VerdictReading[] }) {
   return (
     <section>
       <h3 className="mb-3 font-mono text-[11px] uppercase tracking-[0.12em] text-ink">
-        Two readings — the product won&rsquo;t choose for you
+        Two readings: the product won&rsquo;t choose for you
       </h3>
       <div className="grid gap-3 sm:grid-cols-2">
         {readings.map((reading) => {
